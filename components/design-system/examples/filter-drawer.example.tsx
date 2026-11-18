@@ -21,7 +21,8 @@ export default function FilterDrawerExample() {
         onClearAll={() => setQuick(false)}
         footer={<Button onClick={() => setOpen(false)}>Aplicar</Button>}
       >
-        <div className="flex items-center gap-3 text-body-sm text-text">
+        {/* FRESCO-1235: the drawer body has no padding of its own (header and footer carry `p-4`); content brings its own horizontal margin, as the recipe library's FilterSection does. */}
+        <div data-testid="filter_drawer_example_content" className="flex items-center gap-3 px-4 py-2 text-body-sm text-text">
           <Switch checked={quick} onCheckedChange={setQuick} aria-label="Solo recetas rápidas" />
           Solo recetas rápidas
         </div>
