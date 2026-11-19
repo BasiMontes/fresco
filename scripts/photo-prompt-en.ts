@@ -302,6 +302,13 @@ const DISH_TYPES: DishType[] = [
   // as a fried egg; churros were hidden behind the chocolate and the orange. Both name their shape up front.
   { prefixes: ['crepes', 'crepe'], lead: 'two thin golden crepes folded into triangles, topped with', alone: 'two thin golden crepes folded into triangles', vessel: 'plate', plain: true, omit: [...BATTER, 'harina', 'leche'] },
   { prefixes: ['churros'], lead: 'four long ridged golden churros standing upright in a small cup, with a small bowl of thick dark chocolate dip and', alone: 'four long ridged golden churros standing upright in a small cup, with a small bowl of thick dark chocolate dip', vessel: 'plate', plain: true, omit: ['cacao', 'harina'] },
+  // 2026-11-19 batch review (FRESCO-1200): four dishes were refused by the clay filter (8007), one of them for the
+  // third time. Their prompts named an egg, a "sandwich", "sliced pork loin" or "oven-roasted ... golden browned
+  // surface". The cause is unproven (all 8 prompts with "seared" passed, so that verb is not it); each entry names
+  // the dish by its shape and leaves those words out. They sit before the general "bocadillo" entry: first match wins.
+  { prefixes: ['bocadillo de tortilla'], lead: 'a crusty bread roll cut open and filled with a thick golden omelette slice and', alone: 'a crusty bread roll cut open and filled with a thick golden omelette slice', vessel: 'plate', plain: true, omit: ['huevo', 'pan', 'patata', 'patatas'] },
+  { prefixes: ['berenjena rellena'], lead: 'two baked aubergine halves filled with a soft savory vegetable stuffing and topped with', alone: 'two baked aubergine halves filled with a soft savory vegetable stuffing', vessel: 'plate', plain: true, skipShape: true, omit: ['berenjena', 'champiñones', 'levadura nutricional', 'jengibre'] },
+  { prefixes: ['lomo de cerdo'], lead: 'a plate of tender roast meat slices in a smooth golden onion sauce, with', alone: 'a plate of tender roast meat slices in a smooth golden onion sauce', vessel: 'plate', plain: true, skipShape: true, omit: ['lomo de cerdo', 'cebolla'] },
   { prefixes: ['tostada', 'tostadas'], lead: 'open-faced toasted bread slices topped with', vessel: 'plate' },
   // 2026-11-17 (FRESCO-1220): "cut in half showing the filling" drew a muddle the owner rejected (3 of 3) and sat in 5
   // of the 6 prompts the clay filter refused; "seen from the side, with visible layers" was approved. Plain: the

@@ -408,6 +408,21 @@ describe('buildEnglishPrompt in the clay style: wording the Cloudflare filter re
       expect(prompt).not.toContain('cocoa powder');
     });
 
+    test('the dishes the clay filter refused name their shape and leave out the egg, "sandwich" and "pork loin"', () => {
+      const bocadillo = clay('Bocadillo de tortilla', ['pan', 'huevo', 'patata']);
+      const francesa = clay('Bocadillo de tortilla francesa', ['pan', 'huevo']);
+      const berenjena = clay('Berenjena rellena de levadura nutricional', ['berenjena', 'champiñones', 'jengibre'], ['Asar al horno']);
+      const lomo = clay('Lomo de cerdo en salsa de cebolla', ['lomo de cerdo', 'cebolla', 'ajo']);
+
+      expect(bocadillo).toContain('a crusty bread roll cut open and filled with a thick golden omelette slice');
+      expect(francesa).toContain('a crusty bread roll cut open and filled with a thick golden omelette slice');
+      expect(berenjena).toContain('two baked aubergine halves filled with a soft savory vegetable stuffing');
+      expect(lomo).toContain('tender roast meat slices in a smooth golden onion sauce');
+      for (const prompt of [bocadillo, francesa, berenjena, lomo]) {
+        expect(prompt).not.toMatch(/\b(egg|sandwich|pork loin|oven-roasted|golden browned surface)\b/i);
+      }
+    });
+
     test('"eggplant" is written "aubergine" in a clay prompt, and a photo prompt keeps the word', () => {
       const escalivada = clay('Escalivada', ['berenjena', 'pimiento rojo', 'cebolla'], ['Asar al horno']);
       const photo = buildEnglishPrompt({ nombre: 'Berenjena asada', ingredientes_principales: ['berenjena'], pasos_resumen: [] });
