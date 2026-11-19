@@ -2,6 +2,23 @@
 # `git config` on throwaway repos would then write into the real .git/config.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 
+# FRESCO-1240: the suite only passes on the Bun version CI pins (`.bun-version`, kept equal to
+# BUN_VERSION in the workflows by scripts/bun-version.test.ts). On another version it fails with
+# errors that have nothing to do with the change being pushed (Bun 1.4.4: a mock leak between
+# analytics-consent-sync and identity), so stop here and say what to install. This runs before the
+# gates below because they run Bun scripts too.
+BUN_VERSION_FILE="$(git rev-parse --show-toplevel)/.bun-version"
+if [ -f "$BUN_VERSION_FILE" ]; then
+  BUN_WANTED="$(tr -d '[:space:]' < "$BUN_VERSION_FILE")"
+  BUN_HAVE="$(bun --version 2>/dev/null)"
+  if [ "$BUN_HAVE" != "$BUN_WANTED" ]; then
+    echo "Push stopped: Bun ${BUN_HAVE:-"not found"} is installed, this repo expects $BUN_WANTED (.bun-version, the version CI pins)."
+    echo "   Install it: curl -fsSL https://bun.sh/install | bash -s \"bun-v$BUN_WANTED\""
+    echo "   Do not run 'bun upgrade': it moves you to the latest version again."
+    exit 1
+  fi
+fi
+
 # Framework gates, in one call: the full-repo checks pre-commit skips for speed
 # (format, lint, env-var parity, and the unconditional freshness/parity safety
 # nets). They live in `.husky/framework-gates.sh`, which the boilerplate updater
