@@ -36,6 +36,17 @@ Whatever `git_strategy.policy.direct_push_to_protected` resolves to, a promotion
 
 `.mcp.json` launches the Supabase MCP with `--read-only --project-ref=<db_project_ref of .agents/project.yaml>` and an exact package version (FRESCO-1017). Reads (`execute_sql` with a `SELECT`, `list_tables`, `get_advisors`, `query_logs`, `list_migrations`) work; `apply_migration`, `deploy_edge_function` and any write do not. A schema change goes through the Supabase CLI (`stack.database.migrations_tool: supabase-cli`: `supabase db push --linked`, dry run first), and an Edge Function deploys from CI. Account tools (`list_projects`) are off because the server is project-scoped. The pins live in `cli/lib/agent-compatibility-contracts.ts` (on `updater.protected_paths`) and `scripts/mcp-pinned-versions.test.ts` fails on an unpinned package, so a bump is a reviewed diff there plus the three MCP configs.
 
+## Browser support (read by `modern-web-guidance`)
+
+Decided by the owner on 2026-11-17 after the `modern-web-guidance` skill asked for a documented policy. The baseline target is the `browserslist` key of `package.json`; the policy below says how new web-platform features relate to it.
+
+<!-- binds-in-section: project-owned browser-support policy the modern-web-guidance skill asks AGENTS.md or CLAUDE.md to document; no shared rule carries it -->
+
+- Use features that are **Baseline Widely available** without a fallback.
+- Use **Baseline Newly available** features only behind feature detection, and make sure the page still works when they are missing.
+- No polyfills. If a feature cannot degrade gracefully, redesign the interaction or leave the feature out.
+- A feature that is not Baseline at all is not used in shipped UI.
+
 ## Session log: `bitacora.md`
 
 Append one entry to `.context/bitacora.md` ONLY when a session completes a Jira story, resolves a critical bug or ships a deploy. Never for trivial work, text edits or exploratory sessions.

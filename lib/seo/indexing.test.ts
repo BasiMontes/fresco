@@ -55,6 +55,12 @@ describe('robots.txt', () => {
     expect(result.rules).toMatchObject({ userAgent: '*', allow: '/' });
   });
 
+  test('production keeps the public docs route /design-system out of crawlers (FRESCO-1207)', () => {
+    const result = withEnv({ VERCEL_ENV: 'production' }, () => robots());
+
+    expect(result.rules).toMatchObject({ disallow: expect.arrayContaining(['/qa', '/design-system']) });
+  });
+
   test.each([['pre', { VERCEL_ENV: 'preview' }], ['dev', { VERCEL_ENV: 'preview', VERCEL_GIT_COMMIT_REF: 'dev' }], ['local', {}]])('%s disallows everything and lists no sitemap', (_name, env) => {
     const result = withEnv(env, () => robots());
 
@@ -64,11 +70,12 @@ describe('robots.txt', () => {
 });
 
 describe('sitemap.xml', () => {
-  test('production lists the landing and the four legal pages (A7-LAUNCH-08)', () => {
+  test('production lists the landing, /sobre-nosotros and the four legal pages (A7-LAUNCH-08, FRESCO-1243)', () => {
     const urls = withEnv({ VERCEL_ENV: 'production' }, () => sitemap()).map(entry => entry.url);
 
     expect(urls).toEqual([
       'https://fresco-pro.vercel.app',
+      'https://fresco-pro.vercel.app/sobre-nosotros',
       'https://fresco-pro.vercel.app/legal/privacidad',
       'https://fresco-pro.vercel.app/legal/terminos',
       'https://fresco-pro.vercel.app/legal/cookies',

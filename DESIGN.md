@@ -214,6 +214,18 @@ components:
     backgroundColor: '{colors.accent-2-100}'
     textColor: '{colors.accent-2-800}'
     rounded: '{rounded.full}'
+  alert:
+    # FRESCO-1233: the Aviso (`components/ui/alert-banner.tsx`). A card-family surface in the
+    # allergen amber tint — same fill/text pair as tag-allergen, hairline in accent-2-600. No side stripe.
+    backgroundColor: '{colors.accent-2-100}'
+    textColor: '{colors.accent-2-800}'
+    borderColor: '{colors.accent-2-600}'
+    typography: '{typography.body-md}'
+    rounded: '{rounded.card}'
+    padding: '{spacing.4}'
+  alert-title:
+    textColor: '{colors.accent-2-800}'
+    typography: '{typography.h6}'
   nav-sidebar:
     backgroundColor: '{colors.primary}'
     textColor: '{colors.background}'
@@ -423,6 +435,27 @@ Z-index layer convention (not sourced from the canvas, standard default): base `
 - `card-pro`: `surface-raised` background with a 2px `{colors.primary}` border, `shadow.md`.
 - `recipe-card`: **v2 direction (FRESCO-441 owns the redesign; contract here):** the photo leads — a full-width image area at the top (`rounded.image`, `aspect-[4/3]` + `object-fit: cover` + the `.recipe-photo` grade — see §Photography), title below in Figtree capped at 2 lines, meta and a single tag as secondary info, favourite `button-icon` top-right over the photo. The no-photo state is a designed placeholder (subtle monochrome gradient keyed to meal category, or a typographic initial) — never a lone line-icon on beige. Same component and element order on `/menu`, `/calendar`, `/recipes`.
 
+**Alert / Aviso (FRESCO-1233)** — `components/ui/alert-banner.tsx`, documented at `/design-system/components/alert-banner`. The surface that tells the user something about their menu did not go the way they asked: an allergen or disliked-ingredient filter that left a slot empty, a variety rule that had to bend, a budget that was exceeded, a history that could not be read. The most serious of those is food safety, so the Aviso is built to be read, never to be skipped, and never to shout. It is "calidez como atención, no como alarma" (§Colors, Warning) made into a component.
+
+- **Purpose and scope.** One Aviso per page region, holding every warning that applies, in the order the server returned them. It is not for form validation (that is `error`), not for a payment failure (`card variant="danger"`), not for a "Fresco learned" moment (`card-insight`), and not for success or marketing messages.
+- **Shape.** A card-family container: `{rounded.card}` (20px), a **1px `{colors.accent-2-600}` hairline** on all four sides, **no shadow** (the tint and the hairline separate it; the `card` elevation is not borrowed). **There is no side stripe** (`border-l-4` and any single-edge accent are banned): a coloured edge on one side is the stock "alert box" look this component replaced.
+- **Fill and text, light and dark.** Fill `{colors.accent-2-100}`, every piece of text and the icon in `{colors.accent-2-800}` — the exact tag-allergen pair, which follows the amber contrast rule of FRESCO-283 (dark text on a tint, never amber as text on the page canvas). The tokens are the ramp roles in `app/globals.css`, so the dark theme is automatic and inverted end for end (`accent-2-100` `#3A2408` fill, `accent-2-800` `#F9E2CC` text, `accent-2-600` `#EAAD70` hairline): no per-component `dark:` colour and no hex in the component.
+- **Contrast** (computed from the `globals.css` token values; pinned by `components/ui/alert-banner.test.tsx`):
+
+  | Pair | Light | Dark | Requirement |
+  |---|---|---|---|
+  | text and icon (`accent-2-800`) on fill (`accent-2-100`) | 8,49:1 | 11,69:1 | 4,5:1 text, 3:1 icon (AA) |
+  | hairline (`accent-2-600`) on fill | 3,49:1 | 7,46:1 | 3:1 component boundary (SC 1.4.11) |
+  | hairline on the page (`background`) | 3,51:1 | 9,90:1 | 3:1 component boundary |
+
+  The fill against the light page is ~1,01:1, which is why the hairline is `accent-2-600` and not the 16% text hairline of a `card`: the boundary has to clear 3:1 on its own, exactly as in `tag-allergen`.
+- **Spacing.** `{spacing.4}` (17,6px) padding on all sides; `{spacing.3}` between the title row and the list; each warning inside a list gets `{spacing.2}` above and below its divider. Full width of its column, never a fixed width.
+- **Icon.** A single `CircleAlert` (lucide, from the project's 2px line set, `strokeWidth` 2, 20px), `{colors.accent-2-800}`, `aria-hidden`. It is a recognisable warning cue that is round like the pills and the rest of the set (no sharp triangle), and it is never the only cue: the title and the text carry the message, so nothing depends on colour or on the glyph. No icon chip, no tinted disc, no second icon per warning. It sits on the title row, not beside the list.
+- **Title.** A prop (`title`), never fixed in the component. Default **"A tener en cuenta"**; a caller passes a title that names what the warnings are about ("Sobre tu menú de esta semana"). Set as the system kicker: the `h6` style (Figtree 600, 12px, uppercase, `0.08em` tracking), in `accent-2-800`. **Not Young Serif** (display is `h1`/`h2` only), not a heading element (it labels a live region, it does not open a section), no exclamation, no emoji (§Voice).
+- **A list of warnings.** The warnings are `{typography.body-md}` (15px / 1.55, the system's minimum for anything read while cooking), `{colors.accent-2-800}`. One warning reads as a plain paragraph. Several read as a real list (`ul`/`li`, no browser bullets) separated by a **1px divider at `{colors.accent-2-600}` 30%** between items (not above the first or below the last), so each warning is a distinct statement that can be scanned. Warnings are never truncated, clamped or collapsed: the user must be able to read all of them without an interaction.
+- **Behaviour (binding).** `role="alert"` and `aria-live="assertive"`, so a screen reader announces it as soon as it appears. **Never dismissible**: no close button, no "got it", no timeout, no toast variant, no auto-hide. Always visible while the warnings exist, because the most serious case is a food-safety filter that could not be honoured. Renders nothing at all (not an empty box) when there are no warnings. A caller must not hide it by a state of its own either; only the data decides. No entrance animation beyond the system's own page transitions (§Motion).
+- **States.** There is one: shown. No hover, no focus ring (it contains nothing interactive), no disabled.
+
 **Icons** — a minimal 2px-stroke line set, always `{colors.primary}`: home, calendar, recipes (open book), shopping list, profile, save/heart, add (calendar+plus), notifications (bell), "cook now" (lightning bolt), and a 6-dot drag handle. Single stroke weight and single color across the entire set — no per-icon color exceptions, matching the canvas original. FRESCO-85/86/87 unified icon-button glyph *size* (24px / 22px variants), not stroke width — this file previously misattributed a 3px stroke bump to those tickets; the shipped nav/UI icon set (`components/layout/sidebar.tsx`, `bottom-tab-bar.tsx`, etc.) stays at 2px, carried explicitly by the `components.icon.strokeWidth` token (FRESCO-298 removed a stray global `svg.lucide { stroke-width: 3 }` CSS rule that had been overriding it app-wide). A separate, narrower 3px stroke is used only for small (≤16px) checkmarks (`components/ui/checkbox.tsx`, success ticks) where a thicker relative stroke is needed for legibility at that size — that is a distinct, size-driven exception, not a system-wide icon weight.
 
 **Navigation** — one destination set (Home/Menu, Calendar, Recipes, Profile) surfaced two ways:
@@ -461,6 +494,7 @@ The vibrant `#DF8C26` stays the brand color everywhere it is a surface; it just 
 - Don't render a form's real action button as `surface`-on-`surface` (the v1 "Guardar" bug) — it reads as disabled.
 - Don't animate longer than `duration-slow` (320ms), and don't use bounce/spring easing anywhere.
 - Don't square-corner a button or a tag — pills are the one roundness signal v2 keeps (option A).
+- Don't put a coloured side stripe (`border-l-4`) on an alert or any card, and don't make the Aviso dismissible, timed or collapsible (FRESCO-1233, §Components → Alert).
 
 **Don't:**
 - Don't introduce a second "high-intent orange" button anywhere on the same screen as an existing `button-action` — if two actions both feel like they need orange, that's a hierarchy problem to resolve, not a case for two orange buttons.

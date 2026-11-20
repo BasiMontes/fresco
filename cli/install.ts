@@ -272,6 +272,7 @@ const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/wshobson/agents', skill: 'typescript-advanced-types' },
   { package: 'https://github.com/addyosmani/web-quality-skills', skill: 'accessibility' },
   { package: 'https://github.com/addyosmani/web-quality-skills', skill: 'seo' },
+  { package: 'https://github.com/GoogleChrome/modern-web-guidance', skill: 'modern-web-guidance' },
   { package: 'https://github.com/emilkowalski/skill', skill: 'emil-design-eng' },
   { package: 'https://github.com/nextlevelbuilder/ui-ux-pro-max-skill', skill: 'ui-ux-pro-max' },
   { package: 'https://github.com/pbakaus/impeccable', skill: 'impeccable' },

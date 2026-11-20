@@ -3,7 +3,7 @@ import type { GroceryInput, MappedGroceryItem } from './types';
 import type { DiaSemana, TipoPlato } from '@/lib/api/types';
 import type { MenuGrid } from '@/lib/calendar/apply-slot-swap';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
-import { antiguedadEnDias, frescuraPrecio } from './compra';
+import { antiguedadEnDias, precioCuentaComoVigente } from './compra';
 import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
 import { mapShoppingList, recoverFromRecipeContext } from './map-item';
 
@@ -93,9 +93,10 @@ export function packPrice(item: MappedGroceryItem, ahora: Date = new Date()): nu
   const envaseVenta = resolveEnvaseVenta(item);
 
   const real = item.precios[0];
-  const demasiadoViejo = real !== undefined
-    && frescuraPrecio(antiguedadEnDias({ observadoEn: real.observadoEn, ahora })) === 'oculto';
-  if (real && !demasiadoViejo && Number.isFinite(real.precioEnvase) && real.precioEnvase > 0) {
+  // FRESCO-1237: the one shared rule (`precioCuentaComoVigente`): a price with no date or past 30 days does not count.
+  const cuenta = real !== undefined
+    && precioCuentaComoVigente(antiguedadEnDias({ observadoEn: real.observadoEn, ahora }));
+  if (real && cuenta && Number.isFinite(real.precioEnvase) && real.precioEnvase > 0) {
     return real.precioEnvase;
   }
 

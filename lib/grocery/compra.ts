@@ -18,6 +18,17 @@ export interface LineaCompra {
   /** What the row costs: the linked product's whole-pack price times the packs, else the stored estimate. */
   precio: number | undefined
   enlaces: EnlaceSupermercado[]
+  /**
+   * FRESCO-1222 — set by the server only for a house-brand staple row with a showable Mercadona price: the figure the
+   * labelled chain estimate is built from (`estimacion-cadenas.ts`). Plain data, so no catalog reaches the browser.
+   */
+  precioBaseEstimacion?: number
+  /**
+   * FRESCO-1222 — the price of the linked product alone (whole pack times packs), set only when the link has a valid
+   * price. Unlike `precio` it never falls back to the stored per-gram estimate, so the comparison card can tell a
+   * chain's price from a guess.
+   */
+  precioEnlazado?: number
 }
 
 export type CompraPorItem = Readonly<Record<string, LineaCompra>>;
@@ -51,6 +62,16 @@ export function frescuraPrecio(dias: number | null): FrescuraPrecio {
   if (dias > PRECIO_OCULTO_TRAS_DIAS) { return 'oculto'; }
   if (dias >= PRECIO_ANTIGUO_DESDE_DIAS) { return 'antiguo'; }
   return 'reciente';
+}
+
+/**
+ * FRESCO-1237 — THE rule for "does this price count as current": recent, or old but still shown. A price with no
+ * date or hidden for age does not. The list total, its coverage line and the "Comparar tu compra" card all ask it;
+ * there is no second copy of the rule.
+ */
+export function precioCuentaComoVigente(dias: number | null): boolean {
+  const frescura = frescuraPrecio(dias);
+  return frescura === 'reciente' || frescura === 'antiguo';
 }
 
 /** Key of one row: aisle plus name, because the same name can sit in two aisles. */

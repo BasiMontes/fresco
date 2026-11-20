@@ -33,9 +33,22 @@ const HAPPY_DOM_URL = 'https://test.fresco.local/';
 // need the DOM shim, are unaffected.
 (globalThis as { __FRESCO_NATIVE_FETCH__?: typeof fetch }).__FRESCO_NATIVE_FETCH__ = globalThis.fetch.bind(globalThis);
 
+// FRESCO-1239 — shiki 4.6 inlines its oniguruma wasm and decodes it with `new Response(stream).bytes()`. happy-dom's
+// `Response` (installed over Bun's native one by the registrator) has no `bytes()`, so every test that loads shiki
+// (`components/qa/code-block.test.tsx`) died at import. Added only when missing, after every register call.
+function ensureResponseBytes() {
+  const proto = globalThis.Response?.prototype as { bytes?: () => Promise<Uint8Array>, arrayBuffer: () => Promise<ArrayBuffer> } | undefined;
+  if (proto && typeof proto.bytes !== 'function') {
+    proto.bytes = async function bytes(this: { arrayBuffer: () => Promise<ArrayBuffer> }) {
+      return new Uint8Array(await this.arrayBuffer());
+    };
+  }
+}
+
 // First registration — window is definitely absent and the registrator's
 // flag is unset here, so a plain sync call is enough.
 GlobalRegistrator.register({ url: HAPPY_DOM_URL });
+ensureResponseBytes();
 if (typeof globalThis.window === 'undefined') {
   throw new TypeError('bun-test-setup: happy-dom did not install a window global');
 }
@@ -54,6 +67,7 @@ beforeEach(async () => {
     await GlobalRegistrator.unregister();
   }
   GlobalRegistrator.register({ url: HAPPY_DOM_URL });
+  ensureResponseBytes();
 });
 
 /**
@@ -143,4 +157,10 @@ require('@testing-library/jest-dom');
  */
 afterEach(() => {
   cleanup();
+  // FRESCO-1219: the document is shared by every test, and `components/auth/captcha-field.tsx` appends Cloudflare's
+  // script to `document.head` and never removes it (once per page in the app). A test that renders the captcha without
+  // stubbing `window.turnstile` (the signup OTP step does) left it behind, and a later test asserting "nothing loads
+  // from Cloudflare" (WaitlistForm) failed on whichever CI runner happened to order the files that way. Removed here so
+  // every test starts from a head without it, whatever ran before.
+  document.querySelectorAll('script[src*="challenges.cloudflare.com"]').forEach(script => script.remove());
 });

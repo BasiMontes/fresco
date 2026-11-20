@@ -1,9 +1,8 @@
 'use client';
 
-import type { NivelExperienciaCulinaria, ObjetivoUsuario } from '@schemas';
 import type * as React from 'react';
-import { Dropdown } from '@/components/ui/dropdown';
 import { Input } from '@/components/ui/input';
+import { OptionCardGroup } from '@/components/ui/option-card-group';
 import { NIVEL_EXPERIENCIA_OPTIONS, OBJETIVO_OPTIONS } from '@/lib/onboarding/wizard-options';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
@@ -37,29 +36,36 @@ export function OnboardingStepIdentity({ headingRef }: OnboardingStepIdentityPro
         />
       </label>
 
-      <label className="mt-4 flex flex-col gap-1">
+      {/* FRESCO-1227: with Pro, the goal and the level lean the menu (never exclude a recipe); Free keeps the same
+          menu, and two goals have no data behind them yet, so each option says what it does. */}
+      <div className="mt-4 flex flex-col gap-1">
         <span className="text-body-sm text-tertiary">Objetivo</span>
-        <Dropdown
-          data-testid="objetivo_dropdown"
+        <p data-testid="objetivo_effect_hint" className="text-caption text-tertiary">
+          Con Pro, tu objetivo inclina el menú hacia lo que buscas. Nunca deja recetas fuera.
+        </p>
+        <OptionCardGroup
+          data-testid="objetivo_group"
           aria-label="Objetivo"
           options={OBJETIVO_OPTIONS}
           value={objetivo}
-          onChange={value => setObjetivo(value as ObjetivoUsuario)}
-          placeholder="¿Qué buscas conseguir?"
+          onChange={value => setObjetivo(value)}
         />
-      </label>
+      </div>
 
-      <label className="mt-4 flex flex-col gap-1">
+      <div className="mt-4 flex flex-col gap-1">
         <span className="text-body-sm text-tertiary">Nivel de experiencia culinaria</span>
-        <Dropdown
-          data-testid="nivel_experiencia_dropdown"
+        <p data-testid="nivel_effect_hint" className="text-caption text-tertiary">
+          Con Pro, si eres aprendiz o novato, el menú prefiere las recetas menos difíciles.
+        </p>
+        <OptionCardGroup
+          data-testid="nivel_experiencia_group"
           aria-label="Nivel de experiencia culinaria"
+          columns={1}
           options={NIVEL_EXPERIENCIA_OPTIONS}
           value={nivelExperiencia}
-          onChange={value => setNivelExperiencia(value as NivelExperienciaCulinaria)}
-          placeholder="¿Cuánto sabes cocinar?"
+          onChange={value => setNivelExperiencia(value)}
         />
-      </label>
+      </div>
     </>
   );
 }

@@ -178,6 +178,8 @@ updater:
     - scripts/lint-skills.ts # FRESCO-960: also reads package-only PROJECT_LEVEL_SKILLS entries as community skills, so a restored resend-cli is not KIND-MISSING; a sync would revert it
     - scripts/lint-skills.test.ts # FRESCO-960: the regression test for that change
     - docs/workflows/README.md # FRESCO-962: carries our row for docs/workflows/boilerplate-sync.md; a sync would drop it
+    - cli/lib/variables-manifest.ts # FRESCO-1238: declares the {DEV,PRE,PRO}_PRO_PLAN_USER_{EMAIL,PASSWORD} test users (optional, passwords secret) so the generated .env.core.schema carries them; the `cli` component is synced wholesale, so a sync would drop them and a fresh worktree would fail vars:env:check again
+    - scripts/provision-worktree.ts # FRESCO-1238: also runs `bun run vars:schema` so a fresh worktree gets the gitignored env schema pair without hand edits; the `scripts` component is synced, a sync would revert it
     - .agents/skills/sprint-development/SKILL.md
     - .agents/skills/sprint-development/references/bug-fix-workflow.md
     - .agents/skills/sprint-development/references/story-plan.md

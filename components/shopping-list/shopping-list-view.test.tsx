@@ -191,7 +191,10 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
 
     for (const item of ITEMS) {
       const esperado = formatPrecio(precioLinea(item) as number);
-      expect(screen.getByText(new RegExp(`${esperado}$`.replace('.', '\\.')), { exact: false })).toBeTruthy();
+      // FRESCO-1222: the comparison card repeats some figures, so only the rows outside it are checked here.
+      const enFilas = screen.queryAllByText(new RegExp(`${esperado}$`.replace('.', '\\.')), { exact: false })
+        .filter(el => el.closest('[data-testid="shopping_list_comparison"]') === null);
+      expect(enFilas).toHaveLength(1);
     }
     expect(screen.queryByText(/0,00€/)).toBeNull();
   });
@@ -305,6 +308,63 @@ describe('ShoppingListView — chain-agnostic links and data age (FRESCO-808)', 
     renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(null)} />);
 
     expect(screen.getByTestId('shopping_list_item_0_0_precio_antiguedad')).toHaveTextContent('precio sin fecha');
+  });
+
+  // FRESCO-1237 — the row keeps printing its price and says it is not in the total; the total and coverage leave it out.
+  test('a price with no date is printed on the row but not summed in the total', () => {
+    renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(null)} />);
+
+    expect(screen.getByTestId('shopping_list_item_0_0_precio_antiguedad')).toHaveTextContent('precio sin fecha, no suma en el total');
+    expect(textoDeFila(/1,20€/)).toBeTruthy();
+    expect(screen.queryByTestId('shopping_list_price_coverage')).toBeNull();
+  });
+
+  const DOS_FILAS: ShoppingListPersistido = {
+    ...LIST_FALSA,
+    pasillos: [{
+      nombre: 'Pasta, arroz y legumbres',
+      orden: 1,
+      items: [
+        { nombre: 'arroz', cantidad: 500, unidad: 'g', comprado: false, precio_estimado: 0.5 },
+        { nombre: 'pasta', cantidad: 500, unidad: 'g', comprado: false, precio_estimado: 0.5 },
+      ],
+    }],
+    resumen: { total_items: 2, coste_estimado_min: 7, coste_estimado_max: 9, moneda: 'EUR' },
+  };
+  const enlaceFalso = (antiguedadDias: number | null) => [{ cadena: 'cadenafalsa', nombreCadena: 'Cadena falsa', url: 'https://cadena.example/x', antiguedadDias }];
+
+  // FRESCO-1237: the undated row (2,00) is printed but is not in the total (1,20) nor in the coverage.
+  test('the total is exactly the dated rows: the undated row is not in it', () => {
+    const compra: CompraPorItem = {
+      'Pasta, arroz y legumbres::arroz': { precio: 1.2, enlaces: enlaceFalso(3) },
+      'Pasta, arroz y legumbres::pasta': { precio: 2, enlaces: enlaceFalso(null) },
+    };
+    renderWithProviders(<ShoppingListView list={DOS_FILAS} compra={compra} />);
+
+    expect(screen.getByTestId('shopping_list_summary_total').textContent).toBe('1,20€');
+    expect(screen.getByTestId('shopping_list_price_coverage').textContent).toBe('1 de 2 artículos con precio');
+    expect(textoDeFila(/2,00€/)).toBeTruthy();
+  });
+
+  // FRESCO-1237 known limit, pinned (not changed): with no counted row the summary falls back to the stored
+  // server-side range, which includes undated rows. Unreachable today: no catalog emits undated prices.
+  test('when every priced row is undated the summary shows the stored range, not a sum', () => {
+    const compra: CompraPorItem = {
+      'Pasta, arroz y legumbres::arroz': { precio: 1.2, enlaces: enlaceFalso(null) },
+      'Pasta, arroz y legumbres::pasta': { precio: 2, enlaces: enlaceFalso(null) },
+    };
+    renderWithProviders(<ShoppingListView list={DOS_FILAS} compra={compra} />);
+
+    expect(screen.getByTestId('shopping_list_summary_total').textContent).toBe('7,00–9,00€');
+    expect(screen.queryByTestId('shopping_list_price_coverage')).toBeNull();
+    expect(screen.getByText('Total estimado del menú de esta semana')).toBeTruthy();
+  });
+
+  test('a dated price is summed and counted in the coverage', () => {
+    renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(3)} />);
+
+    expect(screen.getByTestId('shopping_list_summary_total')).toHaveTextContent('1,20');
+    expect(screen.getByTestId('shopping_list_price_coverage')).toHaveTextContent('1 de 1 artículo con precio');
   });
 
   // FRESCO-1028 — thresholds 14 and 30 days, set by the owner.

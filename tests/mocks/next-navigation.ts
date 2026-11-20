@@ -18,6 +18,8 @@ export const routerMock = {
   prefetch: mock(() => {}),
 };
 
+export const redirectMock = mock(() => {});
+
 /** Mutable — set `navState.pathname` in a test before rendering a component that reads `usePathname()`. */
 export const navState = { pathname: '/', searchParams: new URLSearchParams() };
 
@@ -26,6 +28,6 @@ void mock.module('next/navigation', () => ({
   usePathname: () => navState.pathname,
   useSearchParams: () => navState.searchParams,
   useParams: () => ({}),
-  redirect: mock(() => {}),
+  redirect: redirectMock,
   notFound: mock(() => {}),
 }));

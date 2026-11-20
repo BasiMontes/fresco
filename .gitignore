@@ -171,6 +171,7 @@ cookies.txt
 # FRESCO-956: third-party community skills are restored by `bun setup` from skills-lock.json, not committed
 /.agents/skills/accessibility/
 /.agents/skills/impeccable/
+/.agents/skills/modern-web-guidance/
 /.agents/skills/react-hook-form/
 /.agents/skills/resend-cli/
 /.agents/skills/seo/

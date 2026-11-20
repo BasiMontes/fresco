@@ -25,6 +25,9 @@
 
 import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
 import type { DiaSemana, Recipe, Temporada, TipoPlatoSlot, UserProfile } from './types.ts'
+import { cuisineKey, favouriteCuisineKeys } from './cuisine.ts'
+import { buildGoalLevelContext, clampSoft, goalLevelAdjustment, recordGoalLevelPick } from './goal-level.ts'
+import type { GoalLevelContext } from './goal-level.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
@@ -44,6 +47,18 @@ const BUCKET_MIDPOINT_EUROS: Record<CosteEstimado, number> = {
   medio: 5,
   alto: 8,
 }
+
+/**
+ * FRESCO-1226: score bonus for a recipe whose cuisine the user marked as a favourite (Pro/Family only, FR-5.4).
+ * It is one of the Pro-only soft terms whose COMBINED sum `clampSoft` caps at +-0.5 (FRESCO-1227, see
+ * `goal-level.ts`): the jitter in `scoreRecipe` is `rng() * 0.5`, the soft span is at most 1.0, so no soft term
+ * stack can overturn a base gap of 1.5 or more: the in-season step (2.0), the category repeat (-5), the
+ * contundente repeat (-2), the global discard (-4) and the personal discard (-6). A base gap of exactly 1.0 (a
+ * personal cook, `todo_el_ano` against out of season) can be overturned only by a +0.5 recipe against a -0.5
+ * rival with favourable jitter. The favourite alone at 0.5 is exactly at the cap, so the cap never changes the
+ * menu of a favourites-only user. Raising it above 0.5 would only be cut back by the cap, so do not.
+ */
+export const FAVOURITE_CUISINE_BONUS = 0.5
 
 /**
  * Deterministic PRNG seeded from a string (xmur3 hash → mulberry32). Same
@@ -111,6 +126,19 @@ export interface SelectMenuParams {
   hoy?: string
   /** Pro/Family personal cocinada/descartada counts per recipe, all-time (ADR-0008) — `undefined` for Free. */
   userEngagement?: Map<string, { cocinada: number; descartada: number }>
+  /**
+   * FRESCO-1226: the user's `cocinas_favoritas`, passed ONLY for Pro/Family (same gate as `userEngagement`).
+   * The selector never reads them from `profile`: omitted keeps a Free user's menu exactly as before.
+   */
+  favouriteCuisines?: readonly string[] | null
+  /**
+   * FRESCO-1227: the user's `objetivo`, passed ONLY for Pro/Family (same gate as `userEngagement`). A soft
+   * preference for `ahorrar_dinero`, `reducir_desperdicio`, `comer_variado` and `comer_sano`; every other value
+   * (including `perder_peso` and `ganar_masa_muscular`, which have no data behind them) changes nothing.
+   */
+  objetivo?: string | null
+  /** FRESCO-1227: the user's `nivel_experiencia`, Pro/Family only. `aprendiz` and `novato` lean away from hard recipes. */
+  nivelExperiencia?: string | null
 }
 
 export interface SelectedMenu {
@@ -127,6 +155,10 @@ interface ScoreRecipeParams {
   rng: () => number
   /** This user's personal cocinada/descartada counts for this recipe (ADR-0008) — `undefined` for Free or no history. */
   engagement?: { cocinada: number; descartada: number }
+  /** FRESCO-1226: the favourite cuisines as `cuisineKey`s (Pro/Family only). Omitted or empty leaves the score untouched. */
+  favouriteCuisines?: ReadonlySet<string>
+  /** FRESCO-1227: the goal/level context (Pro/Family only). Omitted leaves the score untouched. */
+  goalLevel?: GoalLevelContext
 }
 
 /**
@@ -135,7 +167,7 @@ interface ScoreRecipeParams {
  * to honor as best-effort preferences (FR-2.8) — now a fixed, auditable
  * heuristic instead of a natural-language instruction.
  */
-function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement }: ScoreRecipeParams): number {
+export function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement, favouriteCuisines, goalLevel }: ScoreRecipeParams): number {
   let score = 0
   const clasificacion = recipe.clasificacion
 
@@ -160,6 +192,22 @@ function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, enga
     score += Math.min(engagement.cocinada, 5) * 1.0
     if (engagement.descartada > 0) score -= 6
   }
+
+  // FRESCO-1226: softest signal (FR-5.4 #7, "prefer, never force"): a small bonus, never an exclusion.
+  // FRESCO-1227: every Pro-only soft term (favourite cuisine, goal, level) is summed and clamped together. With
+  // none active (Free) nothing is added at all, so the Free score is not touched even by a `+ 0`.
+  let soft = 0
+  let softActive = false
+  if (favouriteCuisines?.size && favouriteCuisines.has(cuisineKey(clasificacion?.cocina))) {
+    soft += FAVOURITE_CUISINE_BONUS
+    softActive = true
+  }
+
+  if (goalLevel) {
+    soft += goalLevelAdjustment(recipe, goalLevel)
+    softActive = true
+  }
+  if (softActive) score += clampSoft(soft)
 
   // Tie-break jitter (FRESCO-380 / A4-M1): seeded so the same (user, week)
   // is reproducible, and small enough (< 0.25 effective) that it can only
@@ -192,7 +240,7 @@ function pastDiasOf(fechaInicio: string, hoy: string | undefined): Set<DiaSemana
 }
 
 // CLAUDE.md §10: 3+ params → object param, hence the single-object signature.
-export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], discardedRecipeIds = [], profile, seed, fechaInicio, hoy, userEngagement }: SelectMenuParams): SelectedMenu {
+export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], discardedRecipeIds = [], profile, seed, fechaInicio, hoy, userEngagement, favouriteCuisines: favouriteCuisineNames, objetivo, nivelExperiencia }: SelectMenuParams): SelectedMenu {
   const rng = makeSeededRng(seed)
   const excluded = new Set(recentRecipeIds)
   const pool = candidates.filter(r => !excluded.has(r.id))
@@ -217,6 +265,8 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
 
   const pastDias = pastDiasOf(fechaInicio, hoy)
   const season = seasonOf(fechaInicio)
+  const favouriteCuisines = favouriteCuisineKeys(favouriteCuisineNames)
+  const goalLevel = buildGoalLevelContext(objetivo, nivelExperiencia)
   const usedLunchDinner = new Set<string>()
   const breakfastCount = new Map<string, number>()
   const warnedTimeRelax = new Set<string>() // dedupes the "no recipes under N min" advertencia per (tipo, weekday/weekend)
@@ -298,7 +348,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
       let chosen = timeFiltered[0]
       let bestScore = -Infinity
       for (const recipe of timeFiltered) {
-        const score = scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement: userEngagement?.get(recipe.id) })
+        const score = scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement: userEngagement?.get(recipe.id), favouriteCuisines, goalLevel })
         if (score > bestScore) {
           bestScore = score
           chosen = recipe
@@ -306,6 +356,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
       }
 
       menu[dia][tipo] = chosen.id
+      if (goalLevel) recordGoalLevelPick(chosen, goalLevel)
       lastCategoria = chosen.clasificacion?.categoria ?? null
       lastContundente = chosen.clasificacion?.es_contundente ?? null
 

@@ -21,10 +21,13 @@ function precioEnvaseReal(mapped: MappedGroceryItem): number | null {
  * Never throws or returns `NaN`.
  */
 export function precioLinea(item: ShoppingListItem, mapped: MappedGroceryItem = mapShoppingListItem(item)): number | undefined {
+  return precioLineaEnlazada(mapped) ?? item.precio_estimado;
+}
+
+/** FRESCO-1222 — the price of the linked product alone (whole pack times packs), `undefined` when no link has a valid price: never the stored estimate. */
+export function precioLineaEnlazada(mapped: MappedGroceryItem): number | undefined {
   const envase = precioEnvaseReal(mapped);
-  if (envase !== null) {
-    const envases = Number.isFinite(mapped.envasesEstimados) && mapped.envasesEstimados > 0 ? mapped.envasesEstimados : 1;
-    return redondear2(envase * envases);
-  }
-  return item.precio_estimado;
+  if (envase === null) { return undefined; }
+  const envases = Number.isFinite(mapped.envasesEstimados) && mapped.envasesEstimados > 0 ? mapped.envasesEstimados : 1;
+  return redondear2(envase * envases);
 }

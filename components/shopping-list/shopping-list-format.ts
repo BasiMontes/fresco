@@ -1,6 +1,6 @@
 import type { DiaSemana, ShoppingListItem, ShoppingListPasillo } from '@/lib/api/types';
 import type { CompraPorItem } from '@/lib/grocery/compra';
-import { claveItemCompra, frescuraPrecio } from '@/lib/grocery/compra';
+import { claveItemCompra, frescuraPrecio, precioCuentaComoVigente } from '@/lib/grocery/compra';
 import { capitalize } from '@/lib/utils';
 
 /**
@@ -14,14 +14,26 @@ export function precioDeFila({ item, linea }: { item: ShoppingListItem, linea: C
   return frescura === 'oculto' ? undefined : (linea?.precio ?? item.precio_estimado);
 }
 
-/** FRESCO-1099 — sum of the rows' printed prices, to the cent; `undefined` when no row prints one. */
+/**
+ * FRESCO-1237 — the price a row contributes to the list total: its printed price, unless the linked price has no date
+ * or is hidden for age, asked through the same `precioCuentaComoVigente` the comparison card uses. A row that does
+ * not count still prints its own price and "precio sin fecha"; it is just not summed.
+ */
+export function precioQueCuenta({ item, linea }: { item: ShoppingListItem, linea: CompraPorItem[string] | undefined }): number | undefined {
+  const enlaces = linea?.enlaces ?? [];
+  if (enlaces.length > 0 && !precioCuentaComoVigente(enlaces[0]?.antiguedadDias ?? null)) { return undefined; }
+  const precio = precioDeFila({ item, linea });
+  return precio !== undefined && Number.isFinite(precio) && precio > 0 ? precio : undefined;
+}
+
+/** FRESCO-1099 — sum of the rows' counted prices, to the cent; `undefined` when no row counts. */
 export function totalDeLista({ pasillos, compra }: { pasillos: readonly Pick<ShoppingListPasillo, 'nombre' | 'items'>[], compra: CompraPorItem | undefined }): number | undefined {
   let total = 0;
   let conPrecio = false;
   for (const pasillo of pasillos) {
     for (const item of pasillo.items) {
-      const precio = precioDeFila({ item, linea: compra?.[claveItemCompra({ pasillo: pasillo.nombre, item: item.nombre })] });
-      if (precio !== undefined && Number.isFinite(precio) && precio > 0) {
+      const precio = precioQueCuenta({ item, linea: compra?.[claveItemCompra({ pasillo: pasillo.nombre, item: item.nombre })] });
+      if (precio !== undefined) {
         total += precio;
         conPrecio = true;
       }
@@ -37,8 +49,7 @@ export function cobertura({ pasillos, compra }: { pasillos: readonly Pick<Shoppi
   for (const pasillo of pasillos) {
     for (const item of pasillo.items) {
       articulos += 1;
-      const precio = precioDeFila({ item, linea: compra?.[claveItemCompra({ pasillo: pasillo.nombre, item: item.nombre })] });
-      if (precio !== undefined && Number.isFinite(precio) && precio > 0) { conPrecio += 1; }
+      if (precioQueCuenta({ item, linea: compra?.[claveItemCompra({ pasillo: pasillo.nombre, item: item.nombre })] }) !== undefined) { conPrecio += 1; }
     }
   }
   return { conPrecio, articulos };
@@ -47,7 +58,7 @@ export function cobertura({ pasillos, compra }: { pasillos: readonly Pick<Shoppi
 /** What the row says about the linked price's age. Past the second threshold it says there is no recent price instead of an age. */
 export function textoAntiguedad(dias: number | null): string {
   switch (frescuraPrecio(dias)) {
-    case 'sin_fecha': return 'precio sin fecha';
+    case 'sin_fecha': return 'precio sin fecha, no suma en el total';
     case 'oculto': return 'sin precio reciente';
     default:
       if (dias === 0) { return 'precio de hoy'; }

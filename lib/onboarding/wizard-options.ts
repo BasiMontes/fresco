@@ -11,21 +11,24 @@ import { fromPlanningSelection } from '@/lib/planning-selection';
  * pure data/functions, no behavior change from the original inline values.
  */
 
-export const OBJETIVO_OPTIONS: { value: ObjetivoUsuario, label: string }[] = [
-  { value: 'perder_peso', label: 'Perder peso' },
-  { value: 'comer_sano', label: 'Comer sano' },
-  { value: 'ahorrar_dinero', label: 'Ahorrar dinero' },
-  { value: 'ganar_masa_muscular', label: 'Ganar masa muscular' },
-  { value: 'comer_variado', label: 'Comer más variado' },
-  { value: 'reducir_desperdicio', label: 'Reducir desperdicio de comida' },
+// FRESCO-1227: each goal says what it does to the menu, or that it does not do anything yet. `perder_peso` and
+// `ganar_masa_muscular` need calories/protein the catalog does not have, so they are labelled instead of hidden.
+export const OBJETIVO_OPTIONS: { value: ObjetivoUsuario, label: string, description: string }[] = [
+  { value: 'perder_peso', label: 'Perder peso', description: 'Próximamente: aún no cambia tu menú.' },
+  { value: 'comer_sano', label: 'Comer sano', description: 'Prioriza recetas ligeras. Es orientativo, no un cálculo nutricional.' },
+  { value: 'ahorrar_dinero', label: 'Ahorrar dinero', description: 'Prioriza recetas de coste más bajo.' },
+  { value: 'ganar_masa_muscular', label: 'Ganar masa muscular', description: 'Próximamente: aún no cambia tu menú.' },
+  { value: 'comer_variado', label: 'Comer más variado', description: 'Repite menos el mismo tipo de cocina en la semana.' },
+  { value: 'reducir_desperdicio', label: 'Reducir desperdicio de comida', description: 'Prioriza recetas que comparten ingredientes en la semana.' },
 ];
 
-export const NIVEL_EXPERIENCIA_OPTIONS: { value: NivelExperienciaCulinaria, label: string }[] = [
-  { value: 'aprendiz', label: 'Aprendiz' },
-  { value: 'novato', label: 'Novato' },
-  { value: 'intermedio', label: 'Intermedio' },
-  { value: 'chef', label: 'Chef' },
-  { value: 'experto', label: 'Experto' },
+// FRESCO-1225: one help line per level — Aprendiz and Novato were easy to mix up.
+export const NIVEL_EXPERIENCIA_OPTIONS: { value: NivelExperienciaCulinaria, label: string, description: string }[] = [
+  { value: 'aprendiz', label: 'Aprendiz', description: 'Estoy empezando: casi nunca cocino.' },
+  { value: 'novato', label: 'Novato', description: 'Cocino platos sencillos y sigo la receta paso a paso.' },
+  { value: 'intermedio', label: 'Intermedio', description: 'Cocino a menudo y me manejo con técnicas básicas.' },
+  { value: 'chef', label: 'Chef', description: 'Improviso y adapto recetas con soltura.' },
+  { value: 'experto', label: 'Experto', description: 'Domino técnicas avanzadas y cocino casi de todo.' },
 ];
 
 export const DIETA_OPTIONS: { value: DietaFlag, label: string }[] = [
@@ -47,6 +50,12 @@ export const COCINA_OPTIONS: { value: TipoCocina, label: string }[] = [
   { value: 'latina', label: 'Latina' },
   { value: 'internacional', label: 'Internacional' },
 ];
+
+// FRESCO-1232: favourite cuisines only shape the generated menu for Pro users
+// (FRESCO-1226). The onboarding does not know the user's plan, so the notice is
+// worded to be true for both: it names the Pro condition and never claims the
+// cuisines change the menu for everyone.
+export const COCINAS_PRO_AVISO = 'Las cocinas favoritas personalizan el menú solo en Pro: prefiriremos estas cocinas sin descartar el resto.';
 
 // FRESCO-451 (slice 4/5, densidad y restraint): step 2 packs ~25 chips
 // across 4 groups (dieta, alérgenos, ingredientes, cocinas) — the shared

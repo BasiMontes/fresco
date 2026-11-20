@@ -203,6 +203,28 @@ jobs:
             exit 1
           fi
 
+      - name: Edge runtime diagnostics (only when something failed)
+        # FRESCO-1219: on 2026-11-17 the whole edge-functions HTTP block (8 files, ~60 tests) timed
+        # out at 5 s and then returned 502, which added ~5 minutes to the job, and nothing in the
+        # log said why: `bun test` only sees HTTP statuses. This records what the runtime container
+        # was doing (state, exit code, OOM kill, restarts, last log lines) so the next occurrence
+        # has a cause instead of a guess. It reads state only and never fails the job.
+        if: failure()
+        run: |
+          docker ps -a --format 'table {{.Names}}\t{{.Status}}' || true
+          for container in $(docker ps -a --format '{{.Names}}' | grep -E 'edge_runtime' || true); do
+            echo "::group::${container}: state"
+            docker inspect -f 'status={{.State.Status}} exit={{.State.ExitCode}} oom_killed={{.State.OOMKilled}} restarts={{.RestartCount}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' "${container}" || true
+            echo "::endgroup::"
+            echo "::group::${container}: last 300 log lines"
+            docker logs --tail 300 "${container}" 2>&1 || true
+            echo "::endgroup::"
+          done
+          echo "::group::runner memory and load"
+          free -m || true
+          uptime || true
+          echo "::endgroup::"
+
       - name: Stop Supabase
         if: always()
         run: supabase stop
