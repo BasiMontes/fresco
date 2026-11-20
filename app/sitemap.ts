@@ -45,6 +45,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 1,
     },
+    // FRESCO-1243: `/sobre-nosotros` is public, indexable and has its own canonical (FRESCO-1102), but
+    // the sitemap omitted it (seo-audit-skill, FRESCO-1242). No `lastModified`, same reason as the landing.
+    {
+      url: `${baseUrl}/sobre-nosotros`,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
     ...LEGAL_PATHS.map(path => ({
       url: `${baseUrl}${path}`,
       lastModified: LEGAL_LAST_MODIFIED,
