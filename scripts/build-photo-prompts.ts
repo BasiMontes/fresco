@@ -11,7 +11,7 @@
 // and run again.
 //
 // Pipeline:
-//   1. bun scripts/build-photo-prompts.ts [batchSize=20] [--style=clay] > /tmp/prompts.json
+//   1. bun scripts/build-photo-prompts.ts [batchSize=20] [--style=clay] [--replace-realistic] > /tmp/prompts.json
 //   2. bun scripts/generate-photos-cloudflare.ts /tmp/prompts.json ./generated-photos --apply
 //   3. (review the images, vision-verify)
 //   4. bun scripts/apply-photo-generations.ts /tmp/prompts.json ./generated-photos --apply
@@ -27,6 +27,13 @@ const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const BATCH_SIZE = Number(process.argv[2] ?? 20);
 // --style=clay: matte clay 3D icons instead of photographs (FRESCO-1146). Anything else keeps the photo prompts.
 const STYLE: PromptStyle = process.argv.includes('--style=clay') ? 'clay' : 'photo';
+// --replace-realistic: pick recipes that already have a photo from the stock pipeline (Unsplash/Pexels,
+// i.e. a foto_url outside our `recipe-photos` bucket) so clay icons can replace them. Recipes already
+// holding a bucket image never come back, so each run advances through the pool on its own.
+const REPLACE_REALISTIC = process.argv.includes('--replace-realistic');
+const PHOTO_FILTER = REPLACE_REALISTIC
+  ? 'foto_url=not.is.null&foto_url=not.like.*/recipe-photos/*'
+  : 'foto_url=is.null';
 
 interface RecipeRow {
   id: string
@@ -40,7 +47,7 @@ async function main() {
   // Over-fetch: recipes with an unknown ingredient are skipped, and the batch
   // should still come out full.
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/recipes?select=id,nombre,slug,ingredientes_principales,pasos_resumen&foto_url=is.null&activo=eq.true&order=id&limit=${BATCH_SIZE * 3}`,
+    `${SUPABASE_URL}/rest/v1/recipes?select=id,nombre,slug,ingredientes_principales,pasos_resumen&${PHOTO_FILTER}&activo=eq.true&order=id&limit=${BATCH_SIZE * 3}`,
     { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } },
   );
   if (!res.ok) {
