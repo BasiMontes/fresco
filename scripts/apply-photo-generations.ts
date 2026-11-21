@@ -29,6 +29,9 @@
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const APPLY = process.argv.includes('--apply');
+// --replace-realistic: overwrite a stock photo (foto_url outside our `recipe-photos` bucket) with the
+// generated image. The old URL is printed so a rejected swap can be restored by hand.
+const REPLACE_REALISTIC = process.argv.includes('--replace-realistic');
 const [, , promptsPathArg, folderArg] = process.argv;
 
 interface PromptEntry {
@@ -127,21 +130,25 @@ async function main() {
     }
 
     const existing = await currentFotoUrl(entry.id);
-    if (existing) {
+    // Replace mode only overwrites stock photos; an image already in our bucket (clay, or a
+    // previous generation) counts as covered, same as a photo-less run counts any photo.
+    const replaceable = REPLACE_REALISTIC && existing && !existing.includes('/recipe-photos/');
+    if (existing && !replaceable) {
       console.error(`SKIP    [${entry.index}] ${entry.nombre} — already has a photo (covered by another pipeline since prompts were generated)`);
       skippedAlreadyCovered++;
       continue;
     }
+    const was = replaceable ? ` (replaces ${existing})` : '';
 
     if (!APPLY) {
-      console.error(`DRY-RUN [${entry.index}] ${entry.nombre} — would upload ${filePath} and set foto_url`);
+      console.error(`DRY-RUN [${entry.index}] ${entry.nombre} — would upload ${filePath} and set foto_url${was}`);
       applied++;
       continue;
     }
 
     const publicUrl = await uploadPhoto(entry.id, filePath);
     await applyFotoUrl(entry.id, publicUrl);
-    console.error(`OK      [${entry.index}] ${entry.nombre} -> ${publicUrl}`);
+    console.error(`OK      [${entry.index}] ${entry.nombre} -> ${publicUrl}${was}`);
     applied++;
   }
 
