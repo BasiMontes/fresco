@@ -13,7 +13,7 @@
 import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, readJsonBody, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
-import { requireAuthenticatedUser } from '../_shared/auth.ts'
+import { requireAuthenticatedUser, sessionCheckFailure } from '../_shared/auth.ts'
 import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { logger } from '../_shared/logger.ts'
@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
     const { data: targetData, error: targetError } = await targetClient.auth.getUser()
 
     if (targetError || !targetData.user) {
-      throw new HttpError('Credenciales inválidas para esa cuenta.', 401)
+      throw sessionCheckFailure(targetError, new HttpError('Credenciales inválidas para esa cuenta.', 401))
     }
 
     if (targetData.user.is_anonymous) {
