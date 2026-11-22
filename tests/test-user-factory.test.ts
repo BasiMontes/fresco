@@ -1,6 +1,6 @@
 import { describe, expect, spyOn, test } from 'bun:test';
 import { recordConsents, sendSeedRequest } from './test-helpers';
-import { buildProfileRow, deleteTrackedUsers, seedFullWeekMenu } from './test-user-factory';
+import { buildProfileRow, deleteTrackedUsers, generateCurrentWeekPlan, seedFullWeekMenu, seedShoppingListForCurrentPlan } from './test-user-factory';
 
 /**
  * FRESCO-1197: a profile created now starts as "not seen" and the first-visit tour would open over every
@@ -157,6 +157,98 @@ describe('seedFullWeekMenu', () => {
     const { request } = fakeRequest([201], [409]);
 
     await expect(seedFullWeekMenu(request, user)).rejects.toThrow('Failed to seed meal_plan_recipes: 409');
+  });
+});
+
+/**
+ * FRESCO-1219: the two seeding calls that go through an Edge Function failed a scenario on one 5xx (run 44934372466:
+ * "generate-shopping-list failed: 500 Error verificando el límite de peticiones" and "generate-meal-plan failed: 500
+ * Error guardando el plan en la BD", both a 502 between the gateway and PostgREST). They now go through `sendSeedRequest`.
+ */
+describe('Edge Function seeding', () => {
+  const reply = (status: number, body: unknown = []) => ({
+    ok: () => status >= 200 && status < 300,
+    status: () => status,
+    json: async () => body,
+    text: async () => JSON.stringify(body),
+  });
+  const user = { id: 'user-1', accessToken: 'token' } as Parameters<typeof generateCurrentWeekPlan>[1];
+
+  /** A request double: `answers` are the scripted statuses for the POST to `fn`, in order. */
+  function fakeRequest(fn: string, answers: number[]) {
+    const calls = { posts: 0 };
+    const request = {
+      get: async () => reply(200, [{ id: 'plan-1' }]),
+      post: async (url: string) => {
+        expect(url).toContain(`/functions/v1/${fn}`);
+        return reply(answers[calls.posts++]);
+      },
+    };
+    return { request: request as unknown as Parameters<typeof generateCurrentWeekPlan>[0], calls };
+  }
+
+  describe('generateCurrentWeekPlan', () => {
+    test('retries a 500 and carries on once the function answers', async () => {
+      const { request, calls } = fakeRequest('generate-meal-plan', [500, 200]);
+
+      await generateCurrentWeekPlan(request, user);
+
+      expect(calls.posts).toBe(2);
+    });
+
+    test('a 409 after a retried 5xx means the plan was written, so it does not fail', async () => {
+      const { request, calls } = fakeRequest('generate-meal-plan', [500, 409]);
+
+      await generateCurrentWeekPlan(request, user);
+
+      expect(calls.posts).toBe(2);
+    });
+
+    test('a 409 with no earlier 5xx is a real conflict and is reported', async () => {
+      const { request, calls } = fakeRequest('generate-meal-plan', [409]);
+
+      await expect(generateCurrentWeekPlan(request, user)).rejects.toThrow('generate-meal-plan failed: 409');
+      expect(calls.posts).toBe(1);
+    });
+
+    test('gives up after three 5xx and reports the last status', async () => {
+      const { request, calls } = fakeRequest('generate-meal-plan', [500, 502, 500]);
+
+      await expect(generateCurrentWeekPlan(request, user)).rejects.toThrow('generate-meal-plan failed: 500');
+      expect(calls.posts).toBe(3);
+    });
+  });
+
+  describe('seedShoppingListForCurrentPlan', () => {
+    test('retries a 500 and carries on once the function answers', async () => {
+      const { request, calls } = fakeRequest('generate-shopping-list', [500, 200]);
+
+      await seedShoppingListForCurrentPlan(request, user);
+
+      expect(calls.posts).toBe(2);
+    });
+
+    test('a 409 means the list already exists, with or without a retry', async () => {
+      const { request, calls } = fakeRequest('generate-shopping-list', [500, 409]);
+
+      await seedShoppingListForCurrentPlan(request, user);
+
+      expect(calls.posts).toBe(2);
+    });
+
+    test('a 4xx other than 409 is reported at once, without retrying', async () => {
+      const { request, calls } = fakeRequest('generate-shopping-list', [403]);
+
+      await expect(seedShoppingListForCurrentPlan(request, user)).rejects.toThrow('generate-shopping-list failed: 403');
+      expect(calls.posts).toBe(1);
+    });
+
+    test('gives up after three 5xx and reports the last status', async () => {
+      const { request, calls } = fakeRequest('generate-shopping-list', [500, 500, 502]);
+
+      await expect(seedShoppingListForCurrentPlan(request, user)).rejects.toThrow('generate-shopping-list failed: 502');
+      expect(calls.posts).toBe(3);
+    });
   });
 });
 
