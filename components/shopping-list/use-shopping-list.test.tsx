@@ -59,9 +59,37 @@ describe('useShoppingList suggestions', () => {
   test('a failed suggestions load shows none and no error over the list', async () => {
     suggestionsSpy.mockRejectedValue(new Error('edge down'));
     const view = renderHook(() => useShoppingList({ list: LIST, onToggleFailure }));
-    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    // The retry (FRESCO-1219) waits before the second and last attempt, then the failure is logged once.
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled(), { timeout: 3000 });
+    expect(suggestionsSpy).toHaveBeenCalledTimes(2);
     expect(view.result.current.suggestions).toEqual([]);
     expect(view.result.current.errorMessage).toBeNull();
+  });
+
+  // FRESCO-1219: one 502 from the gateway left the carousel empty until the next reload (run 44934372466).
+  test('a 5xx on the first suggestions request is retried once and the carousel still shows up', async () => {
+    suggestionsSpy.mockRejectedValueOnce(Object.assign(new Error('Error verificando el límite de peticiones'), { status: 500 }));
+    const view = renderHook(() => useShoppingList({ list: LIST, onToggleFailure }));
+    await waitFor(() => expect(view.result.current.suggestions).toHaveLength(1), { timeout: 3000 });
+    expect(suggestionsSpy).toHaveBeenCalledTimes(2);
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  test('a 4xx is a real answer: not retried, logged at once', async () => {
+    suggestionsSpy.mockRejectedValue(Object.assign(new Error('Has alcanzado el límite de peticiones'), { status: 429 }));
+    const view = renderHook(() => useShoppingList({ list: LIST, onToggleFailure }));
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    expect(suggestionsSpy).toHaveBeenCalledTimes(1);
+    expect(view.result.current.suggestions).toEqual([]);
+  });
+
+  test('leaving the screen during the pause cancels the retry', async () => {
+    suggestionsSpy.mockRejectedValue(Object.assign(new Error('bad gateway'), { status: 502 }));
+    const view = renderHook(() => useShoppingList({ list: LIST, onToggleFailure }));
+    await waitFor(() => expect(suggestionsSpy).toHaveBeenCalledTimes(1));
+    view.unmount();
+    await new Promise((resolve) => { setTimeout(resolve, 1200); });
+    expect(suggestionsSpy).toHaveBeenCalledTimes(1);
   });
 
   test('adding a suggestion moves it from the carousel into a new aisle and saves it', async () => {
