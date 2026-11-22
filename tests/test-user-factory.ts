@@ -307,12 +307,18 @@ export async function generateCurrentWeekPlan(request: APIRequestContext, testUs
   const headers = restHeaders(testUser.accessToken);
   const { semanaIso, fechaInicio } = currentWeekMonday();
 
-  const genRes = await request.post(`${supabaseUrl()}/functions/v1/generate-meal-plan`, {
+  // FRESCO-1219: a 502 from the gateway of the local stack ("Connection reset by peer" from PostgREST, seen in run
+  // 44934372466) reaches the caller as this function's 500 "Error guardando el plan en la BD". It is retried like
+  // the other seeding writes (FRESCO-1136). A 409 after such a retry means the first attempt was committed, so the
+  // plan is already there; a 409 with no earlier 5xx is still a real conflict.
+  const { res: genRes, retried } = await sendSeedRequest(async () => request.post(`${supabaseUrl()}/functions/v1/generate-meal-plan`, {
     headers,
     data: { semana_iso: semanaIso, fecha_inicio: fechaInicio },
     timeout: options.timeoutMs ?? 120_000,
-  });
-  if (!genRes.ok()) { throw new Error(`generate-meal-plan failed: ${genRes.status()} ${await genRes.text()}`); }
+  }));
+  if (!genRes.ok() && !(retried && genRes.status() === 409)) {
+    throw new Error(`generate-meal-plan failed: ${genRes.status()} ${await genRes.text()}`);
+  }
 }
 
 /**
@@ -354,12 +360,15 @@ export async function seedShoppingListForCurrentPlan(request: APIRequestContext,
   const [plan] = await planRes.json() as { id: string }[];
   if (!plan) { throw new Error('seedShoppingListForCurrentPlan: no meal plan found — call generateCurrentWeekPlan first.'); }
 
-  const genRes = await request.post(`${supabaseUrl()}/functions/v1/generate-shopping-list`, {
+  // FRESCO-1219: the rate-limit RPC behind this function answered 502 from the gateway (run 44934372466) and the
+  // function turned it into a 500, so a 5xx is retried like the other seeding writes (FRESCO-1136).
+  const { res: genRes } = await sendSeedRequest(async () => request.post(`${supabaseUrl()}/functions/v1/generate-shopping-list`, {
     headers,
     data: { meal_plan_id: plan.id },
     timeout: 120_000,
-  });
-  // 409 = list already exists — fine, the scenario just needs one to be there.
+  }));
+  // 409 = list already exists (also what a retry finds when the first attempt was committed) — fine, the scenario
+  // just needs one to be there.
   if (!genRes.ok() && genRes.status() !== 409) {
     throw new Error(`generate-shopping-list failed: ${genRes.status()} ${await genRes.text()}`);
   }
