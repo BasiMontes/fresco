@@ -21,7 +21,7 @@ afterAll(() => {
   (globalThis as { Deno?: unknown }).Deno = originalDeno
 })
 
-const { requireAuthenticatedUser, requireServiceRoleCaller } = await import('./auth.ts')
+const { isTransientAuthError, requireAuthenticatedUser, requireServiceRoleCaller, sessionCheckFailure } = await import('./auth.ts')
 
 function reqWith(headers: Record<string, string> = {}): Request {
   return new Request('https://x.supabase.co/functions/v1/f', { headers })
@@ -55,6 +55,62 @@ describe('requireAuthenticatedUser', () => {
     const supabase = fakeSupabase({ data: { user: REAL_USER }, error: null })
     await expect(requireAuthenticatedUser(reqWith({ Authorization: 'Bearer x' }), supabase))
       .resolves.toBe(REAL_USER)
+  })
+})
+
+/**
+ * FRESCO-1250: with the database restarting, Auth answered 500 and `requireAuthenticatedUser` turned it into a 401,
+ * which the client reads as an expired session and answers by sending the person to the login page. A failure that
+ * is the service's own is now a 503; every other failure, and every ambiguous one, is still the 401.
+ */
+describe('transient Auth failures (FRESCO-1250)', () => {
+  const authError = (name: string, status?: number) => Object.assign(new Error(name), { name, status })
+  const withError = (error: Error) => fakeSupabase({ data: { user: null }, error })
+  const bearer = reqWith({ Authorization: 'Bearer x' })
+
+  it('an Auth answer of 500 (its database is down) is a 503, not a 401', async () => {
+    await expect(requireAuthenticatedUser(bearer, withError(authError('AuthApiError', 500))))
+      .rejects.toMatchObject({ status: 503 })
+  })
+
+  it('a failed call to Auth (retryable fetch error, a network error carries status 0) is a 503', async () => {
+    await expect(requireAuthenticatedUser(bearer, withError(authError('AuthRetryableFetchError', 0))))
+      .rejects.toMatchObject({ status: 503 })
+    await expect(requireAuthenticatedUser(bearer, withError(authError('AuthRetryableFetchError', 503))))
+      .rejects.toMatchObject({ status: 503 })
+  })
+
+  it('an invalid or expired token stays a 401', async () => {
+    for (const status of [400, 401, 403]) {
+      await expect(requireAuthenticatedUser(bearer, withError(authError('AuthApiError', status))))
+        .rejects.toMatchObject({ status: 401, message: 'No autorizado' })
+    }
+  })
+
+  it('an error that says nothing about its status stays a 401, so an ambiguous result still denies', async () => {
+    await expect(requireAuthenticatedUser(bearer, withError(new Error('who knows'))))
+      .rejects.toMatchObject({ status: 401 })
+    await expect(requireAuthenticatedUser(bearer, withError(authError('AuthUnknownError'))))
+      .rejects.toMatchObject({ status: 401 })
+  })
+
+  it('the 503 says to try again and never says the credentials are wrong', async () => {
+    const failed = requireAuthenticatedUser(bearer, withError(authError('AuthApiError', 500)))
+    await expect(failed).rejects.toThrow('Inténtalo de nuevo')
+    await expect(requireAuthenticatedUser(bearer, withError(authError('AuthApiError', 500)))).rejects.not.toThrow('No autorizado')
+  })
+
+  it('isTransientAuthError ignores anything that is not an error object', () => {
+    for (const value of [null, undefined, 'boom', 500, {}]) {
+      expect(isTransientAuthError(value)).toBe(false)
+    }
+  })
+
+  it('sessionCheckFailure hands back the caller\'s own 401, message included, when the failure is not transient', () => {
+    const own = new HttpError('Credenciales inválidas para esa cuenta.', 401)
+    expect(sessionCheckFailure(authError('AuthApiError', 401), own)).toBe(own)
+    expect(sessionCheckFailure(null, own)).toBe(own)
+    expect(sessionCheckFailure(authError('AuthApiError', 500), own)).not.toBe(own)
   })
 })
 

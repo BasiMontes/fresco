@@ -61,9 +61,17 @@ Cada fila es una ejecución fechada. Los resultados son de esa fecha y de esa m�
 #### Hallazgos
 
 1. **Las llamadas a Edge Functions del cliente no tienen límite de tiempo.** `callEdgeFunction` en `lib/api/edge-functions.ts` hace `fetch` sin `AbortSignal`, así que con un backend congelado la pantalla queda esperando lo que decida el navegador. Solo la baja de PostHog usa `AbortSignal.timeout`. Card: FRESCO-1249.
-2. **Un fallo transitorio de Auth o de la base se convierte en un `401` y el cliente lo trata como sesión caducada.** En `supabase/functions/_shared/auth.ts`, cualquier `error` de `supabase.auth.getUser()` lanza `HttpError('No autorizado', 401)`, y `callEdgeFunction` redirige a `/login?session_expired=1` ante un 401. Un corte de la base de datos de unos segundos puede cerrar la sesión de quien esté usando la app. Card: FRESCO-1250.
+2. **Un fallo transitorio de Auth o de la base se convertía en un `401` y el cliente lo trata como sesión caducada.** En `supabase/functions/_shared/auth.ts`, cualquier `error` de `supabase.auth.getUser()` lanzaba `HttpError('No autorizado', 401)`, y `callEdgeFunction` redirige a `/login?session_expired=1` ante un 401, así que un corte de la base de datos de unos segundos podía cerrar la sesión de quien estuviera usando la app. Corregido en FRESCO-1250 (ver la repetición más abajo).
 
 El estado de cada card vive en Jira, no aquí.
+
+### 2026-11-22: `db-restart` repetido tras corregir FRESCO-1250
+
+| Escenario | ¿Se cumplió la hipótesis? | Qué pasó |
+|---|---|---|
+| `db-restart` | Sí | Hipótesis: durante el corte la función ya no responde `401` sino `503`, y se recupera igual. Resultado: `503` durante el corte, `404` al volver la base. Lectura `400` y login `500` no cambian: son de PostgREST y GoTrue, no de nuestro código |
+
+El helper es `sessionCheckFailure` en `supabase/functions/_shared/auth.ts`: solo un error de red de Auth o una respuesta 5xx cuenta como transitorio; cualquier otro, y cualquier error ambiguo, sigue siendo `401`. Lo usan `requireAuthenticatedUser`, `reassign-guest-data` y `delete-account`.
 
 ---
 

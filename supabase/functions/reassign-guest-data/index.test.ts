@@ -75,6 +75,15 @@ describe('reassign-guest-data/index.ts', () => {
     expect((await handler(edgeRequest(body(), { auth: GUEST_AUTH }))).status).toBe(401)
   })
 
+  // FRESCO-1250: Auth failing on its own (500 while its database restarts) is not "wrong credentials": the 401 sends
+  // the person to the login page. It is a 503, and nothing moves.
+  test('503 when Auth fails on its own while checking the target token', async () => {
+    wireGuest()
+    wireTarget(null)
+    clientsByAuth[`Bearer ${TARGET_TOKEN}`] = fakeEdgeClient({ authError: Object.assign(new Error('db down'), { name: 'AuthApiError', status: 500 }) })
+    expect((await handler(edgeRequest(body(), { auth: GUEST_AUTH }))).status).toBe(503)
+  })
+
   test('400 when the target account is itself anonymous', async () => {
     wireGuest()
     wireTarget({ id: 'other_guest', is_anonymous: true })

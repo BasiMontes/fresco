@@ -2,6 +2,31 @@ import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { HttpError } from './http.ts'
 import { timingSafeEqual } from './timing-safe.ts'
 
+const AUTH_UNAVAILABLE_MESSAGE = 'No pudimos comprobar tu sesión en este momento. Inténtalo de nuevo en unos segundos.'
+
+/**
+ * FRESCO-1250: `auth.getUser()` could not say whether the token is valid, as opposed to saying it is not. Only
+ * what is clearly the service's fault counts: a failed call to Auth (`AuthRetryableFetchError`, which the SDK
+ * uses for a network error or a 502/503/504) or an answer of 5xx (Auth answers 500 when its database is down).
+ * Anything else, including an error with no status, is treated as a refusal, so an ambiguous result still denies.
+ */
+export function isTransientAuthError(error: unknown): boolean {
+  if (error === null || typeof error !== 'object') return false
+  const { name, status } = error as { name?: unknown, status?: unknown }
+  if (name === 'AuthRetryableFetchError') return true
+  return typeof status === 'number' && status >= 500
+}
+
+/**
+ * The error to throw when `auth.getUser()` did not resolve a user. A 401 means "this session is not valid", and
+ * the client reads it as an expired session and sends the person to the login page, so it must not be what a
+ * transient failure of Auth or of the database turns into (FRESCO-1250): that is a 503, and the person stays put
+ * and can retry. `notAuthorized` is the 401 each caller already used, with its own message.
+ */
+export function sessionCheckFailure(error: unknown, notAuthorized: HttpError): HttpError {
+  return isTransientAuthError(error) ? new HttpError(AUTH_UNAVAILABLE_MESSAGE, 503) : notAuthorized
+}
+
 /**
  * Public method, fails fast (CLAUDE.md §10): throws HttpError(401) rather
  * than returning a nullable user. NFR-SEC-1: every Edge Function call must
@@ -22,7 +47,7 @@ export async function requireAuthenticatedUser(
   if (!authHeader) throw new HttpError('No autorizado', 401)
 
   const { data, error } = await supabase.auth.getUser()
-  if (error || !data.user) throw new HttpError('No autorizado', 401)
+  if (error || !data.user) throw sessionCheckFailure(error, new HttpError('No autorizado', 401))
 
   return data.user
 }

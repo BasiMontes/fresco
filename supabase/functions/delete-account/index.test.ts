@@ -181,6 +181,17 @@ describe('delete-account/index.ts', () => {
     expect(res.status).toBe(401)
   })
 
+  // FRESCO-1250: Auth answering 500 while its database restarts must not look like a bad reauthentication: the 401
+  // sends the person to the login page. It is a 503 and nothing is deleted.
+  test('503 and nothing deleted when Auth fails on its own while checking the reauthToken', async () => {
+    const token = jwt({ iat: NOW_S, sub: 'user_1' })
+    clientsByAuth[MAIN_AUTH] = fakeEdgeClient({ user: { id: 'user_1', is_anonymous: false }, rpc: OK_RATE })
+    clientsByAuth[`Bearer ${token}`] = fakeEdgeClient({ authError: Object.assign(new Error('db down'), { name: 'AuthApiError', status: 500 }) })
+    const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+    expect(res.status).toBe(503)
+    expect(serviceClient.deletedUserIds).toEqual([])
+  })
+
   test('200 and deletes the account for a registered caller with a fresh reauthToken', async () => {
     const token = registered('user_1')
     const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
