@@ -10,6 +10,7 @@
 | Documento                                        | Descripción                                                 |
 | ------------------------------------------------ | ----------------------------------------------------------- |
 | [boilerplate-sync.md](./boilerplate-sync.md)     | `bun sync` y el `adr:reconcile` que debe seguirle           |
+| [chaos-experiments.md](./chaos-experiments.md)   | Fallos controlados en la pila local y lo que enseñaron      |
 | [e2e-flaky-triage.md](./e2e-flaky-triage.md)     | Cómo encontrar la causa de un escenario e2e flaky           |
 | [environments.md](./environments.md)             | Ambientes de desarrollo (local, staging, producción)        |
 | [git-flow.md](./git-flow.md)                     | Flujo de trabajo Git para desarrollo AI-driven              |
