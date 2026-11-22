@@ -1,7 +1,9 @@
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import type { CompraPorItem } from '@/lib/grocery/compra';
 import type { PerfilCompra } from '@/lib/grocery/product-compatibility';
-import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import * as edgeFunctions from '@/lib/api/edge-functions';
+import * as authApi from '@/lib/client-api/auth';
 import { CONSUM_CATALOG_FECHA } from '@/lib/grocery/consum-catalog.generated';
 import { precioLinea } from '@/lib/grocery/line-price';
 import { resolverCompra } from '@/lib/grocery/shopping-list-compra';
@@ -10,6 +12,19 @@ import { formatPrecio } from '@/lib/utils';
 import { fireEvent, renderWithProviders, screen, setupUser } from '@/tests/component-render';
 import { ShoppingListView } from './shopping-list-view';
 import '@/tests/mocks/next-navigation';
+
+// FRESCO-1219: the view asks for suggestions on mount. Left to the real client it called the network and, now that a
+// failed request is retried after a pause, logged its failure into whichever test file ran next.
+let suggestionsSpy: ReturnType<typeof spyOn<typeof edgeFunctions, 'getShoppingListSuggestions'>>;
+let tokenSpy: ReturnType<typeof spyOn<typeof authApi, 'getAccessToken'>>;
+beforeEach(() => {
+  tokenSpy = spyOn(authApi, 'getAccessToken').mockResolvedValue('token');
+  suggestionsSpy = spyOn(edgeFunctions, 'getShoppingListSuggestions').mockResolvedValue({ suggestions: [] });
+});
+afterEach(() => {
+  tokenSpy.mockRestore();
+  suggestionsSpy.mockRestore();
+});
 
 /**
  * FRESCO-426-ish (receipt ticket) — "Compra realizada" opens the receipt

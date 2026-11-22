@@ -1,7 +1,9 @@
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import type { CompraPorItem } from '@/lib/grocery/compra';
 import { readFileSync } from 'node:fs';
-import { describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import * as edgeFunctions from '@/lib/api/edge-functions';
+import * as authApi from '@/lib/client-api/auth';
 import { claveItemCompra } from '@/lib/grocery/compra';
 import { CADENAS_ESTIMADAS } from '@/lib/grocery/estimacion-cadenas';
 import { MERCADONA_CATALOG_FECHA } from '@/lib/grocery/mercadona-catalog.generated';
@@ -10,6 +12,18 @@ import { renderWithProviders, screen, within } from '@/tests/component-render';
 import { ShoppingListComparison } from './shopping-list-comparison';
 import { ShoppingListView } from './shopping-list-view';
 import '@/tests/mocks/next-navigation';
+
+// FRESCO-1219: the view asks for suggestions on mount; see shopping-list-view.test.tsx.
+let suggestionsSpy: ReturnType<typeof spyOn<typeof edgeFunctions, 'getShoppingListSuggestions'>>;
+let tokenSpy: ReturnType<typeof spyOn<typeof authApi, 'getAccessToken'>>;
+beforeEach(() => {
+  tokenSpy = spyOn(authApi, 'getAccessToken').mockResolvedValue('token');
+  suggestionsSpy = spyOn(edgeFunctions, 'getShoppingListSuggestions').mockResolvedValue({ suggestions: [] });
+});
+afterEach(() => {
+  tokenSpy.mockRestore();
+  suggestionsSpy.mockRestore();
+});
 
 /** FRESCO-1222 — the labelled chain estimate: every figure labelled, never worded as the chain's own price. */
 

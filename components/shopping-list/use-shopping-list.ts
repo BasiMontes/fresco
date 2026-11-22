@@ -9,6 +9,18 @@ import { addShoppingListItem, clearComprados, removeShoppingListItem, toggleShop
 /** FRESCO-1014: shown while ticks are waiting for the connection. */
 const OFFLINE_MESSAGE = 'Sin conexión. Hemos dejado marcado el producto y lo guardaremos cuando vuelva la señal. Mantén esta pantalla abierta.';
 
+/** FRESCO-1219: pause before the one retry of the suggestions request. */
+const SUGGESTIONS_RETRY_DELAY_MS = 800;
+
+/**
+ * A failure worth one more try: the server answered 5xx, or no answer came at all (a network error carries no
+ * `status`). A 4xx, a 429 included, is a real answer and is not repeated.
+ */
+function isTransientError(error: unknown): boolean {
+  const status = (error as { status?: unknown } | null)?.status;
+  return typeof status !== 'number' || status >= 500;
+}
+
 interface UseShoppingListArgs {
   list: ShoppingListPersistido
   /** Called after a failed toggle has been reverted, so the view can shake that row. */
@@ -45,14 +57,27 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
   React.useEffect(() => {
     let cancelled = false;
 
+    async function fetchSuggestions() {
+      const accessToken = await getAccessToken();
+      return getShoppingListSuggestions({ shopping_list_id: list.id }, accessToken);
+    }
+
     async function loadSuggestions() {
       try {
-        const accessToken = await getAccessToken();
-        const { suggestions: fetched } = await getShoppingListSuggestions(
-          { shopping_list_id: list.id },
-          accessToken,
-        );
-        if (!cancelled) { setSuggestions(fetched); }
+        let response;
+        try {
+          response = await fetchSuggestions();
+        }
+        catch (error) {
+          // FRESCO-1219: one transient failure (a 502 from the gateway, a dropped connection) used to leave the
+          // carousel empty until the next reload. Reading suggestions is repeatable, so a 5xx or a network error
+          // is tried once more after a short pause.
+          if (cancelled || !isTransientError(error)) { throw error; }
+          await new Promise((resolve) => { setTimeout(resolve, SUGGESTIONS_RETRY_DELAY_MS); });
+          if (cancelled) { return; }
+          response = await fetchSuggestions();
+        }
+        if (!cancelled) { setSuggestions(response.suggestions); }
       }
       catch (error) {
         // Suggestions are a nice-to-have, not core list functionality — a
