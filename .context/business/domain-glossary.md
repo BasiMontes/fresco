@@ -44,7 +44,7 @@ English prose is used for everything else in this glossary and its sibling docum
 
 **Soft preference** — A declared input that only nudges the menu score and never excludes a recipe: favourite cuisines, goal (`objetivo`) and cooking level (`nivel_experiencia`). Pro/Family only (the same `isPro` gate as the learning history); a Free user keeps the menu they had. The combined effect is clamped to a span of 1.0, so hard filters (allergens, disliked ingredients) and the history rules always outrank it (FR-5.4). Distinct from the behavioral-learning moat, which is observed behavior, not a stated wish (`ADR-0071-pro-soft-preferences-amend-the-moat.md`, amends ADR-0001).
 
-**Master Sprint** — The dependency-ordered execution-cluster unit used in `.context/master-implementation-plan.md` and `.context/dev-roadmap.md` to sequence the 8 PRD epics (Master Sprint 0, 1, 2 — e.g., Master Sprint 0 = EPIC-1 + EPIC-2 + EPIC-8, "prove the core promise, safely"). Distinct from a sprint in the Scrum/agile sense (a fixed time-box) — a Master Sprint here is a dependency cluster of epics that must ship together because none is separately useful, not a calendar interval.
+**Master Sprint** — (Historical since 2026-11-23: both files below were retired, FRESCO-1278; work is ordered by epic and by batch.) The dependency-ordered execution-cluster unit used in `.context/master-implementation-plan.md` and `.context/dev-roadmap.md` to sequence the 8 PRD epics (Master Sprint 0, 1, 2 — e.g., Master Sprint 0 = EPIC-1 + EPIC-2 + EPIC-8, "prove the core promise, safely"). Distinct from a sprint in the Scrum/agile sense (a fixed time-box) — a Master Sprint here is a dependency cluster of epics that must ship together because none is separately useful, not a calendar interval.
 
 ---
 

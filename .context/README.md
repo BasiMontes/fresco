@@ -15,8 +15,8 @@ This directory is what makes a fresh AI session productive on day one. Every fil
 │   ├── project-dev-guide.md       How to build features here         (/project-foundation Phase 4 embedded)
 │   └── domain-glossary.md         Canonical domain terminology       (/project-foundation Phase 4 Step 6; hand-maintained, append-only)
 │
-├── master-implementation-plan.md  High-level dependency-cascaded roadmap — EPIC/strategy (/project-context master-plan)
-├── dev-roadmap.md                 Ticket-level dependency execution roadmap — TICKET/sequence (/project-context dev-roadmap; subsumes PBI/sprint-sequence.md)
+├── master-implementation-plan.md  RETIRED 2026-11-23 (FRESCO-1278): MVP epic roadmap, kept as history
+├── dev-roadmap.md                 RETIRED 2026-11-23 (FRESCO-1278): MVP ticket order, kept as history
 │
 ├── reports/                       Sprint-level cross-ticket dev trackers (/sprint-development batch)
 │   └── README.md                  Lifecycle rules for SPRINT-{N}-DEVELOPMENT.md
@@ -47,8 +47,8 @@ Every file in `.context/` has an owner. Do not edit auto-generated files by hand
 | `business/market-context.md`                        | `/project-foundation` (Phase 1)         | Industry, competitors, positioning                     |
 | `business/project-dev-guide.md`                     | `/project-foundation` (Phase 4 Step 4)  | Embedded skill logic; re-run if architecture changes   |
 | `business/domain-glossary.md`                       | `/project-foundation` (Phase 4 Step 6); updated when new terms surface (via `/product-management` flag) | Hand-maintained, append-only, never regenerated        |
-| `master-implementation-plan.md`                     | `project-context` mode `master-plan`    | Invoked by `/project-foundation` Phase 4 Step 5. EPIC/strategy layer. |
-| `dev-roadmap.md`                                    | `project-context` mode `dev-roadmap`    | TICKET/sequence layer. Surgical UPDATE (regenerates §4 Kahn sort, preserves hand-authored §2/§3/§5/§6). Subsumes `PBI/sprint-sequence.md`. Cascaded from `/project-context master-plan` + `/product-management`; bootstrapped by `/sprint-development` Phase 0. |
+| `master-implementation-plan.md`                     | `project-context` mode `master-plan`    | Invoked by `/project-foundation` Phase 4 Step 5. EPIC/strategy layer. **Retired 2026-11-23 (FRESCO-1278)**: kept as history, do not regenerate. |
+| `dev-roadmap.md`                                    | `project-context` mode `dev-roadmap`    | TICKET/sequence layer. **Retired 2026-11-23 (FRESCO-1278)**: kept as history, do not regenerate; ordering comes from the live tracker. Was: surgical UPDATE of the §4 Kahn sort, cascaded from `/project-context master-plan` + `/product-management`. |
 | `PRD/*.md`                                          | `/project-foundation` (Phase 2)         | Executive summary, personas, MVP scope, user journeys  |
 | `SRS/*.md`                                          | `/project-foundation` (Phase 2)         | Functional / non-functional / architecture / API specs |
 | `ADR/ADR-NNNN-<slug>.md`                            | Human architect, or `/project-foundation` (SRS) / `/sprint-development` (Stage 1) — AI drafts for human approval | **Exception: append-only, never regenerated.** Superseded by a newer ADR, never overwritten or hand-re-run. See `ADR/README.md`. |

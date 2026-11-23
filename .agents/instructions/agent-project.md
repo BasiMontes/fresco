@@ -81,3 +81,7 @@ The `<aspect>-context` skills this project created (`/project-context context-sk
 | `brag` | turning the project website into a short shareable launch video | `/brag`, `launch video`, `make a launch video` | the user |
 | `resend-cli` | sending or managing transactional email through the Resend CLI | `\bresend\b`, `transactional email` | the user |
 <!-- project-skills:end -->
+
+## Retired planning files (FRESCO-1278)
+
+`.context/dev-roadmap.md` and `.context/master-implementation-plan.md` are retired (owner decision of 2026-11-23, audit 10 finding F8): kept in git as the history of the MVP master sprints, not maintained, not a source of order. Ordering, blockers and what to work next come from a live tracker query. The shared doctrine that still mentions them (`agent-context-map.md`, `/sprint-development` Phase 0b, `/project-context`, `/product-management` sequencing) describes a project that keeps them; here the retired banner in each file and the Phase 0b override in `.agents/skills/sprint-development/SKILL.md` win.
