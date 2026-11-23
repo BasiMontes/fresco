@@ -2,6 +2,7 @@ import type { Request as PlaywrightRequest } from '@playwright/test';
 import type { TestUser, TestUserFactory } from './test-user-factory';
 import { test as base } from 'playwright-bdd';
 import { COOKIE_CONSENT_COOKIE, serializeCookieConsent } from '../lib/consent/cookie-consent';
+import { STRIPE_API_VERSION } from '../lib/stripe-api-version';
 import { createTestUserFactory } from './test-user-factory';
 
 /**
@@ -58,7 +59,7 @@ export const test = base.extend<{ signupCtx: SignupCtx, aprendizajeCtx: Aprendiz
     // Stripe client is only constructed when there is something to delete.
     if (ctx.stripeCustomerIds.length > 0) {
       const Stripe = (await import('stripe')).default;
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-10-28.endive' });
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: STRIPE_API_VERSION });
       for (const id of ctx.stripeCustomerIds) {
         await stripe.customers.del(id).catch(() => { /* best-effort cleanup — a failed delete must not fail the run */ });
       }

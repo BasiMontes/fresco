@@ -1,6 +1,7 @@
 import type Stripe from 'stripe';
 import { afterEach, describe, expect, test } from 'bun:test';
 import { getProPriceId, getProPriceIds, parseProInterval, resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveReconciledState, resolveRenewalUpdate, resolveWebhookSecret } from './stripe';
+import { STRIPE_API_VERSION } from './stripe-api-version';
 
 /**
  * `resolveProUpdateFromSession` is a pure function — no network, no Stripe
@@ -405,7 +406,7 @@ describe('stripe client (lazy, fail-fast)', () => {
     process.env.STRIPE_SECRET_KEY = 'sk_test_unit_only';
     expect(typeof stripe.customers.create).toBe('function');
     expect(stripe.checkout.sessions).toBe(stripe.checkout.sessions);
-    expect((stripe as unknown as { getApiField: (k: string) => string }).getApiField('version')).toBe('2026-10-28.endive');
+    expect((stripe as unknown as { getApiField: (k: string) => string }).getApiField('version')).toBe(STRIPE_API_VERSION);
   });
 });
 

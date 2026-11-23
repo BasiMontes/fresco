@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { STRIPE_API_VERSION } from './stripe-api-version';
 
 // Server-only Stripe client (ADR-0007: Stripe Checkout, hosted, `subscription`
 // mode). NEVER import this from a Client Component or any code path reachable
@@ -82,10 +83,9 @@ let cachedStripe: Stripe | undefined;
 
 function getStripe(): Stripe {
   cachedStripe ??= new Stripe(requireStripeSecretKey(), {
-    // Pinned to the version this SDK (`stripe@23.1.0`) was generated against —
-    // otherwise the effective API version is whatever Stripe's account default
-    // is at call time, an implicit and silently-shiftable surface.
-    apiVersion: '2026-10-28.endive',
+    // Pinned (`lib/stripe-api-version.ts`) to the version the installed SDK was generated against, so the
+    // effective API version is not the account default at call time: implicit and silently shiftable.
+    apiVersion: STRIPE_API_VERSION,
   });
 
   return cachedStripe;
@@ -277,7 +277,7 @@ export interface RenewalUpdate {
  *
  * `current_period_end` is read off `subscription.items.data[0]`, not the
  * top-level `Subscription` object — on the pinned API version
- * (`2026-10-28.endive`) that field lives on `Stripe.SubscriptionItem`, not
+ * (the `endive` release) that field lives on `Stripe.SubscriptionItem`, not
  * `Stripe.Subscription` (confirmed against the installed SDK's own
  * `.d.ts` files; the top-level field no longer exists on this API version's
  * type).
