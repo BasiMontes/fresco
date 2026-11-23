@@ -68,6 +68,20 @@ Its cards (FRESCO-1085 to FRESCO-1105 and the hygiene cards FRESCO-1106 to
 FRESCO-1114) sit under FRESCO-986. The child status counts at that moment are in its
 consolidated report, `2026-11-03-audit-8/consolidated.md`.
 
+### Cards without an epic
+
+Every card needs an epic; the rule started on 2026-10-08. Cards created before that
+date that are already finished, and have no parent, are accepted as they are: there
+is no retroactive sweep (audit 9, finding F2). The standing check is that no open
+card lacks an epic. Run it with:
+
+```
+project = FRESCO AND issuetype != Epic AND parent is EMPTY AND statusCategory != Done
+```
+
+It must return 0. Anything it lists gets an epic, chosen by reading the epic of the
+card it follows up.
+
 ## 3. Hard definition of "Finalizada" (DoD)
 
 A ticket does **not** move to `Finalizada` until the problem that created it is
