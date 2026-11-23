@@ -21,9 +21,11 @@ export const metadata: Metadata = {
   alternates: { canonical: canonicalUrl('/') },
 };
 
-// FRESCO-871: the landing shows the Pro prices read from Stripe; re-render at most
-// hourly so a price change in Stripe reaches the public page without a deploy.
-export const revalidate = 3600;
+// FRESCO-871: the landing shows the Pro prices read from Stripe. The hourly refresh lives in
+// `getProPrices` (`unstable_cache`, `lib/billing/pro-prices.ts`), so a price change reaches the page within
+// the hour without a deploy. There is deliberately no `revalidate` here: `proxy.ts` puts a per-request CSP
+// nonce on every page, so the page is rendered on each request and a page-level hint would do nothing
+// (FRESCO-1258; measured on production: `cache-control: no-store`, a different nonce per request).
 
 /**
  * Guest landing ("/") — EPIC-FRESCO-6 (Guest Mode). Content and structure

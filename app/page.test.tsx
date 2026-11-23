@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
 import * as proPrices from '@/lib/billing/pro-prices';
 import { renderWithProviders, screen } from '@/tests/component-render';
-import GuestLandingPage, { revalidate } from './page';
+import GuestLandingPage from './page';
 import '@/tests/mocks/next-navigation';
 
-// FRESCO-1079 — the guest landing ("/"). Pinned: it reads the Pro prices from Stripe and re-renders
-// at most hourly, it emits the structured data, and its landmarks are header / main / footer with
+// FRESCO-1079 — the guest landing ("/"). Pinned: it reads the Pro prices from Stripe (the hourly refresh
+// lives in `getProPrices`, not in a page-level `revalidate`: see FRESCO-1258), it emits the structured data, and its landmarks are header / main / footer with
 // the content sections inside <main id="main"> (the target of the skip link).
 
 let pricesSpy: ReturnType<typeof spyOn<typeof proPrices, 'getProPrices'>>;
@@ -20,10 +20,6 @@ const renderPage = async () => {
 };
 
 describe('GuestLandingPage', () => {
-  test('re-renders at most hourly so a price change in Stripe reaches the page without a deploy', () => {
-    expect(revalidate).toBe(3600);
-  });
-
   test('reads the Pro prices once', async () => {
     await renderPage();
     expect(pricesSpy).toHaveBeenCalledTimes(1);
