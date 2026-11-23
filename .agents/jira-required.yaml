@@ -45,7 +45,10 @@ required:
     name: ✅ Acceptance Criteria (Gherkin)
     type: string
     fallback: { target: comment, label: Acceptance Criteria }
-    description: Gherkin-formatted acceptance criteria attached to user stories.
+    description: |
+      LEGACY (FRESCO-1253). Acceptance criteria now live in the story description under
+      `## Criterio de cierre`; sync-jira-issues reads that section first and falls back to this
+      field only for stories written before the convention. Do not write new criteria here.
     used_by: [sync-jira-issues, sprint-development]
 
   acceptance_test_results:

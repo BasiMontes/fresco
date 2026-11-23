@@ -84,7 +84,7 @@ Every refined story must pass INVEST. This is the gate between "exists" and "rea
 | **S**mall       | Can complete in one sprint (max 8 story points)           | Under 8 SP? If not, split.              |
 | **T**estable    | Acceptance criteria are verifiable                        | Are the Scenarios clear and measurable? |
 
-> **Voice check** (complements INVEST; applies to `{{jira.acceptance_criteria}}`, `{{jira.scope}}`, `{{jira.out_of_scope}}`, `{{jira.workflow}}`): does each criterion stay true after a stack swap? If endpoint paths, HTTP status codes, table/column names, framework or library names, error-code identifiers, or transaction/locking patterns appear, the criterion is implementation, not behavior — rewrite from the persona's POV. **Exception**: persona is an API consumer (DevEx, integration agent, headless client) — API surface IS their UX. See anti-pattern `I15` in `SKILL.md`. The Voice check is a hard gate alongside INVEST; failing it blocks Ready-for-Development.
+> **Voice check** (complements INVEST; applies to the acceptance criteria, `{{jira.scope}}`, `{{jira.out_of_scope}}`, `{{jira.workflow}}`): does each criterion stay true after a stack swap? If endpoint paths, HTTP status codes, table/column names, framework or library names, error-code identifiers, or transaction/locking patterns appear, the criterion is implementation, not behavior — rewrite from the persona's POV. **Exception**: persona is an API consumer (DevEx, integration agent, headless client) — API surface IS their UX. See anti-pattern `I15` in `SKILL.md`. The Voice check is a hard gate alongside INVEST; failing it blocks Ready-for-Development.
 
 **If a criterion (INVEST or Voice) fails, do NOT proceed to development.** Either refine further or split the story.
 
@@ -105,7 +105,7 @@ Common failures and fixes:
 
 > Adapted from the `story.md` template in `product-backlog-seed.md`. The full template lives there; this section focuses on the parts that get refined.
 >
-> **No content duplication**: the body of `story.md` carries narrative + DoD only. Acceptance Criteria, Scope, and Out-of-Scope live exclusively in their dedicated Jira custom fields (`{{jira.acceptance_criteria}}`, `{{jira.scope}}`, `{{jira.out_of_scope}}`). See `references/description-custom-field-dedup.md` for the full single-source-of-truth rule and audit procedure.
+> **No content duplication**: the body of `story.md` carries narrative + DoD only. Scope and Out-of-Scope live exclusively in their dedicated Jira custom fields (`{{jira.scope}}`, `{{jira.out_of_scope}}`); the acceptance criteria live in the description under `## Criterio de cierre` (FRESCO-1253) and sync into `acceptance-criteria.md`. See `references/description-custom-field-dedup.md` for the full single-source-of-truth rule and audit procedure.
 
 **In-file `story.md` body template** — locked shape:
 
@@ -130,8 +130,9 @@ Common failures and fixes:
 
 - [ ] [Project-standard DoD items]
 
-<!-- AC / Scope / Out-of-Scope live exclusively in their dedicated custom fields
-     (`{{jira.acceptance_criteria}}`, `{{jira.scope}}`, `{{jira.out_of_scope}}`).
+<!-- Scope / Out-of-Scope live exclusively in their dedicated custom fields
+     (`{{jira.scope}}`, `{{jira.out_of_scope}}`); the AC live in the description
+     under `## Criterio de cierre` (FRESCO-1253).
      See `references/description-custom-field-dedup.md`. -->
 ```
 
@@ -150,7 +151,7 @@ sentence is present in the body. Domain-entity feature prefixes carry the `TMS-`
 
 **Scope (In / Out) — custom-field only.** Be explicit. Out-of-scope items are the team's defense against scope creep mid-sprint. Write In-Scope bullets to `{{jira.scope}}` and Out-of-Scope bullets to `{{jira.out_of_scope}}` via `[ISSUE_TRACKER_TOOL]`. Do NOT duplicate into the description body. When writing these rich-text fields, follow `references/jira-publishing-gotchas.md` (per-field-per-call when batching ADF; no inline `code` inside `**bold**`).
 
-**Acceptance Criteria — custom-field only.** Gherkin Scenario format, **minimum 3 scenarios**, written to `{{jira.acceptance_criteria}}` via `[ISSUE_TRACKER_TOOL]`. Pattern per scenario:
+**Acceptance Criteria — description section.** Gherkin Scenario format, **minimum 3 scenarios**, written to the description under `## Criterio de cierre` via `[ISSUE_TRACKER_TOOL]` (FRESCO-1253). Pattern per scenario:
 
 ```gherkin
 Scenario: [Descriptive name]
@@ -213,11 +214,11 @@ A story is Ready when **all** of these are true:
 - [ ] **Source spec line** present as the first body line (`**Source spec:** FR-XXX`) when an FR motivates the story, otherwise omitted
 - [ ] **Scope** explicitly populated in `{{jira.scope}}` (in-scope) and `{{jira.out_of_scope}}` (exclusions) — never in the description body
 - [ ] **INVEST** — all six criteria pass
-- [ ] **Acceptance Criteria** — minimum 3 Gherkin Scenarios (happy + error + edge) in `{{jira.acceptance_criteria}}`, each wrapped in a ` ```gherkin ` fenced code block (anti-pattern `I17`)
+- [ ] **Acceptance Criteria** — minimum 3 Gherkin Scenarios (happy + error + edge) in the description's `## Criterio de cierre` section, each wrapped in a ` ```gherkin ` fenced code block (anti-pattern `I17`)
 - [ ] **Testability gate passed** — for every scenario, answer YES to *"could a tester write the test that fails from this `Then` alone, without asking me anything?"* Each `Then` names an observable value (exact count, exact message text, exact final state), never a qualifier. The zero / empty / error case is its own scenario. A scenario that fails this is a `gap` — resolve the value with the PO before the story enters a sprint, never pass it as-is (anti-pattern `I22`).
 - [ ] **Voice gate passed** — AC / Scope / Out-of-Scope / Workflow describe persona-observable behavior; no endpoint paths, HTTP status codes, table/column names, framework names, or internal algorithms appear (anti-pattern `I15`). Exception: API-consumer persona.
 - [ ] **Persona grounded** — `As a` line names a persona that exists in `.context/PRD/user-personas.md`; no generic "user" / "system" actors (anti-pattern `I19`).
-- [ ] **Deduplication audit passed** — run the dedup audit per `references/description-custom-field-dedup.md`. Confirm the description body excludes AC / Scope / OOS H2 sections and that those contents live in `{{jira.acceptance_criteria}}`, `{{jira.scope}}`, `{{jira.out_of_scope}}` respectively. If a duplicate is found, strip from the description and keep the custom field as canonical.
+- [ ] **Deduplication audit passed** — run the dedup audit per `references/description-custom-field-dedup.md`. Confirm the description body excludes Scope / OOS H2 sections (those live in `{{jira.scope}}`, `{{jira.out_of_scope}}`) and that the acceptance criteria appear once, under `## Criterio de cierre`, with no copy in the legacy `{{jira.acceptance_criteria}}` field. If a duplicate is found, strip it from the description (Scope / OOS) or leave the description section canonical (AC).
 - [ ] **Story Points** — leave `{{jira.story_points}}` EMPTY by default. Populate ONLY if the user explicitly requested estimation in this session. Estimation belongs to the team that will build the story (Design + Dev + Test), not to the PO/BA. When opted-in: Fibonacci (1, 2, 3, 5, 8); 13+ → split. See anti-pattern `I16`.
 - [ ] **Dependency Discovery executed** — active pass over the current backlog graph (epic-tree + Jira link graph + business-data-map) ran BEFORE creation/edit. Candidate `(from, to, source)` matrix surfaced to the user; global/infrastructural noise filtered out; only feature-level explicit dependencies kept. See anti-pattern `I18`.
 - [ ] **Dependencies declared locally** — Blocked By / Blocks / Related sections present in `story.md`
@@ -385,7 +386,7 @@ Scenario: Discount code applies before tax calculation
 
 When a story passes the Ready checklist:
 
-1. Hand off to **`acceptance-criteria.md`** for deep AC refinement (refine each Scenario, add negative paths, boundary conditions, equivalence partitions). Mind `references/jira-publishing-gotchas.md` when writing the deepened AC back to `{{jira.acceptance_criteria}}`.
+1. Hand off to **`acceptance-criteria.md`** for deep AC refinement (refine each Scenario, add negative paths, boundary conditions, equivalence partitions). Mind `references/jira-publishing-gotchas.md` when writing the deepened AC back to the description's `## Criterio de cierre` section.
 2. Hand off to **`edge-cases-enumeration.md`** for systematic edge-case discovery.
 3. Confirm the Status transition step has executed (story sits at `{{jira.statuses.story_default}}`).
 4. Confirm the Dependency-link verification step has executed (Jira issue links match local declarations).

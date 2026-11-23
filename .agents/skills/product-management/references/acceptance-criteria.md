@@ -8,7 +8,7 @@
 
 When refining EXISTING acceptance criteria (not a first-time write), run this gate BEFORE any surgical edit. Bad voice tends to compound through small edits, so the gate runs first and the rewrite (if needed) replaces the surgical pass.
 
-1. Read the current value of `{{jira.acceptance_criteria}}` via `bun run jira:sync-issues get <KEY>` (materializes `acceptance-criteria.md` + every other field file locally), then read that file. Do NOT use `acli view` — it omits custom fields entirely, so it will look empty even when the field is richly populated. (REST `GET .../issue/{KEY}?fields=...` is the low-level fallback.)
+1. Read the current criteria (the `## Criterio de cierre` section of the description) via `bun run jira:sync-issues get <KEY>` (materializes `acceptance-criteria.md`, extracted from the description, + every other field file locally), then read that file. For a story written before FRESCO-1253, with no such section, the sync falls back to the legacy `{{jira.acceptance_criteria}}` field. (REST `GET .../issue/{KEY}?fields=...` is the low-level fallback.)
 2. Scan for **voice violations** (anti-pattern `I15` in `SKILL.md`): endpoint paths, HTTP status codes, DB table/column names, framework/library names, error-code identifiers, transaction or locking patterns, internal algorithms.
 3. Scan for **format violations** (anti-pattern `I17`): scenarios that are NOT wrapped in a ` ```gherkin ` fenced code block (plain text Given/When/Then is non-compliant).
 4. Scan for **persona violations** (anti-pattern `I19`): generic actors ("the user", "the system") inside scenarios; the persona must match `.context/PRD/user-personas.md`.
@@ -34,7 +34,7 @@ If any of those three is vague, you do not have AC — you have a wish. The goal
 
 ### Where AC live in the issue tracker
 
-Acceptance criteria are stored in the `{{jira.acceptance_criteria}}` custom field. NEVER duplicate them into the issue description body — see `references/description-custom-field-dedup.md`. When writing the field via `[ISSUE_TRACKER_TOOL]`, follow the ADF guidance in `references/jira-publishing-gotchas.md`.
+Acceptance criteria live in the issue description, under the `## Criterio de cierre` heading (FRESCO-1253; the custom field's 255-character cap made it unusable for real criteria). NEVER write them to the legacy `{{jira.acceptance_criteria}}` field — see `references/description-custom-field-dedup.md`. When writing the description via `[ISSUE_TRACKER_TOOL]`, follow the ADF guidance in `references/jira-publishing-gotchas.md`.
 
 ### Source-grounding rule
 
@@ -174,7 +174,7 @@ Once gaps are filled and ambiguities resolved, convert each AC into one or more 
 
 Use **Given–When–Then** to keep scenarios concrete and reviewable. Each scenario describes a single behavior.
 
-**Hard format rule (anti-pattern `I17` in `SKILL.md`)**: every scenario written to `{{jira.acceptance_criteria}}` MUST be wrapped in a fenced ` ```gherkin ` code block. Plain text Given/When/Then outside the fence is non-compliant on both create and edit. The fence is the only shape that renders monospaced + syntax-highlighted inside the Jira ADF view.
+**Hard format rule (anti-pattern `I17` in `SKILL.md`)**: every scenario written to the description's `## Criterio de cierre` section MUST be wrapped in a fenced ` ```gherkin ` code block. Plain text Given/When/Then outside the fence is non-compliant on both create and edit. The fence is the only shape that renders monospaced + syntax-highlighted inside the Jira ADF view.
 
 **Scenario template** (use this exact shape; the fence is part of the template):
 

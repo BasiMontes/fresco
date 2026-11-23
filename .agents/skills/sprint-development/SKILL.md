@@ -621,7 +621,7 @@ Concrete tools (`bun`, `git`, `gh`) are used literally. Project variables resolv
 - `{{PROJECT_KEY}}`, `{{ISSUE_TRACKER}}`, `{{ATLASSIAN_URL}}` — issue tracker
 - `{{WEB_URL}}`, `{{API_URL}}` — env-scoped, active env from `.agents/project.yaml`
 - `{{BACKEND_STACK}}`, `{{FRONTEND_STACK}}`, `{{DB_TYPE}}` — stack-specific patterns
-- `{{jira.*}}` — story custom fields (acceptance_criteria, business_rules, acceptance_test_plan, etc.)
+- `{{jira.*}}` — story custom fields (business_rules, acceptance_test_plan, etc.)
 
 If any required var is unset, ensure `.agents/project.yaml` exists (clone the full boilerplate — foundation files ship with the repo) and run `/project-foundation` to fill in stack values.
 

@@ -5,6 +5,7 @@ import {
   classifyQaArtifactEpic,
   DEFAULT_QA_ARTIFACT_LABEL,
   defaultSweepEntries,
+  extractClosingCriteria,
   higherAltitudeLabel,
   outOfScopeTypeNames,
 } from './sync-jira-issues.ts';
@@ -284,5 +285,37 @@ describe('outOfScopeTypeNames', () => {
 
   test('empty when everything present is covered', () => {
     expect(outOfScopeTypeNames(['Story', 'Bug', 'Defect', 'Test'], reg, [])).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// extractClosingCriteria (FRESCO-1253: acceptance criteria live in the description)
+// ---------------------------------------------------------------------------
+
+describe('extractClosingCriteria', () => {
+  test('returns the section body without its heading, up to the next heading of the same level', () => {
+    const md = ['Intro.', '', '## Criterio de cierre', '', '- A pasa', '- B pasa', '', '## Notas', '', 'otra cosa'].join('\n');
+    expect(extractClosingCriteria(md)).toBe('- A pasa\n- B pasa');
+  });
+
+  test('accepts the aliases the board already uses and any case', () => {
+    expect(extractClosingCriteria('### CRITERIOS DE ACEPTACIÓN\n\nuno')).toBe('uno');
+    expect(extractClosingCriteria('## Acceptance criteria\n\ntwo')).toBe('two');
+    expect(extractClosingCriteria('## Criterios de cierre\n\ntres')).toBe('tres');
+  });
+
+  test('keeps a deeper heading inside the section and runs to the end of the text', () => {
+    const md = '## Criterio de cierre\n\n### Caso feliz\n\nok';
+    expect(extractClosingCriteria(md)).toBe('### Caso feliz\n\nok');
+  });
+
+  test('a heading-looking line inside a fenced block does not end the section', () => {
+    const md = ['## Criterio de cierre', '', '```gherkin', '# comentario', '## no soy un titulo', 'Given algo', '```', '', '## Siguiente'].join('\n');
+    expect(extractClosingCriteria(md)).toBe('```gherkin\n# comentario\n## no soy un titulo\nGiven algo\n```');
+  });
+
+  test('returns an empty string when the description has no such section', () => {
+    expect(extractClosingCriteria('## Contexto\n\ntexto')).toBe('');
+    expect(extractClosingCriteria('')).toBe('');
   });
 });

@@ -38,7 +38,7 @@ Custom-field IDs vary per workspace (`customfield_10201` in one tenant, `customf
 
 Slugs written by this workflow:
 
-- `{{jira.acceptance_criteria}}` — Gherkin-formatted scenarios (Given / When / Then), every scenario wrapped in a ` ```gherkin ` fenced code block (anti-pattern `I17`). Persona-observable language only — no endpoint paths, HTTP status codes, table names, or framework names (anti-pattern `I15`).
+- Description section `## Criterio de cierre` (not a custom field; FRESCO-1253) — Gherkin-formatted scenarios (Given / When / Then), every scenario wrapped in a ` ```gherkin ` fenced code block (anti-pattern `I17`). Persona-observable language only — no endpoint paths, HTTP status codes, table names, or framework names (anti-pattern `I15`).
 - `{{jira.business_rules_specification}}` — domain rules and validations (boundaries, role gates, retry semantics, audit guarantees). NOT internal algorithms or implementation patterns (anti-pattern `I15`).
 - `{{jira.scope}}` — in-scope bullets only (no out-of-scope mixed in). Capabilities the persona gains, not endpoints / tables / services (anti-pattern `I15`).
 - `{{jira.out_of_scope}}` — explicit exclusions; complementary to `scope`. Deferred capabilities, not deferred endpoints.
@@ -77,7 +77,7 @@ Epic summaries follow the same rule: no `FR-` or `EPIC-` prefix in the summary t
 
 ## No content duplication
 
-The story description body and the dedicated custom fields hold **disjoint** content. Acceptance Criteria, Scope, and Out-of-Scope live **exclusively** in their custom fields (`{{jira.acceptance_criteria}}`, `{{jira.scope}}`, `{{jira.out_of_scope}}`); they never appear as H2/H3 sections inside the description.
+The story description body and the dedicated custom fields hold **disjoint** content. Scope and Out-of-Scope live **exclusively** in their custom fields (`{{jira.scope}}`, `{{jira.out_of_scope}}`); they never appear as H2/H3 sections inside the description. The acceptance criteria are the exception (FRESCO-1253): they live in the description under `## Criterio de cierre`, never in the legacy `{{jira.acceptance_criteria}}` field.
 
 Canonical description body sections:
 
@@ -85,8 +85,9 @@ Canonical description body sections:
 2. `## User story` — As / I want / So that narrative.
 3. `## Business rules` — overflow only, when content does not fit in `{{jira.business_rules_specification}}`.
 4. `## Workflow` — overflow only, when content does not fit in `{{jira.workflow}}`.
-5. `## Definition of done` — closing checklist.
-6. Optional blocks: `Mockup`, `Technical notes`.
+5. `## Criterio de cierre` — the acceptance criteria (Gherkin scenarios).
+6. `## Definition of done` — closing checklist.
+7. Optional blocks: `Mockup`, `Technical notes`.
 
 Full rationale + audit procedure → `references/description-custom-field-dedup.md`.
 
@@ -94,7 +95,7 @@ Full rationale + audit procedure → `references/description-custom-field-dedup.
 
 ## Rich-text gotchas
 
-Every step in this workflow that writes to a Jira rich-text field (description, `{{jira.acceptance_criteria}}`, `{{jira.scope}}`, `{{jira.out_of_scope}}`, `{{jira.business_rules_specification}}`, `{{jira.workflow}}`) is subject to ADF-conversion bugs documented in `references/jira-publishing-gotchas.md`. Read that reference once before the first write; cite it from every step below that publishes rich text.
+Every step in this workflow that writes to a Jira rich-text field (description, `{{jira.scope}}`, `{{jira.out_of_scope}}`, `{{jira.business_rules_specification}}`, `{{jira.workflow}}`) is subject to ADF-conversion bugs documented in `references/jira-publishing-gotchas.md`. Read that reference once before the first write; cite it from every step below that publishes rich text.
 
 ---
 
@@ -294,7 +295,7 @@ If any criterion fails, split or rewrite the story before creating it. Never pus
 - Priority: `High | Medium | Low`.
 - Labels: `mvp` (plus project-specific).
 - Custom fields (slug-resolved at the tool layer):
-  - `{{jira.acceptance_criteria}}` — minimum 3 Gherkin scenarios (1 happy path + 2 edge / error cases), each wrapped in a ` ```gherkin ` fenced code block (anti-pattern `I17`). Persona-observable language only; no endpoint paths, HTTP status codes, table names, or framework names (anti-pattern `I15`).
+  - Description `## Criterio de cierre` — minimum 3 Gherkin scenarios (1 happy path + 2 edge / error cases), each wrapped in a ` ```gherkin ` fenced code block (anti-pattern `I17`). Persona-observable language only; no endpoint paths, HTTP status codes, table names, or framework names (anti-pattern `I15`).
   - `{{jira.scope}}` — in-scope bullets only. Bullets describe capabilities the persona gains, not endpoints / DB tables / services (anti-pattern `I15`).
   - `{{jira.out_of_scope}}` — explicit exclusions, also in persona-capability voice.
   - `{{jira.story_points}}` — **OPT-IN ONLY**. Leave EMPTY unless the user explicitly requested estimation in this session. When opted-in: Fibonacci (1, 2, 3, 5, 8); 13+ → split. See anti-pattern `I16`.
@@ -436,9 +437,9 @@ This step runs once before the link-creation loop below.
 When the seed completes, verify in order:
 
 - [ ] Every epic from `epic-tree.md` exists in Jira with a real key, transitioned to `{{jira.statuses.epic_default}}` (or fallback).
-- [ ] Every foundational story exists in Jira with a real key, transitioned to `{{jira.statuses.story_default}}` (or fallback), populated AC + Scope + Out-of-Scope custom fields, INVEST-validated.
+- [ ] Every foundational story exists in Jira with a real key, transitioned to `{{jira.statuses.story_default}}` (or fallback), a `## Criterio de cierre` section plus the Scope + Out-of-Scope custom fields, INVEST-validated.
 - [ ] **Voice gate** — every AC, Scope bullet, Out-of-Scope bullet, and Workflow narrative is in persona-observable language. No endpoint paths, HTTP status codes, DB table/column names, framework names, or internal algorithms appear (anti-pattern `I15`). Exception: API-consumer persona.
-- [ ] **Gherkin code-fence** — every scenario in `{{jira.acceptance_criteria}}` is wrapped in a ` ```gherkin ` fenced code block (anti-pattern `I17`).
+- [ ] **Gherkin code-fence** — every scenario in the `## Criterio de cierre` section is wrapped in a ` ```gherkin ` fenced code block (anti-pattern `I17`).
 - [ ] **Persona grounding** — every `As a` line names a persona that exists in `.context/PRD/user-personas.md` (anti-pattern `I19`).
 - [ ] **Story Points policy** — `{{jira.story_points}}` is EMPTY by default; populated only when the user explicitly requested estimation in this session (anti-pattern `I16`).
 - [ ] **Active Dependency Discovery ran** — Phase 3.0 produced a candidate matrix, global/infrastructural noise was filtered, user confirmed before any link was written (anti-pattern `I18`).
