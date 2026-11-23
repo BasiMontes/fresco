@@ -59,11 +59,11 @@ Coste: una historia que lee la sección de su mapa para situarse recibe el produ
 
 Desde FRESCO-799 (2026-10-05), Supabase Auth alojado exige un token de Turnstile en cada inicio de sesión con contraseña, venga del formulario `/login` o de la API. En esta pasada, las dos identidades, la Free (`PRE_USER_*`) y la Pro (`PRE_PRO_PLAN_USER_*`), se detuvieron en un desafío interactivo en `fresco-pre`: el token seguía vacío a los 20 y a los 40 segundos. La suite e2e entra por `tests/session-login.ts`, que usa un `generate_link` con service-role y está documentado como infraestructura de pruebas para CI. `live-ui-identity.md` sección 3 prohíbe a los agentes justo ese camino, y con razón. Y como `staging` y producción comparten un único proyecto de Supabase (ADR-0020), una clave de prueba de Turnstile solo en el despliegue de `staging` fallaría en la verificación del servidor. `live-ui-validation.md` no menciona el captcha, así que una comprobación de UI en vivo de `/sprint-development` en `staging` choca con este muro sin aviso. Dos auditorías seguidas quedan ciegas en la mitad autenticada.
 
-Opciones, todas a decidir por el dueño: una sesión con ventana en la que el dueño marca la casilla y el agente continúa (barato, pero hace falta en cada ejecución); nombrar el stack local (sin captcha) como el lugar autorizado para las comprobaciones de UI autenticadas y decirlo en la sección 3; o aceptar por escrito el punto ciego.
+Opciones, todas a decidir por el dueño: una sesión con ventana en la que el dueño marca la casilla y el agente continúa (barato, pero hace falta en cada ejecución); nombrar el stack local (sin captcha) como el lugar autorizado para las comprobaciones de UI autenticadas y decirlo en la sección 3; o aceptar por escrito el punto ciego. **Actualización (sección 8):** decidido el mismo día, las pantallas autenticadas se comprueban en el stack local, y esa medición ya se hizo.
 
 ### F6. FRESCO-1269 se cerró hoy sin dos de sus puertas de cierre (Disciplina del agente, BAJA, problema real)
 
-Este agente cerró FRESCO-1269 como `Finalizada` el 2026-11-23 tras la promoción a `main`. `.context/backlog/definition-of-done.md:36` pide de un defecto que "la reproducción se reprodujo y deja de ser reproducible tras el arreglo", y que `root_cause` esté rellena al cerrar. El arreglo tiene tests unitarios en la misma PR, pero nadie volvió a ejecutar la reproducción tarjeta contra aviso en un entorno desplegado (F5 bloqueó el intento en esta pasada), y `root_cause` está vacía. Es el único de los 15 defectos desde el 2026-10-15 sin ninguno de los dos campos. Arreglo: rellenar `root_cause` y verificar la reproducción en `staging` (requiere F5), o devolver el ticket a `Merged` hasta que alguien lo haga.
+Este agente cerró FRESCO-1269 como `Finalizada` el 2026-11-23 tras la promoción a `main`. `.context/backlog/definition-of-done.md:36` pide de un defecto que "la reproducción se reprodujo y deja de ser reproducible tras el arreglo", y que `root_cause` esté rellena al cerrar. El arreglo tiene tests unitarios en la misma PR, pero nadie volvió a ejecutar la reproducción tarjeta contra aviso en un entorno desplegado (F5 bloqueó el intento en esta pasada), y `root_cause` está vacía. Es el único de los 15 defectos desde el 2026-10-15 sin ninguno de los dos campos. Arreglo: rellenar `root_cause` y verificar la reproducción en `staging` (requiere F5), o devolver el ticket a `Merged` hasta que alguien lo haga. **Actualización (sección 8):** `root_cause` rellena (`code_error`) y reproducción repetida en el stack local con Free y Pro; FRESCO-1276 está `Finalizada`.
 
 ### F7. Los avisos del asesor de Supabase son correctos, pero nada lo deja registrado (Arquitectura, BAJA)
 
@@ -133,7 +133,7 @@ Capturas (temporales, no commiteadas): `login-captcha-blocked-390.png` y `login-
 
 ## 6. Puntos ciegos
 
-- **La app autenticada no se ejercitó**, por segunda pasada seguida (F5). El control de acceso por planes, la comprobación de presupuesto de FRESCO-1269 sobre un menú real y los tiempos de `/menu` siguen sin medir. El rol de admin nunca se ha medido en vivo en ninguna pasada.
+- **La app autenticada no se ejercitó en un entorno desplegado**, por segunda pasada seguida (F5); se midió después en el stack local (sección 8). El control de acceso por planes, la comprobación de presupuesto de FRESCO-1269 sobre un menú real y los tiempos de `/menu` siguen sin medir. El rol de admin nunca se ha medido en vivo en ninguna pasada.
 - **Configuración alojada.** Solo se leyeron el asesor de seguridad de Supabase y las definiciones de funciones. El asesor de rendimiento, los ajustes del proyecto de Vercel y los de Auth no se leyeron.
 - **`.env.ci` está versionado y no se abrió**, por la regla 1 de `AGENTS.md`, igual que en la auditoría 9.
 - **Los recuentos de backlog salen de la búsqueda de texto de Jira**, que es difusa. Un criterio escrito bajo otro encabezado o en un comentario no se cuenta.
@@ -149,3 +149,28 @@ Capturas (temporales, no commiteadas): `login-captcha-blocked-390.png` y `login-
 5. **F7 y F8:** una lista de avisos aceptados; retirar o refrescar los ficheros del roadmap.
 6. **F4:** regenerar los mapas de API y de features.
 7. **F9 a F11:** volver a medir en la próxima pasada.
+
+## 8. Apéndice (2026-11-23, tras el informe): la mitad autenticada, medida en el stack local
+
+El mismo día el dueño decidió que las pantallas autenticadas se comprueban en el stack local (FRESCO-1275) y se hizo la medición: Free y Pro, a 390 y 1440 px, por el formulario real de la app, con un menú generado por las Edge Functions. Un subagente, con lectura y escritura permitidas porque la base de datos es desechable.
+
+**El primer intento falló por el montaje de esta pasada, no por la app.** El servidor de desarrollo recogió `NEXT_PUBLIC_TURNSTILE_SITE_KEY` de los ficheros `.env*` del desarrollador, y `/login` mostró un Turnstile real que un navegador sin ventana no puede pasar. El Supabase local no tiene captcha; el CI fuerza esa variable vacía al final (`pr-check.yml`). La documentación escrita para FRESCO-1275 decía "el stack local no tiene captcha" sin esa condición, y queda corregida.
+
+Resultados, medidos y comprobados de nuevo por el orquestador donde se indica:
+
+| Comprobación | Free | Pro |
+|---|---|---|
+| Login por el formulario | funciona | funciona |
+| Plan mostrado en `/profile` | Free, con la oferta de Pro | Pro, "Gestionar mi suscripción" |
+| Rutas (`/menu`, `/calendar`, `/shopping-list`, `/recipes`, `/profile` y las de la cabecera) | `lang="es"`, un `h1`, sin saltos de encabezado, sin `img` sin `alt`, sin desbordamiento horizontal | igual |
+| Reproducción del presupuesto de FRESCO-1269 | tarjeta 168,75 €: con presupuesto 153 hay aviso de 15,75 € (168,75 − 153), con 100 de 68,75 €, con 189 y 500 no hay | tarjeta 121,61 €: con 106 hay aviso de 15,61 €, con 142 y 500 no hay |
+| Tiempos de `/menu` (modo desarrollo, no comparables con producción) | 240 ms al primer byte, 310 ms al contenido del DOM | 230 ms, 266 ms |
+| Credencial en disco | 0 apariciones, recontadas por el orquestador | 0 |
+
+- **F6 queda cerrado con evidencia:** el aviso sale de la misma cifra que la tarjeta y su exceso es esa cifra menos el presupuesto, al céntimo, en los dos planes.
+- **El control de acceso por planes aguanta.** Free ve la nota de que sus marcas no se aplican a sus menús y la oferta de Pro; Pro no ve nada de eso. Objetivo, nivel y cocinas favoritas son seleccionables por Free con el texto de que solo moldean el menú en Pro, que es lo que describe la ADR-0071. Nada de Pro está desbloqueado para Free y nada está bloqueado para Pro.
+- **Un error de consola, que no es un fallo.** La primera visita a `/shopping-list` registra un `409` de `generate-shopping-list`. `shopping-list-generator.tsx` trata un `409` como "la lista ya existe" y solo relee, y en desarrollo React ejecuta los efectos dos veces, lo que envía la segunda petición. No se comprobó contra producción.
+- **Observaciones, sin puntuar:** los botones de icono y las flechas del calendario miden entre 36 y 38 px (la pauta cómoda de 44 px, no el mínimo de WCAG 2.5.8); el presupuesto semanal solo se edita en el paso 3 del onboarding y una carga nueva de ese paso muestra el campo vacío en vez del valor guardado; el título de pestaña de la receta es el genérico "Receta · Fresco" a propósito (FRESCO-966, WCAG 2.4.2). Una observación más no se verificó: el resumen de Free mostró "Cocinas favoritas: Española" sin que el subagente la eligiera.
+- **Sigue sin medirse:** lo que solo existe en un despliegue (comportamiento de Vercel, ajustes de Auth alojados, el catálogo real y las fotos, que en local salen como una letra), los menús extra, marcar favoritos, marcar recetas cocinadas o descartadas, el flujo de pago, `/recipes/<id>` como Pro y el rol de admin.
+
+Las notas de la sección 1 no cambian. Esta mitad no encontró ningún defecto nuevo, y los cambios del día (F1 a F8) se siguen en FRESCO-1270.
