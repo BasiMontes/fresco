@@ -184,7 +184,7 @@ erDiagram
 
 **Auth flow**: Supabase Auth issues a JWT on signup/login; the frontend attaches it as a Bearer token; every Edge Function verifies it via `supabase.auth.getUser()` before touching any data (NFR-SEC-1). Guest mode (EPIC-FRESCO-6) does not yet have a defined auth flow in any source document — flagged, not invented (see FR-6.1).
 
-**RBAC**: not role-based in the traditional sense — authorization is row-ownership-based (RLS keyed to `auth.uid()`), plus a `service_role` vs `authenticated` split for the one genuinely privileged operation (writing to the shared `recipes` catalog during the batch-generation pipeline). There is no `admin`/`user` role distinction anywhere in the source material.
+**RBAC**: not role-based in the traditional sense — authorization is row-ownership-based (RLS keyed to `auth.uid()`), plus a `service_role` vs `authenticated` split for the one genuinely privileged operation (writing to the shared `recipes` catalog during the batch-generation pipeline). There is no `admin` column or database role; the only admin notion is a server-side allowlist of user ids (`ADMIN_USER_ID`, FRESCO-237, read by `lib/auth/is-admin.ts` and `supabase/functions/_shared/admin.ts`) that gates the `/admin` pages and the admin-only Edge Functions.
 
 **Data protection**: HTTPS/TLS inherited from Vercel + Supabase platform defaults; input validation performed server-side in each Edge Function before any DB write. There is no third-party AI/API credential in the system — `GEMINI_API_KEY` was removed with Gemini on 2026-08-01 (NFR-SEC-3, `ADR-0005`).
 

@@ -67,10 +67,10 @@ Este agente cerró FRESCO-1269 como `Finalizada` el 2026-11-23 tras la promoció
 
 ### F7. Los avisos del asesor de Supabase son correctos, pero nada lo deja registrado (Arquitectura, BAJA)
 
-Leído hoy en vivo (primera vez que una pasada lee la configuración alojada): 29 WARN y 17 INFO.
+Leído hoy en vivo (primera vez que una pasada lee la configuración alojada): 27 WARN y 17 INFO (releído al escribir la lista de aceptados, FRESCO-1277; la primera lectura de este informe decía 29 y 16 más abajo, un error de recuento).
 
 - **11 funciones `SECURITY DEFINER` ejecutables por `authenticated`.** Cada una filtra por `auth.uid()`, y `anon` no puede ejecutar ninguna (`pg_get_functiondef` y `has_function_privilege`, solo lectura).
-- **16 avisos de inicio de sesión anónimo.** Son políticas del modo invitado limitadas a las filas del propio usuario, más dos tablas de `cron` gestionadas por Supabase.
+- **15 avisos de inicio de sesión anónimo.** Políticas del modo invitado `TO authenticated`: 8 limitadas a las filas del propio usuario, 5 solo de `SELECT` sobre tablas de catálogo compartido (datos de supermercado y la relación ingrediente-producto), más dos tablas de `pg_cron` a las que `anon` y `authenticated` no llegan (sin `USAGE` sobre el esquema `cron`).
 - **Protección contra contraseñas filtradas.** Requiere Supabase Pro; `lib/validation/pwned-password.ts` lo cubre en la app.
 - **17 tablas con RLS y sin política.** Todas son tablas solo para service-role, como está documentado, por ejemplo `stripe_webhook_events` en el mapa de datos.
 

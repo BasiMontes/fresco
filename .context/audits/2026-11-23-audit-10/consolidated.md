@@ -65,10 +65,10 @@ This agent closed FRESCO-1269 as `Finalizada` on 2026-11-23 after the promotion 
 
 ### F7. The Supabase advisor's warnings hold up, but nothing records that (Architecture, LOW)
 
-Read live today (first time a pass reads hosted settings): 29 WARN and 17 INFO.
+Read live today (first time a pass reads hosted settings): 27 WARN and 17 INFO (re-read when the accepted list was written, FRESCO-1277; the first reading of this report said 29 and 16 below, which was a miscount).
 
 - **11 `SECURITY DEFINER` functions executable by `authenticated`.** Each one filters by `auth.uid()`, and `anon` cannot execute any of them (`pg_get_functiondef` and `has_function_privilege`, read-only).
-- **16 anonymous-sign-in warnings.** These are guest-mode policies scoped to the user's own rows, plus two Supabase-managed `cron` tables.
+- **15 anonymous-sign-in warnings.** Guest-mode policies `TO authenticated`: 8 scoped to the user's own rows, 5 `SELECT`-only on shared catalog tables (supermarket data and the ingredient-to-product match), plus two `pg_cron` tables that `anon` and `authenticated` cannot reach (no `USAGE` on the `cron` schema).
 - **Leaked password protection.** It needs Supabase Pro; `lib/validation/pwned-password.ts` covers it in the app.
 - **17 tables with RLS and no policy.** All are service-role-only tables, as documented, for example `stripe_webhook_events` in the data map.
 

@@ -562,7 +562,8 @@ either double-counts or silently drops data.
   transition does count normally.
 - Only the owning user can transition their own slot — enforced by the ownership join
   described in §2's feedback-loop flow, not by a role check (Fresco has no
-  admin/user role distinction anywhere).
+  database role for this; the only admin notion is the server-side
+  `ADMIN_USER_ID` allowlist, which never touches a user's slots).
 - A rating (1–5) only ever attaches to a `cocinada` transition, and it's always
   optional — the system has to keep learning from the unrated signal alone, since most
   toggles probably won't carry a rating.
