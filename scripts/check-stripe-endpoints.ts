@@ -26,6 +26,7 @@
 import { readFileSync } from 'node:fs';
 import Stripe from 'stripe';
 import { parse } from 'yaml';
+import { STRIPE_API_VERSION } from '../lib/stripe-api-version';
 
 export interface WebhookEndpoint {
   id: string
@@ -88,7 +89,7 @@ async function main(): Promise<number> {
     return 2;
   }
 
-  const stripe = new Stripe(key, { apiVersion: '2026-10-28.endive' });
+  const stripe = new Stripe(key, { apiVersion: STRIPE_API_VERSION });
   const endpoints: WebhookEndpoint[] = [];
   for await (const endpoint of stripe.webhookEndpoints.list({ limit: 100 })) {
     endpoints.push({ id: endpoint.id, url: endpoint.url, status: endpoint.status });

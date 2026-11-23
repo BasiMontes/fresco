@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { STRIPE_API_VERSION } from '@/lib/stripe-api-version';
 
 /**
  * FRESCO-1100 (audit 8 A8-TEST-01). `route.test.ts` replaces `stripe.webhooks.constructEvent`
@@ -25,7 +26,7 @@ const realStripeModule = await import('@/lib/stripe');
 // synchronous `constructEvent`, which is what Node runs in production (the `default` build). Load
 // that build, or every request would be refused for the wrong reason and these tests would pass blind.
 const { default: NodeStripe } = await import('../../../../node_modules/stripe/esm/stripe.esm.node.js') as { default: typeof import('stripe').default };
-const sdk = new NodeStripe('sk_test_fresco_1100', { apiVersion: '2026-10-28.endive' });
+const sdk = new NodeStripe('sk_test_fresco_1100', { apiVersion: STRIPE_API_VERSION });
 
 void mock.module('@/lib/stripe', () => ({
   ...realStripeModule,

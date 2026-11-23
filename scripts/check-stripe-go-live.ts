@@ -38,6 +38,7 @@ import { readFileSync } from 'node:fs';
 import Stripe from 'stripe';
 import { parse } from 'yaml';
 import { HANDLED_EVENT_TYPES } from '../lib/billing/handled-events';
+import { STRIPE_API_VERSION } from '../lib/stripe-api-version';
 
 export type CheckStatus = 'pass' | 'fail' | 'warn' | 'manual';
 
@@ -237,7 +238,7 @@ async function main(): Promise<number> {
     return 2;
   }
 
-  const stripe = new Stripe(key, { apiVersion: '2026-10-28.endive' });
+  const stripe = new Stripe(key, { apiVersion: STRIPE_API_VERSION });
   const checks: Check[] = [];
 
   const endpoints: EndpointInfo[] = [];

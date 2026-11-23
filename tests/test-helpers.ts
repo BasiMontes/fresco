@@ -1,6 +1,7 @@
 import type { APIRequestContext, Page } from '@playwright/test';
 import Stripe from 'stripe';
 import { LEGAL_TEXTS_VERSION } from '../lib/legal/consent';
+import { STRIPE_API_VERSION } from '../lib/stripe-api-version';
 import { mintSession, sessionLoginEnabled, signInBrowserViaSession } from './session-login';
 
 /**
@@ -144,7 +145,7 @@ export function remainingDaysOfCurrentWeek(): number {
 let cachedTestStripe: Stripe | undefined;
 
 function testStripe(): Stripe {
-  cachedTestStripe ??= new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-10-28.endive' });
+  cachedTestStripe ??= new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: STRIPE_API_VERSION });
   return cachedTestStripe;
 }
 
