@@ -1441,6 +1441,30 @@ function extractClosingCriteria(descriptionMarkdown: string): string {
     if (isFence) { inFence = !inFence; }
     if (capturing) { body.push(line); }
   }
+  const underHeading = body.join('\n').trim();
+  return underHeading || extractInlineClosingCriteria(descriptionMarkdown);
+}
+
+/** The label older cards use inside a paragraph: `Criterio de cierre: ...`. */
+const INLINE_CLOSING_CRITERIA_LABEL = /(?:^|[\s.])\**criterios?\s+de\s+(?:cierre|aceptaci[oó]n)\**\s*:\**\s*/i;
+
+/**
+ * Cards written before the heading convention end with a sentence such as
+ * `Criterio de cierre: una receta ... revisado por el dueño.` (audit 9, F1).
+ * Returns everything after that label up to the next heading, or '' without one.
+ */
+function extractInlineClosingCriteria(descriptionMarkdown: string): string {
+  const label = INLINE_CLOSING_CRITERIA_LABEL.exec(descriptionMarkdown);
+  if (!label) { return ''; }
+  const rest = descriptionMarkdown.slice(label.index + label[0].length).split('\n');
+  const body: string[] = [];
+  let inFence = false;
+  for (const line of rest) {
+    const isFence = /^\s*(?:```|~~~)/.test(line);
+    if (!inFence && !isFence && /^#{1,6}\s+\S/.test(line)) { break; }
+    if (isFence) { inFence = !inFence; }
+    body.push(line);
+  }
   return body.join('\n').trim();
 }
 

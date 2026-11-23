@@ -38,7 +38,7 @@ Anything not listed above does not belong in the description body.
 
 If you see either of these H2 headings in a description body, the story has a duplication bug. Run the audit below.
 
-`## Acceptance criteria` in English is not forbidden any more, but the canonical heading is `## Criterio de cierre`; the sync also accepts `## Criterios de cierre`, `## Criterios de aceptación` and `## Acceptance criteria`, so use the canonical one on new stories.
+`## Acceptance criteria` in English is not forbidden any more, but the canonical heading is `## Criterio de cierre`; the sync also accepts `## Criterios de cierre`, `## Criterios de aceptación` and `## Acceptance criteria`, so use the canonical one on new stories. For cards written before the heading convention, the sync also reads an inline `Criterio de cierre:` label (up to the next heading) so their `acceptance-criteria.md` is not empty; new stories use the heading.
 
 ---
 

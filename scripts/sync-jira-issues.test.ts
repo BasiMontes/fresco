@@ -314,6 +314,21 @@ describe('extractClosingCriteria', () => {
     expect(extractClosingCriteria(md)).toBe('```gherkin\n# comentario\n## no soy un titulo\nGiven algo\n```');
   });
 
+  test('falls back to the inline label older cards use, up to the end of the text', () => {
+    const md = 'Hoy la regla no existe. Fuera de alcance: regenerar. Criterio de cierre: una receta sin temporada no se puede guardar, y el informe está revisado.';
+    expect(extractClosingCriteria(md)).toBe('una receta sin temporada no se puede guardar, y el informe está revisado.');
+  });
+
+  test('the inline label stops at the next heading and accepts a bolded label', () => {
+    const md = ['Texto.', '', '**Criterios de aceptación:** uno', 'dos', '', '## Notas', 'otra cosa'].join('\n');
+    expect(extractClosingCriteria(md)).toBe('uno\ndos');
+  });
+
+  test('a heading section wins over an inline label', () => {
+    const md = ['Criterio de cierre: viejo', '', '## Criterio de cierre', '', 'nuevo'].join('\n');
+    expect(extractClosingCriteria(md)).toBe('nuevo');
+  });
+
   test('returns an empty string when the description has no such section', () => {
     expect(extractClosingCriteria('## Contexto\n\ntexto')).toBe('');
     expect(extractClosingCriteria('')).toBe('');
