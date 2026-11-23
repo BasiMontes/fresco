@@ -38,6 +38,7 @@ Concretely:
 - Cooked/discarded **application to future generation** is Pro-only: the menu-selection prompt only receives `historial_semanas` / recent-recipe-id history when the caller is a Pro user (FR-2.5, FR-5.4). Free-tier generation is, by construction, always stateless — not because the data doesn't exist, but because the prompt-building code never reads it in for that tier.
 - The invariant every feature must uphold: **no code path may pass Free-tier history into a generation prompt.** If this invariant is ever violated (even for a "small UX improvement"), the Free/Pro value distinction collapses and the pricing model no longer has a technical basis.
 - **Amendment (FRESCO-1128):** the recent-history exclusion is a preference for variety, not a reason to leave a menu slot empty. When it leaves a slot with nothing to choose from, the selector may repeat a recipe the user COOKED in the last two weeks, with an advertencia; a recipe the user DISCARDED is never repeated. History is still read only for Pro callers, so the invariant above is unchanged.
+- **Amendment (ADR-0071, 2026-11-23):** Pro also carries declared soft preferences (favourite cuisines, goal, cooking level) as a capped score nudge. The "table stakes" reasoning above still holds for the pricing line, and the moat remains the main reason to pay; see `ADR-0071-pro-soft-preferences-amend-the-moat.md`.
 
 ## Consequences
 

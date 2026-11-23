@@ -131,6 +131,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0068](./ADR-0068-recipe-season-also-reflects-the-dish.md) | A recipe's season also reflects when the dish is wanted: stews, soups and legume dishes go to autumn and winter | Accepted | — | — |
 | [ADR-0069](./ADR-0069-guest-email-change-needs-a-database-grant.md) | A guest's pending email can only be written with a one-shot database grant, created by the app route after captcha and limits | Accepted | — | — |
 | [ADR-0070](./ADR-0070-recipe-marks-outlive-their-week.md) | The cocinada and descartada marks of a week outlive that week: they are archived when a plan is deleted | Accepted | — | — |
+| [ADR-0071](./ADR-0071-pro-soft-preferences-amend-the-moat.md) | Pro adds soft menu preferences (cuisines, goal, level) next to the behavioral-learning moat; amends ADR-0001 | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first. `bun run adr:check` (part of `repo:check`) fails on a file missing from this table, a duplicate number, a status that disagrees with the file, or an ADR left `Proposed` for more than 14 days.
 

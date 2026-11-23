@@ -154,6 +154,7 @@ Traces to US 5.1, US 5.2, US 5.3 — **the product's core moat** (see ADR-0001).
 | 5 | Low rating (< 3) | `recipes.rating_promedio` | deprioritize |
 | 6 | High rating (> 4) | `recipes.rating_promedio` | prioritize |
 | 7 (softest) | Favorite cuisine | `user_profiles.cocinas_favoritas` | prefer, never force |
+| 7 (softest, same cap) | Goal and cooking level | `user_profiles.objetivo`, `user_profiles.nivel_experiencia` | prefer, never force; Pro/Family only. The combined span of every soft term is at most 1.0, and `perder_peso` / `ganar_masa_muscular` change nothing because the catalog has no calories or protein (ADR-0071) |
 
 **FR-5.5 — HARD GATE (Pro only): a visible, specific explanation of what changed must accompany a history-informed menu.**
 - **Related to:** EPIC-FRESCO-5, US 5.3
