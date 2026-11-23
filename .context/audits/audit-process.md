@@ -30,10 +30,21 @@ band and the remediation epics compete for the one person's time.
 Only **one** audit-remediation epic is open at any moment.
 
 The next pass does not start — and its epic is not created — until the current
-remediation epic is genuinely closed: **every child `Finalizada`, the epic
-`Finalizada`**, per the "Finalizada" definition in §3. This keeps the remediation
-backlog a single legible queue instead of three interleaved ones, and forces each
-pass's findings to actually land before the next pass piles on.
+remediation epic is genuinely closed: **every child `Finalizada` or `Rechazos`,
+the epic `Finalizada`**, per the "Finalizada" definition in §3. This keeps the
+remediation backlog a single legible queue instead of three interleaved ones, and
+forces each pass's findings to actually land before the next pass piles on.
+
+Two statuses need a rule, because neither is `Finalizada`:
+
+- **`Rechazos`** means the owner decided it will not be done. It is terminal for
+  this rule: a child there does not hold the epic open. §3 still requires an ADR
+  or a process note behind the rejection.
+- **`Aplazada`** means decided but blocked by money or by a consent that does not
+  exist yet. It does not count towards closing. When a remediation epic is about to
+  close, its `Aplazada` children move to the parked epic FRESCO-1261 ("Aparcado:
+  trabajo bloqueado por dinero o consentimiento"), with the blocking condition
+  written on the card. Decided by the owner on 2026-11-23 (audit 9, finding F5).
 
 If a pass must run while an epic is still open, its findings are **appended to the
 open epic**, not spun into a parallel one. An off-cycle pass is allowed in two cases:
