@@ -353,6 +353,27 @@ describe('estimateMenuCost', () => {
     expect(estimateMenuCost(emptyMenu(), { numPersonas: 4 })).toBe(0);
   });
 
+  // FRESCO-1269 (QAFRESCO-2) / FRESCO-1129: the budget warning is compared with this cost, so the days already over
+  // (generated on a Friday, Monday to Thursday come out excluded and arrive as empty cells) must add nothing.
+  // Each day uses a different product, because the estimate prices whole packs: one product repeated costs one pack.
+  test('los huecos excluidos o vacíos no suman: solo cuentan los días que quedan', () => {
+    const ingredientePorDia: Record<string, string> = { lunes: 'aceite de oliva', martes: 'garbanzos', miercoles: 'salmon', viernes: 'aceite de oliva' };
+    const receta = (nombre: string) => makeFixtureRecipe({ nombre: `Receta con ${nombre}`, ingredientes_principales: [nombre], meta: metaConRaciones(4) });
+    const entera = emptyMenu();
+    const desdeElViernes = emptyMenu();
+    entera.lunes.comida = receta(ingredientePorDia.lunes);
+    entera.martes.comida = receta(ingredientePorDia.martes);
+    entera.miercoles.comida = receta(ingredientePorDia.miercoles);
+    entera.viernes.comida = receta(ingredientePorDia.viernes);
+    desdeElViernes.viernes.comida = receta(ingredientePorDia.viernes);
+
+    const costeEntero = estimateMenuCost(entera, { numPersonas: 4 });
+    const costeRestante = estimateMenuCost(desdeElViernes, { numPersonas: 4 });
+
+    expect(costeRestante).toBeGreaterThan(0);
+    expect(costeRestante).toBeLessThan(costeEntero);
+  });
+
   test('un ingrediente con match real de Mercadona (aceite de oliva) produce el total esperado a mano', () => {
     const menu = emptyMenu();
     menu.lunes.comida = makeFixtureRecipe({

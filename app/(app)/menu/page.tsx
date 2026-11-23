@@ -15,7 +15,9 @@ import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
 import { hoyEnMadrid } from '@/lib/date/madrid-date';
 import { perfilCompraDesde } from '@/lib/grocery/product-compatibility';
 import { costeSemanalEstimado } from '@/lib/grocery/weekly-cost';
+import { advertenciasConPresupuesto, avisoPresupuesto } from '@/lib/menu/budget-warning';
 import { loadMenuPageData } from '@/lib/menu/load-menu-page-data';
+import { snapshotBudgetWarning } from '@/lib/menu/snapshot-budget-warning';
 import { snapshotWeeklyCost } from '@/lib/menu/snapshot-weekly-cost';
 import { formatSpendVsAverage } from '@/lib/menu/spend-vs-average';
 import { createClient } from '@/lib/supabase/server';
@@ -58,7 +60,7 @@ export default async function MenuPage() {
   const semanaIso = getIsoWeek();
   const mondayIso = getDateFromIsoWeek(semanaIso).toISOString().slice(0, 10);
 
-  const { nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences, hasUnseenNotifications, spendTrend, proPreview } = await loadMenuPageData(supabase, { userId: user?.id, semanaIso });
+  const { nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences, hasUnseenNotifications, spendTrend, proPreview, presupuestoSemanaEuros } = await loadMenuPageData(supabase, { userId: user?.id, semanaIso });
 
   if (!plan) {
     return (
@@ -84,6 +86,12 @@ export default async function MenuPage() {
   });
 
   snapshotWeeklyCost(supabase, { userId: user?.id, semanaIso, costeEstimado, spendTrend });
+
+  // FRESCO-1269 (QAFRESCO-2): the budget warning is computed from the figure the tile above shows, not from a
+  // second estimate made when the menu was generated, so the two can never disagree. It replaces any budget
+  // warning stored with the plan and is written back so `meal_plans.advertencias` holds what the user saw.
+  const advertencias = advertenciasConPresupuesto(plan.advertencias ?? [], avisoPresupuesto(costeEstimado, presupuestoSemanaEuros));
+  snapshotBudgetWarning(supabase, { mealPlanId: plan.mealPlanId, userId: user?.id, stored: plan.advertencias ?? [], shown: advertencias });
 
   const isAnonymous = user?.is_anonymous ?? false;
 
@@ -111,7 +119,7 @@ export default async function MenuPage() {
         />
       </div>
 
-      <MenuNotices plan={plan} isAnonymous={isAnonymous} proPreview={proPreview} />
+      <MenuNotices plan={{ ...plan, advertencias }} isAnonymous={isAnonymous} proPreview={proPreview} />
 
       {/* FRESCO-1000: the promise is "we filter by what each recipe declares", never "this is safe". */}
       <AllergenReminder />

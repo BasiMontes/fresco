@@ -23,7 +23,6 @@
 // SQL pre-filter (`get_filtered_recipes`) carries a stable `ORDER BY id`
 // so the candidate array itself is not a source of run-to-run variance.
 
-import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
 import type { DiaSemana, Recipe, Temporada, TipoPlatoSlot, UserProfile } from './types.ts'
 import { cuisineKey, favouriteCuisineKeys } from './cuisine.ts'
 import { buildGoalLevelContext, clampSoft, goalLevelAdjustment, recordGoalLevelPick } from './goal-level.ts'
@@ -34,19 +33,6 @@ const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 
 const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
 const WEEKEND_DIAS = new Set<DiaSemana>(['sabado', 'domingo'])
 const MAX_BREAKFAST_REPEATS = 3
-
-// Same approximate euro midpoints `validator.ts` used before this ADR — no
-// numeric per-recipe price exists in the schema (`recipe.meta.coste_estimado`
-// is a 4-value categorical enum). FRESCO-1009 (A7-LOGIC-03): the buckets are
-// PER PERSON (`.context/SRS/functional-requirements.md`: "< 2 EUR/person" ...
-// "implicitly scaled by household size"), so each slot's midpoint is
-// multiplied by `profile.num_personas` before it is compared with the budget.
-const BUCKET_MIDPOINT_EUROS: Record<CosteEstimado, number> = {
-  muy_bajo: 1.5,
-  bajo: 3,
-  medio: 5,
-  alto: 8,
-}
 
 /**
  * FRESCO-1226: score bonus for a recipe whose cuisine the user marked as a favourite (Pro/Family only, FR-5.4).
@@ -244,7 +230,6 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
   const rng = makeSeededRng(seed)
   const excluded = new Set(recentRecipeIds)
   const pool = candidates.filter(r => !excluded.has(r.id))
-  const recipeById = new Map(candidates.map(r => [r.id, r]))
 
   const byTipo = new Map<TipoPlatoSlot, Recipe[]>(
     TIPOS.map(tipo => [tipo, pool.filter(r => r.clasificacion?.tipo_plato === tipo)]),
@@ -387,43 +372,9 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
     }
   }
 
-  // AC Scenario 2/5: structural budget check, soft-warn only (Decision 1 —
-  // never a hard-fail/retry gate, same as before this ADR).
-  if (profile.presupuesto_semana_euros != null) {
-    let totalEuros = 0
-    let costeDesconocido = 0
-    // The DB CHECK keeps it 1..10; a missing or odd value counts as one person, never zero.
-    const personas = Number.isFinite(profile.num_personas) && profile.num_personas >= 1 ? profile.num_personas : 1
-    for (const dia of DIAS) {
-      for (const tipo of TIPOS) {
-        const recipeId = menu[dia][tipo]
-        if (recipeId === NO_SAFE_RECIPE_SENTINEL || recipeId === SLOT_EXCLUDED_SENTINEL) continue
-        const coste = recipeById.get(recipeId)?.meta?.coste_estimado
-        // A4-L10: `BUCKET_MIDPOINT_EUROS[coste]` is `undefined` for a missing
-        // bucket OR a value outside the 4-key enum (bad/new data). Adding
-        // that turns `totalEuros` into `NaN`, `NaN > budget` is `false`, and
-        // the over-budget warning silently vanishes. Look the midpoint up
-        // explicitly; count an unknown slot as the cheapest bucket (keeps the
-        // total a lower bound) and surface the imprecision.
-        const midpoint = coste ? BUCKET_MIDPOINT_EUROS[coste] : undefined
-        if (midpoint != null) {
-          totalEuros += midpoint * personas
-        } else {
-          totalEuros += BUCKET_MIDPOINT_EUROS.muy_bajo * personas
-          costeDesconocido++
-        }
-      }
-    }
-    if (totalEuros > profile.presupuesto_semana_euros) {
-      const overage = totalEuros - profile.presupuesto_semana_euros
-      advertencias.push(`El menú supera tu presupuesto semanal en aproximadamente ${overage.toFixed(2)}€`)
-    }
-    if (costeDesconocido > 0) {
-      advertencias.push(
-        `El cálculo de presupuesto es aproximado: ${costeDesconocido} ${costeDesconocido === 1 ? 'receta no tiene' : 'recetas no tienen'} coste estimado.`,
-      )
-    }
-  }
+  // FRESCO-1269 (QAFRESCO-2): there is no budget check here any more. The warning is computed on `/menu` from the
+  // same estimate the "Gasto semanal estimado" tile shows (`lib/menu/budget-warning.ts`); a second estimate made
+  // from recipe cost buckets disagreed with the tile and let a menu over budget through without a warning.
 
   return { menu, advertencias }
 }
