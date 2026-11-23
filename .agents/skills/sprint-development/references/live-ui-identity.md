@@ -86,7 +86,7 @@ Live-UI work is normally done by a stage subagent, which does not read this file
 1. The resolved identity, BY VARIABLE NAME (`log in with process.env.<EMAIL_VAR> / <PASSWORD_VAR>`), never the value.
 2. The §3 prohibition list, restated — at minimum: "never obtain a session through a privileged key, an admin/user-management API, a generated link, a hand-crafted token, or any account other than the declared identity; if the declared identity fails, STOP and report".
 3. The §4 hygiene contract plus the two mandatory report fields.
-4. The browser-session rules: one named in-memory `/playwright-cli` session per identity, credentials typed only as `--raw fill <ref> "$VAR"`, every session closed before reporting with `playwright-cli list` as proof (`live-ui-validation.md` §3, §6).
+4. The browser-session rules: one named in-memory `/playwright-cli` session per identity, credentials typed only as `--raw fill <ref> "$VAR"`, the login form submitted with `run-code` (never `click`, `press` or `fill --submit`, which write the typed value into a snapshot file), no `snapshot` or `goto` while a credential field is filled, a count-only scan of `.playwright/` for the value after every login, every session closed before reporting with `playwright-cli list` as proof (`live-ui-validation.md` §3, §6).
 
 An orchestrator that dispatches live-UI work without these four lines has not delegated the rule, and the executor is free to improvise. That is the failure this contract exists to close.
 

@@ -83,8 +83,10 @@ playwright-cli -s=<KEY> open <web url>/login
 playwright-cli -s=<KEY> snapshot                                  # find the field refs
 bunx varlock run -- sh -c 'playwright-cli -s=<KEY> --raw fill <email-ref> "$QA_E2E_USER_EMAIL"'
 bunx varlock run -- sh -c 'playwright-cli -s=<KEY> --raw fill <password-ref> "$QA_E2E_USER_PASSWORD"'
-playwright-cli -s=<KEY> click <submit-ref>
-playwright-cli -s=<KEY> --raw eval "location.href"                # landed past the login page?
+# Submit with run-code: click, press and fill --submit write a snapshot holding the typed values (raw or not), run-code writes none.
+playwright-cli -s=<KEY> run-code "async page => { await page.keyboard.press('Enter'); }"
+playwright-cli -s=<KEY> --raw eval "location.href"                # landed past the login page? (eval --raw writes no snapshot; on a failed login, `close` the session now, do not snapshot a filled form)
+bunx varlock run -- sh -c 'rg -c -F --hidden --no-ignore -- "$QA_E2E_USER_PASSWORD" .playwright 2>/dev/null | awk -F: "{s+=\$NF} END{print s+0}"'   # count only: must print 0
 playwright-cli -s=<KEY> goto <web url>/<story-screen-route>
 playwright-cli -s=<KEY> screenshot --full-page --filename <story evidence dir>/<screen>-default.png
 # repeat for loading / empty / error states + responsive breakpoints (§4; `resize <w> <h>`)
@@ -92,6 +94,7 @@ playwright-cli -s=<KEY> close
 playwright-cli list                                               # <KEY> is gone
 ```
 
+- **`--raw` hides the echo of a command, not the snapshot file it may write.** After `click`, `press` and `fill --submit` (with or without `--raw`) the CLI writes a page snapshot to `.playwright/output/page-*.yml` that holds the typed value in plain text; `--raw fill`, `--raw eval`, `run-code` and `screenshot` write none. So while a credential field is filled use only those four, submit with `run-code`, and never `snapshot`, `click`, `press` or `goto` until the form is gone. The folder is gitignored, but the ephemeral-artifact contract forbids session material even in ignored repo paths. After every login run the count-only scan of the recipe above (it prints a number, never the value); a number other than 0 means delete the `page-*.yml` files that hold it (`rg -l -F` names them), and report it as `secrets_materialized: credentials` with `cleaned:`.
 - **`--raw fill <ref> "$VAR"` is the only way a credential is typed.** `fill` echoes what it typed in its "Ran Playwright code" block; the shell expands the variable, the command text carries only its NAME, and `--raw` suppresses the echo.
 - The variables are never in the agent's own process: the harness is opened bare and holds no `.env` value (ADR-0016). Every command that needs one runs through the loader in a subprocess, `bunx varlock run -- sh -c '...'`, with the single quotes keeping `$VAR` unexpanded until varlock has loaded `.env`.
 - After the login, verify WHICH account is signed in (a profile menu, `/me`, the user's email on screen) before trusting any result. A login page after `goto` means the session expired: log in again through the same form, never through a shortcut from `live-ui-identity.md` §3.
