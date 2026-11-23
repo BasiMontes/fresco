@@ -71,7 +71,7 @@ Both are closed at the source. Question for the author: was the `Claude-Session:
 
 ### F9. 52 of 213 e2e scenarios are not tagged automated (Verification, question)
 
-`regression.feature`: 213 scenarios, 161 tagged `@automatizado`, 3 `@pendiente`, 11 `@smoke`. I did not classify the other 52 (some will be `@requiere-captcha-off` or real-Stripe by design). Question: which of them are intentionally manual?
+`regression.feature`: 213 scenarios, 161 tagged `@automatizado`, 3 `@pendiente`, 11 `@smoke`. *(Correction, 2026-11-23, FRESCO-1260: re-measured per scenario, 154 are tagged `@automatizado` and none is `@pendiente`; the 161 and the 3 counted mentions inside comments. 59 were not automated, not 52. Now all 213 are classified; see `.context/qa/README.md`.)* I did not classify the other 52 (some will be `@requiere-captcha-off` or real-Stripe by design). Question: which of them are intentionally manual?
 
 ### Observations that are not findings
 
