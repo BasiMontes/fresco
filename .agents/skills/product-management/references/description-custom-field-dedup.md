@@ -1,6 +1,6 @@
 # Description ↔ Custom Field Deduplication
 
-> **Purpose**: Codify the single-source-of-truth contract between the Jira issue description body and the dedicated rich-text custom fields. AC / Scope / Out-of-Scope content lives in its own custom field, NEVER in the description body. The downstream product backlog surfaced widespread duplication during Pass 2 refinement — every workflow that writes to a story must respect this contract or the duplication returns.
+> **Purpose**: Codify the single-source-of-truth contract between the Jira issue description body and the dedicated rich-text custom fields. Scope / Out-of-Scope content lives in its own custom field, NEVER in the description body. The acceptance criteria are the exception (FRESCO-1253): they live in the description under `## Criterio de cierre`, NEVER in the legacy `{{jira.acceptance_criteria}}` field. The downstream product backlog surfaced widespread duplication during Pass 2 refinement — every workflow that writes to a story must respect this contract or the duplication returns.
 > **Use when**: Authoring a new story, refining an existing one, or auditing a story before the ready-for-dev gate.
 > **Companion references**: `story-refinement.md` (ready-for-dev gate calls the audit below), `acceptance-criteria.md`, `epic-creation.md`, `add-feature.md`, `product-backlog-seed.md`, `jira-publishing-gotchas.md` (publishing edge cases).
 
@@ -8,7 +8,7 @@
 
 ## Why this contract exists
 
-Storing AC / Scope / Out-of-Scope inside the description body creates two copies of the same content: one in the description, one in the dedicated custom field. The two drift. Downstream consumers (sprint-report, sprint-development planning, QA test design) read the custom fields — anything that lives only in the description becomes invisible. Anything that lives in both creates a "which one is correct?" coin toss. One canonical home per concept.
+Storing a concept in two places creates two copies that drift: a "which one is correct?" coin toss. One canonical home per concept. Scope / Out-of-Scope live in their custom fields. The acceptance criteria live in the description because the `{{jira.acceptance_criteria}}` field caps at 255 characters, which real Gherkin scenarios exceed; on the board, 77 % of the cards created since 2026-10-08 already carry them in the description and none in the field (audit 9, F1, FRESCO-1253). `scripts/sync-jira-issues.ts` reads the `## Criterio de cierre` section of the description into `acceptance-criteria.md`, and falls back to the legacy field only when the section is absent, so downstream consumers (sprint-report, sprint-development planning, QA test design) read the synced file and see the same text.
 
 ---
 
@@ -20,9 +20,10 @@ In this order, top to bottom:
 2. **`## User story`** — As / I want / So that narrative. Always present.
 3. **`## Business rules`** — overflow only. Use when content does not fit in `{{jira.business_rules_specification}}` (e.g. tables, long enumerations, embedded diagrams). The custom field remains canonical; this section explicitly references it.
 4. **`## Workflow`** — overflow only. Same rule as Business rules: use when content does not fit in `{{jira.workflow}}`.
-5. **`## Definition of done`** — closing checklist. Lives in the body because no dedicated field exists for it.
-6. **`## Mockup`** — optional. Link or embedded image.
-7. **`## Technical notes`** — optional. Architecture hints, library choices, migration notes for the implementing dev.
+5. **`## Criterio de cierre`** — the acceptance criteria: Gherkin scenarios, each wrapped in a fenced ` ```gherkin ` block (anti-pattern `I17`). Always present on a story that is ready for development.
+6. **`## Definition of done`** — closing checklist. Lives in the body because no dedicated field exists for it.
+7. **`## Mockup`** — optional. Link or embedded image.
+8. **`## Technical notes`** — optional. Architecture hints, library choices, migration notes for the implementing dev.
 
 Anything not listed above does not belong in the description body.
 
@@ -32,11 +33,12 @@ Anything not listed above does not belong in the description body.
 
 | Forbidden section | Canonical home |
 |---|---|
-| `## Acceptance criteria` | `{{jira.acceptance_criteria}}` |
 | `## Scope` | `{{jira.scope}}` |
 | `## Out of scope` | `{{jira.out_of_scope}}` |
 
-If you see any of these H2 headings in a description body, the story has a duplication bug. Run the audit below.
+If you see either of these H2 headings in a description body, the story has a duplication bug. Run the audit below.
+
+`## Acceptance criteria` in English is not forbidden any more, but the canonical heading is `## Criterio de cierre`; the sync also accepts `## Criterios de cierre`, `## Criterios de aceptación` and `## Acceptance criteria`, so use the canonical one on new stories.
 
 ---
 
@@ -50,14 +52,15 @@ If you see any of these H2 headings in a description body, the story has a dupli
 
 Called from `story-refinement.md` ready-for-dev gate. Returns a structured report to the user.
 
-1. Fetch the story via `[ISSUE_TRACKER_TOOL]`. Include the description body AND the three dedicated custom fields: `{{jira.acceptance_criteria}}`, `{{jira.scope}}`, `{{jira.out_of_scope}}`.
-2. Parse the description body. Detect any of the forbidden H2 sections: `## Acceptance criteria`, `## Scope`, `## Out of scope`. Case-insensitive match; variants like `## ACs` or `## Acceptance Criteria` all count.
+1. Fetch the story via `[ISSUE_TRACKER_TOOL]`. Include the description body AND the dedicated custom fields: `{{jira.scope}}`, `{{jira.out_of_scope}}`, and the legacy `{{jira.acceptance_criteria}}`.
+2. Parse the description body. Detect any of the forbidden H2 sections: `## Scope`, `## Out of scope`. Case-insensitive match.
 3. For each forbidden section found:
    - Read the section content.
    - Read the corresponding canonical custom field.
    - Compare. If the content is already canonical (substantively identical or strictly contained) → mark as "safe to strip".
    - If the content is NOT canonical (description has more, or the custom field is empty) → **migrate first**: write the missing content into the custom field, then mark as "safe to strip".
 4. Strip every forbidden section from the description body. Preserve everything else verbatim.
+   - **Acceptance criteria**: the description must carry exactly one `## Criterio de cierre` section. If it is missing and the legacy `{{jira.acceptance_criteria}}` field has content, **migrate first**: write the field's content into a new `## Criterio de cierre` section of the description (same single write as step 5), and leave the legacy field untouched. If both exist and differ, surface the difference to the user instead of picking one.
 5. Use `[ISSUE_TRACKER_TOOL]` to update the description — single write, no batching with the custom fields (see `jira-publishing-gotchas.md` Gotcha 2).
 6. Surface to the user, in one structured report:
    - Which forbidden sections were detected.
@@ -70,7 +73,7 @@ If no forbidden sections are detected, return a one-line "description body is cl
 
 ## Anti-patterns
 
-- NEVER copy AC / Scope / Out-of-Scope content into the description body "for visibility". The custom fields ARE the visibility layer; the description body is for narrative + DoD only.
+- NEVER copy Scope / Out-of-Scope content into the description body "for visibility". Their custom fields ARE the visibility layer. The acceptance criteria are the reverse: they belong in the description body, and NEVER in the legacy `{{jira.acceptance_criteria}}` field.
 - NEVER mix in-scope bullets and out-of-scope bullets inside the same field. Each field has exactly one direction.
 - NEVER strip a forbidden section from the description without first verifying the content exists in the canonical custom field. Silent data loss is the worst outcome of this audit.
 - NEVER batch the description update with the custom-field updates in a single MCP call — Gotcha 2 in `jira-publishing-gotchas.md` will reject it.
@@ -80,4 +83,4 @@ If no forbidden sections are detected, return a one-line "description body is cl
 
 ## Hand-off
 
-Refinement workflows (`story-refinement.md`, `add-feature.md` Phase 2B, `product-backlog-seed.md`) call this audit before transitioning a story to Ready for Dev. Sprint-report and other read-only consumers do NOT modify state, but they must still respect the contract: read AC / Scope / Out-of-Scope from the dedicated custom fields, never from the description body. Treating the description body as authoritative for those three concepts is itself a bug — it accepts duplication that this audit is designed to eliminate.
+Refinement workflows (`story-refinement.md`, `add-feature.md` Phase 2B, `product-backlog-seed.md`) call this audit before transitioning a story to Ready for Dev. Sprint-report and other read-only consumers do NOT modify state, but they must still respect the contract: read Scope / Out-of-Scope from the dedicated custom fields and the acceptance criteria from the description's `## Criterio de cierre` section (through the synced `acceptance-criteria.md`), with the legacy field as a fallback only. Treating the description body as authoritative for Scope / Out-of-Scope is itself a bug — it accepts duplication that this audit is designed to eliminate.

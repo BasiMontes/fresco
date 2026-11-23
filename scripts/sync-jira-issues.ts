@@ -1367,11 +1367,12 @@ function renderFieldFile(
   spec: FieldFileSpec,
   content: string,
   config: Config,
+  source?: string,
 ): string {
   return [
     `# ${issueKey} — ${spec.title}`,
     '',
-    `> Jira field: \`${CUSTOM_FIELDS[spec.key]}\` · [View in Jira](${config.displayUrl}/browse/${issueKey})`,
+    `> ${source ?? `Jira field: \`${CUSTOM_FIELDS[spec.key]}\``} · [View in Jira](${config.displayUrl}/browse/${issueKey})`,
     '',
     content.trim(),
     '',
@@ -1406,6 +1407,43 @@ function renderFieldStub(
   ].join('\n');
 }
 
+/** Headings that open the acceptance-criteria section of a story description. */
+const CLOSING_CRITERIA_HEADING = /^(#{1,6})\s+(?:criterios?\s+de\s+cierre|criterios?\s+de\s+aceptaci[oó]n|acceptance\s+criteria)\s*$/i;
+
+/**
+ * Pulls the acceptance criteria out of a story description (FRESCO-1253: the
+ * description, under `## Criterio de cierre`, is the canonical home; the
+ * `acceptance_criteria` custom field is a legacy fallback). Returns the section
+ * body without its heading, up to the next heading of the same or a higher level,
+ * or '' when the description has no such section. Headings inside fenced code
+ * blocks are ignored, so a Gherkin comment (`# ...`) never ends the section.
+ */
+function extractClosingCriteria(descriptionMarkdown: string): string {
+  const lines = descriptionMarkdown.split('\n');
+  let inFence = false;
+  let level = 0;
+  const body: string[] = [];
+  let capturing = false;
+  for (const line of lines) {
+    const isFence = /^\s*(?:```|~~~)/.test(line);
+    if (!inFence && !isFence) {
+      const heading = /^(#{1,6})\s+\S/.exec(line);
+      if (capturing && heading && heading[1].length <= level) { break; }
+      if (!capturing) {
+        const open = CLOSING_CRITERIA_HEADING.exec(line);
+        if (open) {
+          capturing = true;
+          level = open[1].length;
+          continue;
+        }
+      }
+    }
+    if (isFence) { inFence = !inFence; }
+    if (capturing) { body.push(line); }
+  }
+  return body.join('\n').trim();
+}
+
 /**
  * Materializes the per-field files for an issue into `folder`. Returns the specs
  * actually written (field non-empty) so the index can link them.
@@ -1421,6 +1459,19 @@ function syncFieldFiles(
 ): FieldFileSpec[] {
   const present: FieldFileSpec[] = [];
   for (const spec of specs) {
+    // Acceptance criteria live in the description (FRESCO-1253); the custom field
+    // is only the fallback for stories written before that convention.
+    if (spec.key === 'acceptanceCriteria') {
+      const fromDescription = extractClosingCriteria(adfToMarkdown(fields.description));
+      if (fromDescription) {
+        const filePath = join(folder, spec.file);
+        const status = writeFieldFile(filePath, renderFieldFile(issueKey, spec, fromDescription, config, 'Source: description, section `Criterio de cierre`'), dryRun);
+        if (status === 'created') { result.files.created++; }
+        else { result.files.updated++; }
+        present.push(spec);
+        continue;
+      }
+    }
     // Field not configured in this Jira instance → emit a fallback-pointer stub
     // so the dedicated file path is predictable and skills know to read the
     // fallback (comments/description) instead.
@@ -3761,6 +3812,7 @@ export {
   classifyQaArtifactEpic,
   DEFAULT_QA_ARTIFACT_LABEL,
   defaultSweepEntries,
+  extractClosingCriteria,
   higherAltitudeLabel,
   outOfScopeTypeNames,
 };

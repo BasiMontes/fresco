@@ -42,7 +42,7 @@ Jira numeric IDs (`customfield_NNNNN`) vary per workspace and DO NOT live in thi
 
 **Slugs this workflow writes** (semantics of each field):
 
-- `{{jira.acceptance_criteria}}` — Given/When/Then scenarios. Single source of truth for AC.
+- Description section `## Criterio de cierre` — Given/When/Then scenarios. Single source of truth for AC (FRESCO-1253); the `{{jira.acceptance_criteria}}` field is a legacy read-only fallback.
 - `{{jira.business_rules_specification}}` — story-specific business rules (validations, domain invariants).
 - `{{jira.scope}}` — in-scope only. Excluded items go to `out_of_scope`.
 - `{{jira.out_of_scope}}` — explicit exclusions, complementary to `scope` (no cross-pollination).
@@ -83,7 +83,7 @@ The same rule applies to the epic summary.
 
 ## No content duplication — description ↔ custom fields
 
-**Hard rule:** AC, Scope, and Out-of-Scope live **EXCLUSIVELY** in their slug-resolved custom fields. The issue description NEVER carries `## Acceptance Criteria`, `## Scope`, or `## Out of Scope` as H2 sections.
+**Hard rule:** Scope and Out-of-Scope live **EXCLUSIVELY** in their slug-resolved custom fields; the issue description NEVER carries `## Scope` or `## Out of Scope` as H2 sections. The acceptance criteria are the opposite (FRESCO-1253): they live in the description under `## Criterio de cierre`, never in the legacy `{{jira.acceptance_criteria}}` field.
 
 The description body carries:
 
@@ -91,6 +91,7 @@ The description body carries:
 - `## User story` — As/I want/So that narrative.
 - `## Business rules` — overflow only when the content does not fit in `{{jira.business_rules_specification}}`.
 - `## Workflow` — overflow only when the content does not fit in `{{jira.workflow}}`.
+- `## Criterio de cierre` — the acceptance criteria: minimum 3 Given/When/Then scenarios (1 happy + 2 error/edge), each in a ```gherkin code-fence (anti-pattern `I17`), persona-observable language (anti-pattern `I15`).
 - `## Definition of done` — closing checklist.
 - Optional: `## Mockups / Wireframes`, `## Technical notes`.
 
@@ -243,7 +244,7 @@ Before classifying, ask yourself:
 - **Project:** PROJECT_KEY resolved from `.agents/project.yaml`.
 - **Issue type:** Story.
 - **Summary:** Pattern `{Feature} | {Action}` (see "Summary nomenclature"). No functional-spec prefix; no `As a … so that …` sentence in the summary — that goes in the body `## User story`.
-- **Description (body):** first line `**Source spec:** FR-XXX` when applicable. Body contains `## User story`, `## Definition of done`, and optional overflow for business rules / workflow / mockups / technical notes. **NEVER** include `## Acceptance Criteria`, `## Scope`, or `## Out of Scope` — those live in custom fields (see "No content duplication").
+- **Description (body):** first line `**Source spec:** FR-XXX` when applicable. Body contains `## User story`, `## Definition of done`, and optional overflow for business rules / workflow / mockups / technical notes. Also `## Criterio de cierre` (the acceptance criteria). **NEVER** include `## Scope` or `## Out of Scope` — those live in custom fields (see "No content duplication").
 - **Epic Link:** Jira key of the parent epic identified in Step 1.
 - **Priority:** High | Medium | Low.
 - **Labels:** `feature-extension`, `post-mvp` (adjust as appropriate).
@@ -252,7 +253,6 @@ Before classifying, ask yourself:
 
 | Slug                                       | Content                                                                          |
 | ------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `{{jira.acceptance_criteria}}`     | Minimum 3 Given/When/Then scenarios (1 happy + 2 error/edge). Each scenario wrapped in a ```gherkin code-fence (anti-pattern `I17`). Persona-observable language; no endpoints, HTTP codes, table names, framework names (anti-pattern `I15`). |
 | `{{jira.scope}}`                           | In-scope only (bullet list). Bullets describe capabilities the persona gains, not endpoints / tables / services (anti-pattern `I15`). |
 | `{{jira.out_of_scope}}`                    | Explicit exclusions (complementary to `scope`, no cross-pollination), also in capability voice. |
 | `{{jira.story_points}}`                    | **OPT-IN ONLY**. Leave EMPTY unless the user explicitly requested estimation in this session. When opted-in: Fibonacci (1, 2, 3, 5, 8); 13+ → split. See anti-pattern `I16`. |
@@ -474,7 +474,7 @@ If PROJECT_KEY = "MYM", the parent epic is "MYM-13", and Jira assigned issue num
 
 **Important notes:**
 
-- **AC, Scope, Out-of-Scope are NOT replicated in `story.md`** — they live only in their custom fields Jira-side and sync into their own per-field files (`acceptance-criteria.md`, `scope.md`, `out-of-scope.md`). See `references/description-custom-field-dedup.md`.
+- **Scope and Out-of-Scope are NOT replicated in `story.md`** — they live only in their custom fields Jira-side and sync into their own per-field files (`scope.md`, `out-of-scope.md`). The acceptance criteria live in the description's `## Criterio de cierre` section and sync into `acceptance-criteria.md`. See `references/description-custom-field-dedup.md`.
 - `## Business Rules`, `## Workflow`, `## Mockups` are sourced from their Jira slugs and emitted by the sync — they are never edited locally; edit the Jira field and re-sync.
 
 **Synced output:** `.context/PBI/epics/EPIC-[...]/stories/STORY-[...]/story.md` (+ per-field files).
@@ -618,7 +618,6 @@ This emits the canonical `.context/PBI/epics/EPIC-{PROJECT_KEY}-{EPIC_NUM}-{slug
 
 | Slug                                       | Content                                                                          |
 | ------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `{{jira.acceptance_criteria}}`     | Given/When/Then scenarios, wrapped in a ` ```gherkin ` fenced code block (anti-pattern `I17`). Persona-observable language; no endpoints, HTTP codes, table names, framework names (anti-pattern `I15`). |
 | `{{jira.scope}}`                           | In-scope only. Capabilities, not endpoints (anti-pattern `I15`).                                 |
 | `{{jira.out_of_scope}}`                    | Explicit exclusions. Deferred capabilities, not deferred endpoints (anti-pattern `I15`).                    |
 | `{{jira.story_points}}`                    | **EMPTY by default** (anti-pattern `I16`) — only populate when the user explicitly asked for estimation. If opted-in: Fibonacci 1, 2, 3, 5, 8; 13+ → split. |
@@ -723,7 +722,7 @@ bun run jira:sync-issues pull --epic {PROJECT_KEY}-{EPIC_NUM}
 
 **IMPORTANT:**
 
-- AC / Scope / Out-of-Scope are NOT in `story.md` — they sync into their own per-field files (`acceptance-criteria.md`, `scope.md`, `out-of-scope.md`) from the Jira custom fields.
+- Scope / Out-of-Scope are NOT in `story.md` — they sync into their own per-field files (`scope.md`, `out-of-scope.md`) from the Jira custom fields; `acceptance-criteria.md` is extracted from the description's `## Criterio de cierre` section.
 - `Blocked By` / `Blocks` in each `story.md` must match the issue links created in Step 8. A mismatch means the link is wrong in Jira — fix the link, then re-sync. Never edit the local file.
 - Wrong content (missing source spec, leaked impl detail) → fix the Jira field (create / REST PUT per `references/jira-operations.md`), then re-run the sync.
 

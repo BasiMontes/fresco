@@ -27,7 +27,7 @@ Jira rich-text fields require ADF (a structured JSON document, not Markdown). Th
 
 ## Gotcha 2 — MCP rejects batched ADF custom fields
 
-- **Symptom**: The error message `Operation value must be an Atlassian Document (see the Atlassian Document Format)` returned from `[ISSUE_TRACKER_TOOL]` when updating multiple rich-text custom fields in a single call (e.g. `{{jira.acceptance_criteria}}` + `{{jira.scope}}` + `{{jira.out_of_scope}}` together).
+- **Symptom**: The error message `Operation value must be an Atlassian Document (see the Atlassian Document Format)` returned from `[ISSUE_TRACKER_TOOL]` when updating multiple rich-text custom fields in a single call (e.g. `{{jira.scope}}` + `{{jira.out_of_scope}}` + `{{jira.business_rules_specification}}` together).
 - **Cause**: The MCP variant of `[ISSUE_TRACKER_TOOL]` auto-converts Markdown → ADF only for the top-level `description` field. Custom fields passed inside an `additional_fields` payload are forwarded as-is, so the Jira API receives raw Markdown strings where it expects ADF JSON and rejects the whole update.
 - **Workaround A — split the update**: issue one update call per ADF custom field. Slower but simple and resilient. Default to this when touching 2+ rich-text custom fields.
 - **Workaround B — pre-convert each value**: run each Markdown value through the converter at `.agents/skills/acli/scripts/md-to-adf.ts` and pass the resulting ADF JSON directly inside `additional_fields`. Faster but couples the workflow to converter internals.

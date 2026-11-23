@@ -197,7 +197,7 @@ This creates the canonical folder + `epic.md` index plus one Markdown file per n
 
 ## No content duplication
 
-> **Callout — applies to the epic body AND every child story.** The epic description body MUST NOT duplicate content that belongs in dedicated custom fields on child stories (Acceptance Criteria, In Scope, Out of Scope). The epic body carries narrative + outcomes; the AC / Scope / OOS detail lives on each child story in its dedicated custom field, NOT inside the description text. See `references/description-custom-field-dedup.md` for the full rule and examples. Rich-text encoding pitfalls when writing any of these fields: `references/jira-publishing-gotchas.md`.
+> **Callout — applies to the epic body AND every child story.** The epic description body MUST NOT duplicate content that belongs in dedicated custom fields on child stories (In Scope, Out of Scope) or in their description (Acceptance Criteria, FRESCO-1253). The epic body carries narrative + outcomes; the AC / Scope / OOS detail lives on each child story (AC in its description, Scope / OOS in their dedicated custom fields), NOT inside the epic text. See `references/description-custom-field-dedup.md` for the full rule and examples. Rich-text encoding pitfalls when writing any of these fields: `references/jira-publishing-gotchas.md`.
 
 ---
 
@@ -373,7 +373,7 @@ Epic-level ACs are **outcomes**, not test scenarios. They describe what must be 
 4. ✅ All N user stories under this epic are marked Done
 ```
 
-Story-level ACs (Gherkin Scenario / Given-When-Then) live in each story's `{{jira.acceptance_criteria}}` custom field in Jira and sync into the story's per-field `acceptance-criteria.md` cache — never into `epic.md`. Do not duplicate them at the epic level. Refinement details: `references/acceptance-criteria.md`.
+Story-level ACs (Gherkin Scenario / Given-When-Then) live in each story's description under `## Criterio de cierre` in Jira and sync into the story's per-field `acceptance-criteria.md` cache — never into `epic.md`. Do not duplicate them at the epic level. Refinement details: `references/acceptance-criteria.md`.
 
 ---
 
