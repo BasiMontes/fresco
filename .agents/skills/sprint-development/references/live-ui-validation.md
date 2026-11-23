@@ -111,6 +111,15 @@ A storage-state file, a cookie value and a request's `Authorization` header are 
 - Under the shipped config two session names never share a profile, so **the name IS the isolation**: one name per worker, nothing on disk to clean.
 - Rule §3.2.3 binds across the fleet: the orchestrator serializes workers that need the same identity, or declares a second identity for the parallel one.
 
+### 3.6 Deployed environments: the login captcha (decision of 2026-11-23, FRESCO-1275)
+
+Since FRESCO-799 (2026-10-05) the hosted Supabase Auth requires a Cloudflare Turnstile token for every password sign-in, from the `/login` form and from the API alike. Turnstile shows an interactive checkbox that a headless session does not solve. So **on a deployed environment (`fresco-dev`, `fresco-pre`, `fresco-pro`) an agent cannot log in with the declared identity, and that is a known limit, not a defect to work around.** Audits 9 and 10 both ended with the authenticated half unmeasured for this reason.
+
+- **Where authenticated screens are checked: the local stack, which has no captcha.** Start it as the README does (`supabase start`, `supabase db reset`, `bun scripts/seed-e2e-users.ts`, then `cat .env.ci >> .env`, restoring `.env` afterwards) and run `{{stack.package_manager}} run {{stack.scripts.dev}}`. Log in through the app's own form as one of the fixed accounts the seed script creates (its header names them). Free and Pro screens both exist there.
+- **What the local stack cannot show:** anything that belongs to the deployment itself (Vercel behaviour, hosted Auth settings, the hosted CORS allowlist, the real catalog). Those have their own checks: the post-deploy smoke, `scripts/check-hosted-auth-settings.ts` and the Edge-function drift gate.
+- **If a run on a deployed environment reaches the Turnstile checkbox: STOP and report it.** Do not wait for the token, do not click the challenge, do not look for another way in. A captcha is not a reason to reach for a privileged path: `live-ui-identity.md` §3 stays in force, so no service-role key, no generated link and no hand-made session. A human may tick the box in a headed session if the owner wants a look at the deployed UI, as an exception that is theirs to grant.
+- An anonymous visit of a deployed environment (public pages, the login page itself) is not affected: that is case (a) of §3.1.
+
 ---
 
 ## 4. Per-screen validation checklist
