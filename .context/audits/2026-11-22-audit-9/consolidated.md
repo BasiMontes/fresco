@@ -56,7 +56,7 @@ So criteria exist in most recent cards, but in the description, under a heading 
 
 ### F6. History carries two things the current rules forbid (Traceability, LOW, historical)
 
-- **340 commits** have a `Claude-Session:` trailer, between 2026-08-29 and 2026-10-14. `AGENTS.md` rule 3 forbids that trailer now. **Zero** since 2026-10-15; the `Session:` forensic trailer replaced it (582 trailer lines in 463 commits since).
+- **340 commits** have a `Claude-Session:` trailer, between 2026-08-29 and 2026-10-14. *(Correction, 2026-11-23, FRESCO-1257: re-measured with `git log --all --grep='^Claude-Session:'`, it is 230, same date range. Rule 3 allowed the trailer in writing from 2026-09-07 until 2026-10-14; see `audit-process.md`, "Accepted history".)* `AGENTS.md` rule 3 forbids that trailer now. **Zero** since 2026-10-15; the `Session:` forensic trailer replaced it (582 trailer lines in 463 commits since).
 - **113 commits** on `main` are authored `test <test@example.com>`, between 2026-09-09 and 2026-10-02, almost all `docs: bitacora FRESCO-…`. **Zero** since 2026-10-15, and `git:promote` now refuses a placeholder identity.
 
 Both are closed at the source. Question for the author: was the `Claude-Session:` trailer ever allowed, or does rule 3 apply backwards? History is pushed, so rule 5 forbids rewriting it; record it as accepted.

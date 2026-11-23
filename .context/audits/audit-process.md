@@ -82,6 +82,27 @@ project = FRESCO AND issuetype != Epic AND parent is EMPTY AND statusCategory !=
 It must return 0. Anything it lists gets an epic, chosen by reading the epic of the
 card it follows up.
 
+### Accepted history
+
+Pushed history is never rewritten (`AGENTS.md` rule 5), so two things the current
+rules forbid stay in it, recorded here as accepted (audit 9, finding F6). Counts were
+measured with `git log --all` on 2026-11-23.
+
+- **`Claude-Session:` trailer.** 230 commits, 2026-08-29 to 2026-10-14. 112 of them
+  are before 2026-09-07; from that day rule 3 of `AGENTS.md` carried one scoped
+  exception that allowed a harness session trailer on commits written by an AI
+  session (commit `8d20ac89`), and 118 are after it. The forensic `Worktree:` and
+  `Session:` trailers replaced it on 2026-10-15 (commit `6bbe0bbe`), and `Claude-Session:`
+  is forbidden since. There are none after 2026-10-14. So rule 3 did not apply
+  backwards: the trailer was allowed in writing for most of the range, and no written
+  rule either way was found for the first 112 commits.
+- **Author `test <test@example.com>`.** 113 commits on `main`, 2026-09-09 to
+  2026-10-02, 86 of them `docs:` and 70 of them bitacora entries. A placeholder git
+  identity, not a person. There are none after 2026-10-02, and `bun run git:promote`
+  now refuses any commit signed with `*@example.com`.
+
+Both are closed at the source. Nothing is done to the history.
+
 ## 3. Hard definition of "Finalizada" (DoD)
 
 A ticket does **not** move to `Finalizada` until the problem that created it is
