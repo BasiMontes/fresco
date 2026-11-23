@@ -181,6 +181,7 @@ updater:
     - cli/lib/variables-manifest.ts # FRESCO-1238: declares the {DEV,PRE,PRO}_PRO_PLAN_USER_{EMAIL,PASSWORD} test users (optional, passwords secret) so the generated .env.core.schema carries them; the `cli` component is synced wholesale, so a sync would drop them and a fresh worktree would fail vars:env:check again
     - scripts/provision-worktree.ts # FRESCO-1238: also runs `bun run vars:schema` so a fresh worktree gets the gitignored env schema pair without hand edits; the `scripts` component is synced, a sync would revert it
     - .agents/skills/sprint-development/SKILL.md
+    - docs/boilerplate.md # FRESCO-1274: the three business-map command rows name the HTML maps, not the legacy markdown paths; a sync would revert them
     - .agents/skills/sprint-development/references/live-ui-identity.md # FRESCO-1271: dispatch rule 5.4 carries the no-snapshot login procedure (run-code submit, count-only scan); a sync would drop it
     - .agents/skills/sprint-development/references/live-ui-validation.md # FRESCO-1275: carries the Turnstile section (§3.6) that makes the local stack the authorized place for authenticated checks; a sync would drop it
     - .agents/skills/sprint-development/references/bug-fix-workflow.md

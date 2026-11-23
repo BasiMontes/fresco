@@ -319,9 +319,9 @@ Validation: `bun run skills:check` checks tier coherence (orphan categories, tie
 | Command                       | Purpose                                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------------------- |
 | `/sync-ai-memory`             | Audit + sync README, CLAUDE.md, CONTEXT.md, docs/, and onboarding HTML against current repo state |
-| `/business-data-map`          | Generate or update `.context/business/business-data-map.md`                                       |
-| `/business-feature-map`       | Generate or update `.context/business/business-feature-map.md`                                    |
-| `/business-api-map`           | Generate or update `.context/business/business-api-map.md`                                        |
+| `/business-data-map`          | Generate or update the data map (`business-data-context`, HTML, read with `bun run context:map`)                                    |
+| `/business-feature-map`       | Generate or update the feature map (`business-feature-context`, HTML, read with `bun run context:map`)                                    |
+| `/business-api-map`           | Generate or update the API map (`business-api-context`, HTML, read with `bun run context:map`)                                     |
 | `/master-implementation-plan` | Generate or update `.context/master-implementation-plan.md` (EPIC/strategy roadmap)               |
 | `/dev-roadmap`                | Generate or update `.context/dev-roadmap.md` (TICKET/sequence: dependency edges + execution sprints + mockup-gates; subsumes `sprint-sequence.md`) |
 
