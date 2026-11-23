@@ -113,7 +113,7 @@ Característica: Flujo completo de usuario en Fresco
     # escenario cubre los campos; el layout del widget se validó en navegador
     # con las claves de prueba de Cloudflare.
 
-  @login @landing @verificado-manual-2026-09-10
+  @login @landing @verificado-manual-2026-09-10 @solo-manual
   # FRESCO-486 (epic FRESCO-484): la nav de la landing mostraba los CTA de
   # invitado a todo el mundo. NO @automatizado: el estado logueado depende de
   # `getSession()` en cliente + la cookie `fresco_nombre` que escribe
@@ -123,15 +123,17 @@ Característica: Flujo completo de usuario en Fresco
   # cambios, "Ir a mi menú" con sesión sin nombre, "Hola, {nombre}" cuando la
   # cookie aterriza (sin recargar, vía evento), el sheet móvil replica el
   # estado, 0 errores de consola.
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: La nav de la landing refleja el estado logueado
     Dado que un visitante con sesión activa y nombre en su perfil abre la landing
     Cuando la nav termina de resolver la sesión en cliente
     Entonces ve "Hola, {nombre}" y un enlace "Ir a mi menú" en lugar de "Ya tengo cuenta" y "Empezar gratis"
     Y el menú móvil desplegable muestra el mismo estado
 
-  @login @landing @edge-case @verificado-manual-2026-09-10
+  @login @landing @edge-case @verificado-manual-2026-09-10 @solo-manual
   # FRESCO-486: rama sin nombre disponible (perfil sin `nombre`, o cookie aún
   # no escrita en la primera visita tras iniciar sesión).
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: La nav de la landing con sesión pero sin nombre muestra solo el enlace a la app
     Dado que un visitante con sesión activa y sin nombre en su perfil abre la landing
     Cuando la nav termina de resolver la sesión en cliente
@@ -197,13 +199,15 @@ Característica: Flujo completo de usuario en Fresco
     Cuando intenta confirmar el formulario de recuperación
     Entonces el navegador bloquea el envío con la validación nativa del campo (required + type=email), sin llamar al backend
 
-  @login @recuperar-password @edge-case @verificado-manual-2026-08-19
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: Confirmar la nueva contraseña detecta que no coincide con la anterior
     Dado que un usuario está en /update-password
     Cuando escribe una contraseña y una confirmación distintas y confirma
     Entonces ve el mensaje "Las contraseñas no coinciden."
 
-  @login @recuperar-password @edge-case @verificado-manual-2026-08-19
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: Un mensaje de error obsoleto puede confundir sobre el problema real de la contraseña
     Dado que un usuario en /update-password ya vio "Las contraseñas no coinciden." por un intento anterior
     Cuando corrige la confirmación para que ambas coincidan, pero deja una contraseña de menos de 10 caracteres, y reenvía
@@ -310,14 +314,16 @@ Característica: Flujo completo de usuario en Fresco
     Cuando pulsa "Ver mi menú"
     Entonces llega a /menu y la semana sigue teniendo un único menú
 
-  @generacion-menu @edge-case @verificado-manual-2026-07-29
+  @generacion-menu @edge-case @verificado-manual-2026-07-29 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1262: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: El catálogo filtrado no tiene recetas específicas para todos los huecos
     Dado que las restricciones del usuario dejan un catálogo con recetas insuficientes para desayuno o cena
     Cuando se genera el menú
     Entonces la IA rellena esos huecos con recetas de tipo "comida" como sustituto
     Y el sistema muestra un aviso explícito ("Antes de continuar…") explicando qué se sustituyó y por qué
 
-  @generacion-menu @edge-case @verificado-manual-2026-08-01
+  @generacion-menu @edge-case @verificado-manual-2026-08-01 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1262: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: El catálogo filtrado no llega al mínimo de 21 recetas para el perfil declarado (ADR-0005)
     Dado que las restricciones combinadas del usuario dejan menos de 21 recetas disponibles tras el filtro SQL
     Cuando intenta generar el menú
@@ -366,7 +372,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando intenta generar de nuevo sin eliminar el plan existente
     Entonces el sistema responde 409 y no crea un plan duplicado
 
-  @onboarding @edge-case @verificado-manual-2026-08-06
+  @onboarding @edge-case @verificado-manual-2026-08-06 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1262: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: El 409 de "ya existe un menú" muestra un mensaje accionable en /onboarding
     Dado que el usuario ya generó un menú para la semana actual
     Cuando repite el flujo de onboarding completo para la misma semana
@@ -409,13 +416,15 @@ Característica: Flujo completo de usuario en Fresco
     Y sube y baja los adultos y los niños con los botones del paso 3
     Entonces las tarjetas elegidas figuran en el resumen y los botones respetan el mínimo y el máximo del hogar
 
-  @generacion-menu @edge-case @verificado-manual-2026-07-31
+  @generacion-menu @edge-case @verificado-manual-2026-07-31 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1262: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: El perfil de usuario no existe todavía
     Dado que un usuario autenticado nunca completó el onboarding
     Cuando se intenta generar un menú para él
     Entonces el sistema responde 404 "Perfil de usuario no encontrado"
 
-  @generacion-menu @edge-case @verificado-manual-2026-07-31
+  @generacion-menu @edge-case @verificado-manual-2026-07-31 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1262: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: Ninguna receta del catálogo es segura para una franja concreta (AC-4, FR-8.2)
     Dado que ningún ítem del catálogo filtrado cumple una regla absoluta para un día/tipo concreto
     Cuando se genera el menú
@@ -552,7 +561,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando marca que tiene 14 años o más y acepta los términos y la privacidad, y sigue como invitada
     Entonces quedan registrados sus consentimientos de edad, términos y privacidad en la versión vigente
 
-  @invitado @notificaciones @verificado-manual-2026-09-01
+  @invitado @notificaciones @verificado-manual-2026-09-01 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1265: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: Tras generar su primer menú, se le pide permiso de notificaciones push en un momento de valor
     Dado que una visitante sin cuenta ni sesión completa el onboarding y genera su primer menú
     Cuando llega a /menu
@@ -574,7 +584,7 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve un banner "Crea una cuenta para no perder este menú"
     Y un enlace a /signup
 
-  @registro-progresivo @verificado-manual-2026-08-07
+  @registro-progresivo @verificado-manual-2026-08-07 @solo-manual
   # FRESCO-353: NO automatizado — la conversión es un flujo de 2 pasos con
   # verificación de código OTP de 6 dígitos (FRESCO-89); el camino feliz
   # completo necesita un inbox real. Queda manual.
@@ -591,13 +601,15 @@ Característica: Flujo completo de usuario en Fresco
   # sobrevive a perder la sesión anónima) no se pudo verificar de punta a
   # punta en esta sesión por falta de acceso a un inbox real — pendiente de
   # una pasada de QA manual con una cuenta de correo real.
+  # @solo-manual (FRESCO-1260): la conversión exige el código OTP de 6 dígitos real y no hay fixture de bandeja de correo en tests/ (mismo bloqueo que los escenarios de conversión de abajo).
   Escenario: La invitada convierte su sesión anónima en una cuenta real
     Dado que una invitada con sesión anónima y un email nuevo rellena email y contraseña en /signup
     Cuando confirma el formulario y verifica el código de 6 dígitos enviado a su correo
     Entonces su sesión anónima se actualiza a una cuenta real (mismo user_id)
     Y conserva el menú que ya había generado como invitada
 
-  @registro-progresivo @edge-case @verificado-manual-2026-08-07
+  @registro-progresivo @edge-case @verificado-manual-2026-08-07 @solo-manual
+  # @solo-manual (FRESCO-1260): es el mismo flujo de conversión (594): necesita el código OTP real y no hay fixture de bandeja de correo en tests/.
   Escenario: La conversión de invitada a cuenta real no sobrevive a perder la sesión anónima original
     Dado que una invitada generó un menú y "creó su cuenta" en /signup con un email nuevo
     Cuando limpia cookies/localStorage (simula cerrar el navegador o cambiar de dispositivo) e intenta loguearse con esas mismas credenciales
@@ -686,7 +698,8 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve un error claro
     Y no se mueve ni se modifica ningún dato
 
-  @invitado @edge-case @verificado-manual-2026-08-07
+  @invitado @edge-case @verificado-manual-2026-08-07 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1265: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: Cerrar sesión como invitada advierte antes de borrar el menú generado
     Dado que una invitada generó un menú y tiene sesión anónima activa
     Cuando toca "Cerrar sesión" en el sidebar
@@ -719,7 +732,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando abre /menu (Inicio)
     Entonces ve el saludo con su nombre real ("¡Hola, <nombre>!")
 
-  @panel-inicio @edge-case @verificado-manual-2026-08-02
+  @panel-inicio @edge-case @verificado-manual-2026-08-02 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El saludo de Inicio cae a un mensaje genérico cuando el nombre no está cargado
     Dado que el usuario no tiene un nombre guardado en su perfil
     Cuando abre /menu (Inicio)
@@ -741,7 +755,8 @@ Característica: Flujo completo de usuario en Fresco
     # tailwind.config.ts porque Tailwind purgaba la clase `lucide`, inyectada
     # en runtime por la librería, invisible al escaneo estático de content).
 
-  @panel-inicio @edge-case @verificado-manual-2026-08-07
+  @panel-inicio @edge-case @verificado-manual-2026-08-07 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El sidebar muestra un placeholder de email para invitadas, no una línea en blanco
     Dado que una invitada con sesión anónima genera un menú
     Cuando mira el pie de la barra lateral (desktop)
@@ -750,7 +765,8 @@ Característica: Flujo completo de usuario en Fresco
     # {email || 'Invitada'}, mismo fallback que profile/page.tsx.
     # Verificado en vivo: "Invitada" visible en el sidebar de una invitada.
 
-  @panel-inicio @edge-case @verificado-manual-2026-08-07
+  @panel-inicio @edge-case @verificado-manual-2026-08-07 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: "Ver más recetas" del scroll horizontal y "cargar más" de la lista tienen nombres accesibles distintos
     Dado que Laura está en la sección "Últimas recetas añadidas" de Inicio
     Cuando un lector de pantalla anuncia la flecha de scroll y el botón de cargar más
@@ -769,7 +785,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca el botón "Ver mi plan semanal"
     Entonces es llevado directamente a /calendar
 
-  @panel-inicio @edge-case @verificado-manual-2026-08-03
+  @panel-inicio @edge-case @verificado-manual-2026-08-03 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El banner de sugerencia de Calendario se muestra aunque no exista un menú generado todavía
     Dado que el usuario no tiene un menú generado para esta semana
     Cuando abre /menu (Inicio)
@@ -831,7 +848,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca el control de semana anterior
     Entonces ve el menú de la semana anterior si existe, o el estado vacío si nunca se generó uno para esa semana
 
-  @calendario @edge-case @verificado-manual-2026-08-07
+  @calendario @edge-case @verificado-manual-2026-08-07 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: La etiqueta de semana distingue los meses cuando la semana cruza de mes
     Dado que el usuario navega a una semana que empieza en un mes y termina en el siguiente (ej. 27 jul – 2 ago)
     Cuando mira la etiqueta de semana
@@ -840,7 +858,8 @@ Característica: Flujo completo de usuario en Fresco
     # lib/date/iso-week.ts muestra ambos meses cuando difieren. Verificado
     # en vivo: semana 2026-W31 muestra "27 jul – 2 ago".
 
-  @calendario @edge-case @verificado-manual-2026-08-06
+  @calendario @edge-case @verificado-manual-2026-08-06 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El botón de eliminar semana es alcanzable en mobile
     Dado que el usuario tiene un menú generado, viewport 375px
     Cuando busca el botón de eliminar semana en el header de /calendar
@@ -909,14 +928,16 @@ Característica: Flujo completo de usuario en Fresco
     Cuando recarga /calendar
     Entonces ve el menú en el orden que dejó, no el orden original generado
 
-  @calendario @edge-case @verificado-manual-2026-07-31
+  @calendario @edge-case @verificado-manual-2026-07-31 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1263: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: El intercambio falla por error de red o de base de datos
     Dado que el usuario arrastra un plato a otro hueco
     Cuando el guardado del nuevo orden falla
     Entonces el plato vuelve visualmente a su posición original
     Y ve un mensaje claro de que el cambio no se guardó
 
-  @calendario @edge-case @verificado-manual-2026-07-29
+  @calendario @edge-case @verificado-manual-2026-07-29 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1263: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: Un usuario autenticado puede leer de vuelta su propio menú generado
     Dado que un usuario generó un menú y tiene su propia sesión (no admin)
     Cuando visita /menu o /calendar
@@ -970,7 +991,8 @@ Característica: Flujo completo de usuario en Fresco
     # flecha de día siguiente pisaba la cabecera. El número de días visibles
     # ahora sale del ancho del contenedor, no del de la ventana.
 
-  @calendario @edge-case @verificado-manual-2026-07-31
+  @calendario @edge-case @verificado-manual-2026-07-31 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1263: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: Dos arrastres simultáneos sobre huecos que se solapan
     Dado que un primer intercambio todavía no ha terminado de guardarse
     Cuando el usuario arrastra de nuevo uno de esos dos huecos
@@ -1175,7 +1197,8 @@ Característica: Flujo completo de usuario en Fresco
     # (favoritos → ingredientes no presentes en la lista actual). "Nuevo"
     # queda fuera — sin tracking de recencia en shopping_lists.
 
-  @lista-compra @edge-case @verificado-manual-2026-07-31
+  @lista-compra @edge-case @verificado-manual-2026-07-31 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1264: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: Ya existe una lista de la compra para ese menú
     Dado que el usuario ya generó una lista de la compra para su menú semanal actual
     Cuando intenta generar la lista de nuevo
@@ -1185,7 +1208,8 @@ Característica: Flujo completo de usuario en Fresco
     # existente. El backstop de backend sigue vigente: segunda llamada
     # directa a la API → 409, tratado como "ya existe → re-lee".
 
-  @lista-compra @edge-case @verificado-manual-2026-07-31
+  @lista-compra @edge-case @verificado-manual-2026-07-31 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1264: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: La consolidación de ingredientes no produce ningún resultado
     Dado que el menú semanal del usuario no tiene ingredientes que se puedan consolidar
     Cuando solicita la lista de la compra
@@ -1285,7 +1309,7 @@ Característica: Flujo completo de usuario en Fresco
     Entonces la base de datos rechaza el INSERT
     Y su perfil sigue sin conceder Pro
 
-  @seguridad @edge-case @no-implementado
+  @seguridad @edge-case @solo-manual
   # La segunda red de seguridad (el cron de reconciliación degrada cualquier
   # fila Pro/Family sin stripe_subscription_id) está cubierta por el test
   # unitario `sweepOrphanPaidPlans` en app/api/cron/stripe-reconcile/route.test.ts,
@@ -1298,13 +1322,14 @@ Característica: Flujo completo de usuario en Fresco
     Cuando se ejecuta el job de reconciliación de suscripciones
     Entonces esa fila queda degradada a plan Free
 
-  @seguridad @edge-case @verificado-manual-2026-10-04
+  @seguridad @edge-case @verificado-manual-2026-10-04 @pendiente
   # FRESCO-840: el `notFound()` de la página corría bajo el Suspense de
   # `app/(app)/loading.tsx`, con la respuesta ya en streaming, así que el estado
   # quedaba en 200 (reproducido en local y en staging con la cuenta no admin).
   # La decisión se toma ahora en `proxy.ts`, antes del render. Cubierto por
   # `proxy.test.ts` (gateado por `bun test` en CI); la rama admin no se verificó
   # en vivo porque la cuenta de automatización no es admin.
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1267: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: Un usuario sin rol admin recibe un 404 real en el catálogo de administración
     Dado que un usuario con sesión no figura en la lista de administradores
     Cuando abre la ruta /admin/recipes
@@ -1334,7 +1359,8 @@ Característica: Flujo completo de usuario en Fresco
     # un bug contra el AC tal como está escrito, pero es una causística real
     # a tener en cuenta.
 
-  @biblioteca @edge-case @verificado-manual-2026-08-03
+  @biblioteca @edge-case @verificado-manual-2026-08-03 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El buscador de la Biblioteca no encuentra resultados
     Dado que Laura busca algo que ninguna receta contiene
     Cuando mira los resultados
@@ -1363,7 +1389,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca "Todo"
     Entonces vuelve a ver el catálogo completo
 
-  @biblioteca @edge-case @verificado-manual-2026-08-07
+  @biblioteca @edge-case @verificado-manual-2026-08-07 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El mensaje de "No encontramos nada" deja claro que solo aplica al catálogo
     Dado que Laura tiene una receta propia guardada y busca algo que ninguna receta del catálogo contiene
     Cuando mira la sección "Tus recetas" y el mensaje de "No encontramos nada"
@@ -1410,7 +1437,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando completa el formulario "Crear propia" con nombre, ingredientes y pasos, y confirma
     Entonces su receta aparece en la sección "Tus recetas", distinguible del catálogo
 
-  @biblioteca @edge-case @verificado-manual-2026-08-07
+  @biblioteca @edge-case @verificado-manual-2026-08-07 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: Un nombre de receta propia extremadamente largo no rompe el layout de la grilla
     Dado que Laura pega un nombre de ~1000 caracteres en el formulario "Crear propia"
     Cuando guarda la receta
@@ -1462,7 +1490,8 @@ Característica: Flujo completo de usuario en Fresco
     # "tags de alérgeno/cocina" en la evidencia. Arreglado junto con
     # FRESCO-117 — ahora sí muestra todos los flags de dieta activos.
 
-  @biblioteca @edge-case @verificado-manual-2026-08-07
+  @biblioteca @edge-case @verificado-manual-2026-08-07 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El texto de dificultad y coste estimado se muestra humanizado, no en snake_case crudo
     Dado que Laura ve una receta cuya dificultad es "muy_facil" o cuyo coste es "muy_bajo"
     Cuando mira la tarjeta o el detalle de esa receta
@@ -1490,7 +1519,8 @@ Característica: Flujo completo de usuario en Fresco
     # cero cambio de código, el tipo y el label map ya estaban bien.
     # Verificado en vivo: "30 min · avanzada · muy bajo".
 
-  @biblioteca @edge-case @verificado-manual-2026-08-08
+  @biblioteca @edge-case @verificado-manual-2026-08-08 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: Receta propia con 1 solo ingrediente usa singular "1 ingrediente"
     Dado que Laura tiene una receta propia con exactamente 1 ingrediente
     Cuando ve su tarjeta en Recetas
@@ -1498,7 +1528,8 @@ Característica: Flujo completo de usuario en Fresco
     # FRESCO-125 (arreglado 2026-08-08): pluralización naive en
     # personal-recipe-card.tsx, siempre añadía "s". Verificado en vivo.
 
-  @biblioteca @edge-case @verificado-manual-2026-08-08
+  @biblioteca @edge-case @verificado-manual-2026-08-08 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: Receta propia con nombre vacío — investigado, constraint server-side ya existía
     Dado que se intenta insertar una receta propia con nombre vacío o solo espacios
     Cuando la escritura llega a Postgres
@@ -1514,7 +1545,8 @@ Característica: Flujo completo de usuario en Fresco
     # Nota aparte, fuera de este ticket: el límite de 100 caracteres
     # (FRESCO-107) sí sigue siendo solo client-side, sin backstop en DB.
 
-  @biblioteca @edge-case @verificado-manual-2026-08-07
+  @biblioteca @edge-case @verificado-manual-2026-08-07 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1266: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: Se puede marcar/desmarcar favorito desde el detalle de una receta del catálogo
     Dado que Laura abre el detalle de una receta de catálogo
     Cuando busca el control de favorito en esa pantalla
@@ -1524,7 +1556,8 @@ Característica: Flujo completo de usuario en Fresco
     # optimista que FavoriteRecipeCard. Verificado en vivo: toggle funciona
     # y persiste tras reload.
 
-  @biblioteca @edge-case @verificado-manual-2026-08-07
+  @biblioteca @edge-case @verificado-manual-2026-08-07 @pendiente
+  # @pendiente (FRESCO-1260): se cierra con FRESCO-1266: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
   Escenario: El filtro de tipo de comida soporta navegación por flechas de teclado (patrón radiogroup)
     Dado que Laura tabula hasta el grupo "Filtrar por tipo de comida" en la Biblioteca
     Cuando usa las flechas izquierda/derecha
@@ -1586,7 +1619,8 @@ Característica: Flujo completo de usuario en Fresco
   # Perfil
   # ==========================================================================
 
-  @perfil @edge-case @verificado-manual-2026-08-07
+  @perfil @edge-case @verificado-manual-2026-08-07 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El input "Tu nombre" no muestra borde de error en el primer render
     Dado que Laura entra a /profile con una cuenta que todavía no tiene nombre guardado
     Cuando la página carga por primera vez, sin que ella haya tocado el campo
@@ -1595,7 +1629,8 @@ Característica: Flujo completo de usuario en Fresco
     # touched && !isValid, igual que el mensaje. Verificado en vivo: sin
     # borde rojo en primer render, rojo tras touch+vacío.
 
-  @perfil @edge-case @verificado-manual-2026-08-08
+  @perfil @edge-case @verificado-manual-2026-08-08 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El FAQ de Ayuda describe correctamente cómo se genera el menú, sin mencionar Gemini
     Dado que Laura abre /profile → Preferencias y ayuda → FAQ
     Cuando lee "¿Cómo genera Fresco mi menú semanal?"
@@ -1668,9 +1703,10 @@ Característica: Flujo completo de usuario en Fresco
     # FK (user_profiles/meal_plans/shopping_lists/recetas_propias -> auth.users,
     # todos ON DELETE CASCADE) está confirmado por migración.
 
-  @perfil @edge-case @no-implementado
+  @perfil @edge-case @solo-manual
   # FRESCO-397 (A4-L11): re-autenticación server-side. Candidato a @automatizado
   # cuando haya un flujo e2e no destructivo (mock del admin.deleteUser).
+  # @solo-manual (FRESCO-1260): la re-autenticación server-side está cubierta por supabase/functions/delete-account/index.test.ts; un e2e exigiría borrar una cuenta o mockear admin.deleteUser.
   Escenario: delete-account rechaza una petición sin re-autenticación reciente
     Dado que Laura tiene una sesión válida pero no ha vuelto a introducir su contraseña
     Cuando llama directamente a la Edge Function delete-account sin reauthToken
@@ -1680,7 +1716,8 @@ Característica: Flujo completo de usuario en Fresco
   # QA y herramientas de desarrollo
   # ==========================================================================
 
-  @qa @edge-case @verificado-manual-2026-08-08
+  @qa @edge-case @verificado-manual-2026-08-08 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: La página /qa no se autocontradice sobre la arquitectura de generación
     Dado que un evaluador externo abre /qa
     Cuando lee la cabecera y la sección "Arquitectura"
@@ -1690,7 +1727,8 @@ Característica: Flujo completo de usuario en Fresco
     # "100% deterministas — sin llamadas a modelos de IA en producción".
     # Se corrigió la cabecera para que coincida.
 
-  @app-shell @edge-case @verificado-manual-2026-08-08
+  @app-shell @edge-case @verificado-manual-2026-08-08 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El title tag global no reclama un mecanismo de "IA" que ya no existe
     Dado que cualquier página de la app carga
     Cuando se inspecciona el <title> del documento
@@ -1884,7 +1922,8 @@ Característica: Flujo completo de usuario en Fresco
     # (Renovación, Ver mi próximo cobro) no llaman a la API de Stripe, así
     # que su customer id sintético no se toca.
 
-  @suscripcion @verificado-manual-2026-08-19
+  @suscripcion @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1260): ocurre dentro de la interfaz alojada de Stripe (Billing Portal), fuera de nuestra app; solo se observa con Stripe real y ya hay `@requiere-stripe-real` para la entrada al portal.
   Escenario: Cancelar la suscripción
     Dado que Laura está en la gestión de su suscripción (Billing Portal)
     Cuando elige cancelarla
@@ -1892,7 +1931,8 @@ Característica: Flujo completo de usuario en Fresco
     # FRESCO-231. Verificado en producción real: configuración de
     # cancelación del portal en modo at_period_end.
 
-  @suscripcion @verificado-manual-2026-08-19
+  @suscripcion @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1260): ocurre dentro de la interfaz alojada de Stripe (Billing Portal), fuera de nuestra app; solo se observa con Stripe real.
   Escenario: Ver mi próximo cobro
     Dado que Laura tiene una suscripción Pro activa
     Cuando abre la gestión de su suscripción
@@ -1961,7 +2001,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando abre /favorites
     Entonces ve una tarjeta por cada receta favorita, con imagen, nombre, categoría y tiempo/coste
 
-  @favoritos @edge-case @verificado-manual-2026-08-19
+  @favoritos @edge-case @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: La lista de favoritos vacía muestra un estado vacío claro
     Dado que Laura no tiene ninguna receta marcada como favorita
     Cuando abre /favorites
@@ -1992,7 +2033,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca una tarjeta de receta favorita
     Entonces ve el detalle completo de esa receta, con el botón de favorito ya marcado
 
-  @favoritos @edge-case @verificado-manual-2026-08-19
+  @favoritos @edge-case @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El enlace "Volver a la Biblioteca" del detalle de receta no vuelve a Favoritos aunque se haya llegado desde ahí
     Dado que Laura abre el detalle de una receta navegando desde /favorites
     Cuando pulsa "Volver a la Biblioteca"
@@ -2005,7 +2047,8 @@ Característica: Flujo completo de usuario en Fresco
   # Centro de Avisos (/notifications)
   # ==========================================================================
 
-  @notificaciones @edge-case @verificado-manual-2026-08-19
+  @notificaciones @edge-case @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El "Centro de Avisos" no contiene avisos reales, solo recomendaciones de recetas
     Dado que Laura abre /notifications
     Entonces ve una sección "Recetas que te pueden gustar" con tarjetas de receta
@@ -2024,7 +2067,8 @@ Característica: Flujo completo de usuario en Fresco
     # (menú sin generar y otros eventos reales todavía no tienen un tipo de
     # aviso propio en /notifications).
 
-  @notificaciones @edge-case @verificado-manual-2026-08-19
+  @notificaciones @edge-case @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El icono de Notificaciones no muestra ningún contador de no leídos
     Dado que Laura está en /menu
     Cuando mira el icono de Notificaciones en la cabecera
@@ -2117,7 +2161,8 @@ Característica: Flujo completo de usuario en Fresco
     # "Menú semanal con IA" y "a diferencia de ChatGPT" — publicidad engañosa.
     # Mismo criterio que los escenarios FRESCO-128 de /profile más arriba.
 
-  @landing @edge-case @verificado-manual-2026-08-19
+  @landing @edge-case @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: Un usuario con sesión activa que visita / sigue viendo la landing pública, no su panel
     Dado que Laura tiene sesión iniciada y un menú ya generado
     Cuando visita / directamente
@@ -2130,7 +2175,8 @@ Característica: Flujo completo de usuario en Fresco
     # con un menú ya generado, cae en el 409 ya cubierto por el escenario "Ya
     # existe un plan para la semana solicitada".
 
-  @landing @edge-case @verificado-manual-2026-08-19
+  @landing @edge-case @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
   Escenario: El copyright del footer muestra un año desactualizado
     Dado que cualquier visitante llega al final de /
     Cuando lee el texto del footer
