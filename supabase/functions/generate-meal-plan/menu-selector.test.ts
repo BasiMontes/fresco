@@ -184,68 +184,20 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
     expect(relaxWarnings.length).toBeGreaterThan(0)
   })
 
-  test('warns when the selected menu exceeds the declared weekly budget (soft warn, never blocks)', () => {
+  test('FRESCO-1269 (QAFRESCO-2): the selector never warns about the budget, whatever it is — `/menu` does, from the tile\'s own cost', () => {
     const candidates = buildAmpleCatalog().map(r => ({
       ...r,
       meta: { ...r.meta!, coste_estimado: 'alto' as const },
     }))
-    const { advertencias } = selectMenu({
-      candidates,
-      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
-      profile: makeProfile({ presupuesto_semana_euros: 10 }),
-    })
+    for (const presupuesto_semana_euros of [1, 150, null]) {
+      const { advertencias } = selectMenu({
+        candidates,
+        recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
+        profile: makeProfile({ num_personas: 4, presupuesto_semana_euros }),
+      })
 
-    expect(advertencias.some(a => a.includes('supera tu presupuesto'))).toBe(true)
-  })
-
-  test('FRESCO-1009: the budget is compared per household, so 4 people on 21 medio slots exceed 150 EUR (A7-LOGIC-03)', () => {
-    const candidates = buildAmpleCatalog().map(r => ({
-      ...r,
-      meta: { ...r.meta!, coste_estimado: 'medio' as const },
-    }))
-    const run = (num_personas: number) => selectMenu({
-      candidates,
-      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
-      profile: makeProfile({ num_personas, presupuesto_semana_euros: 150 }),
-    }).advertencias
-
-    // 21 slots x 5 EUR = 105 EUR for one person: under 150. For four people it is 420 EUR.
-    expect(run(1).some(a => a.includes('supera tu presupuesto'))).toBe(false)
-    const four = run(4).find(a => a.includes('supera tu presupuesto'))
-    expect(four).toBeDefined()
-    expect(four).toContain('270.00')
-  })
-
-  test('presupuesto_semana_euros: null never triggers the budget check', () => {
-    const candidates = buildAmpleCatalog().map(r => ({
-      ...r,
-      meta: { ...r.meta!, coste_estimado: 'alto' as const },
-    }))
-    const { advertencias } = selectMenu({
-      candidates,
-      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
-      profile: makeProfile({ presupuesto_semana_euros: null }),
-    })
-
-    expect(advertencias.some(a => a.includes('supera tu presupuesto'))).toBe(false)
-  })
-
-  test('an unknown coste bucket does not turn the budget total into NaN — the over-budget warning still fires (A4-L10)', () => {
-    // Bad/legacy data: a coste_estimado outside the 4-value enum. Before the
-    // fix `BUCKET_MIDPOINT_EUROS[coste]` was undefined, totalEuros went NaN,
-    // `NaN > budget` was false, and the over-budget warning vanished.
-    const candidates = buildAmpleCatalog().map(r => ({
-      ...r,
-      meta: { ...r.meta!, coste_estimado: 'carisimo' as unknown as 'alto' },
-    }))
-    const { advertencias } = selectMenu({
-      candidates,
-      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
-      profile: makeProfile({ presupuesto_semana_euros: 1 }),
-    })
-
-    expect(advertencias.some(a => a.includes('supera tu presupuesto'))).toBe(true)
-    expect(advertencias.some(a => a.includes('cálculo de presupuesto es aproximado'))).toBe(true)
+      expect(advertencias.some(a => a.includes('presupuesto'))).toBe(false)
+    }
   })
 })
 
@@ -863,16 +815,6 @@ describe('selectMenu — FRESCO-1129 (A8-LOGIC-08): days already over take no pi
     const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, hoy: '2026-02-01', profile: makeProfile() })
 
     for (const dia of DIAS) for (const tipo of TIPOS) expect(menu[dia][tipo]).not.toBe(SLOT_EXCLUDED_SENTINEL)
-  })
-
-  test('the budget warning counts only the days that remain', () => {
-    // 'bajo' costs 3 EUR per person: 6 EUR a slot for 2 people, so 126 EUR for 21 slots and 54 EUR for Friday to Sunday.
-    const profile = makeProfile({ presupuesto_semana_euros: 100 })
-    const full = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile })
-    const friday = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, hoy: FRIDAY, profile })
-
-    expect(full.advertencias.some(a => a.toLowerCase().includes('presupuesto'))).toBe(true)
-    expect(friday.advertencias.some(a => a.toLowerCase().includes('presupuesto'))).toBe(false)
   })
 
   test('hoyEnMadrid reads the date in Madrid, not in UTC', () => {

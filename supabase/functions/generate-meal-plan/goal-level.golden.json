@@ -117,7 +117,7 @@
         "cena": "cena-53"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "favourites constrained user-0:2026-W01": {
     "menu": {
@@ -157,7 +157,7 @@
         "cena": "cena-53"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "plain user-1:2026-W02": {
     "menu": {
@@ -277,7 +277,7 @@
         "cena": "cena-63"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "favourites constrained user-1:2026-W02": {
     "menu": {
@@ -317,7 +317,7 @@
         "cena": "cena-108"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "plain user-2:2026-W03": {
     "menu": {
@@ -437,7 +437,7 @@
         "cena": "cena-13"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "favourites constrained user-2:2026-W03": {
     "menu": {
@@ -477,7 +477,7 @@
         "cena": "cena-13"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "plain user-3:2026-W04": {
     "menu": {
@@ -597,7 +597,7 @@
         "cena": "cena-88"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "favourites constrained user-3:2026-W04": {
     "menu": {
@@ -637,7 +637,7 @@
         "cena": "cena-73"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "plain user-4:2026-W05": {
     "menu": {
@@ -757,7 +757,7 @@
         "cena": "cena-43"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "favourites constrained user-4:2026-W05": {
     "menu": {
@@ -797,7 +797,7 @@
         "cena": "cena-118"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "plain user-5:2026-W06": {
     "menu": {
@@ -917,7 +917,7 @@
         "cena": "cena-28"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   },
   "favourites constrained user-5:2026-W06": {
     "menu": {
@@ -957,6 +957,6 @@
         "cena": "cena-28"
       }
     },
-    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+    "advertencias": []
   }
 }

@@ -31,6 +31,7 @@ function spies() {
     trend: spyOn(spendTrend, 'getSpendTrend'),
     userPlan: spyOn(userProfile, 'getUserPlan'),
     priorMarks: spyOn(proExcluded, 'getPriorMarks'),
+    budget: spyOn(userProfile, 'getUserPresupuestoSemana'),
   };
 }
 
@@ -51,6 +52,7 @@ describe('loadMenuPageData', () => {
     s.trend.mockResolvedValue([{ semana: '2026-W42', coste: 40 }] as never);
     s.userPlan.mockResolvedValue('free');
     s.priorMarks.mockResolvedValue([]);
+    s.budget.mockResolvedValue(90);
   });
 
   afterEach(() => {
@@ -67,6 +69,7 @@ describe('loadMenuPageData', () => {
     expect(data.plan).toEqual({ semana_iso: '2026-W43', menu: {} });
     expect(data.favoriteIds).toEqual(new Set(['r1']));
     expect(data.hasUnseenNotifications).toBe(true);
+    expect(data.presupuestoSemanaEuros).toBe(90);
     expect(s.trend).toHaveBeenCalledWith(supabase, { semanaIso: '2026-W43', userId: 'user-1' });
   });
 
@@ -85,8 +88,9 @@ describe('loadMenuPageData', () => {
       hasUnseenNotifications: false,
       spendTrend: [],
       proPreview: [],
+      presupuestoSemanaEuros: null,
     });
-    expect(consoleError).toHaveBeenCalledTimes(10);
+    expect(consoleError).toHaveBeenCalledTimes(11);
   });
 
   test('a failed meal-plan read shows the empty state and leaves the rest intact', async () => {
