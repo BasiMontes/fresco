@@ -167,6 +167,80 @@ Cómo se reproduce el corte de respuesta perdida: en una sesión de Playwright, 
 
 ---
 
+## Stripe sin responder (FRESCO-1251, fase 3)
+
+Dos preguntas distintas, porque Stripe habla con nosotros en dos direcciones:
+
+- **Nosotros llamamos a Stripe** (`/api/stripe/checkout` crea la sesión de pago) y Stripe no contesta. La pregunta es qué ve quien paga.
+- **Stripe nos llama a nosotros** (`/api/stripe/webhook`) y no llega, o llega mientras algo falla. La pregunta es si el estado de la suscripción queda coherente al volver.
+
+### S1: la llamada a Stripe no contesta (hipótesis escritas antes de ejecutar, 2026-11-24)
+
+Leídas del código, no medidas. Hechos de partida: el cliente de Stripe se crea solo con `apiVersion` (`lib/stripe.ts`), sin `timeout` ni `maxNetworkRetries` propios; el SDK instalado (23.2.0) trae un `timeout` por defecto de 80 s; la ruta hace varias llamadas a Stripe en serie; y antes de la primera solo lee (el perfil y el registro de consentimientos), no escribe.
+
+| # | Hipótesis |
+|---|---|
+| S1a | Con la configuración real, una llamada a Stripe que no contesta tarda **más de 80 s** en rendirse, más con los reintentos por defecto del SDK. Es mucho más de lo que espera quien paga |
+| S1b | Mientras tanto la pantalla se queda en estado "pendiente" sin ningún límite en el cliente: `fetch('/api/stripe/checkout')` en `use-pro-checkout.ts` no lleva `AbortSignal` |
+| S1c | Cuando Stripe por fin falla, la ruta contesta `500` "No se pudo iniciar el pago." y la pantalla dice "No se pudo iniciar el pago. Inténtalo de nuevo.". No cambia el plan ni deja una suscripción a medias, porque antes de Stripe no escribió nada |
+| S1d | Reintentar dentro de la ventana de idempotencia no crea una segunda sesión de pago |
+
+### Resultados de S1 (2026-11-24)
+
+`bun run chaos:stripe-stall` construye un cliente de Stripe con **las mismas opciones que la aplicación** (solo `apiVersion`) y lo apunta a un socket local que acepta la conexión y no escribe nada, que es el Stripe mudo. Hace una llamada y mide.
+
+| # | ¿Se cumplió? | Qué pasó |
+|---|---|---|
+| S1a | Sí, y más de lo que decía | La llamada tardó **241,0 s** en rendirse: `StripeConnectionError: Request aborted due to timeout being reached (80000ms)`. Abrió 3 conexiones, una más los 2 reintentos que el SDK trae por defecto en Node, de 80 s cada una. Son cuatro minutos esperando en una llamada, y la ruta hace varias en serie. Debilidad: FRESCO-1285 |
+| S1b | Sí (leído en el código, no ejecutado) | `use-pro-checkout.ts` hace `fetch('/api/stripe/checkout')` sin `AbortSignal` y deja `isRedirecting` en `true` hasta que vuelve. Quien paga ve el botón en espera sin ninguna salida propia. Mismo hallazgo: FRESCO-1285 |
+| S1c | Sí (leído en el código y en `route.test.ts`, no ejecutado) | Cuando Stripe por fin falla, la ruta contesta `500` "No se pudo iniciar el pago." y la pantalla dice "No se pudo iniciar el pago. Inténtalo de nuevo.". Antes de llamar a Stripe la ruta solo lee, así que el plan no cambia y no queda nada a medias |
+| S1d | Matiz | La ventana de idempotencia es de **un minuto** (`BUCKET_SECONDS = 60` en `checkout-guard.ts`). Tras una espera de cuatro minutos un reintento ya usa otra clave, así que la coherencia no la da la idempotencia sino `expireOtherOpenCheckoutSessions`, que deja una sola sesión de pago abierta. Leído en el código, no ejecutado |
+
+**Lo que no se midió:** qué corta primero, el SDK o el límite de duración de la función en Vercel. Esta medición es del SDK, solo; el límite de la plataforma depende del plan y no se ha comprobado.
+
+**Lo que no se ejecutó:** el recorrido completo desde la pantalla. Exigiría que la aplicación hablara con un Stripe que no contesta. El cliente se construye en `lib/stripe.ts` sin ninguna opción de entorno para el host y la pila local no trae un Stripe de mentira, así que no se puede redirigir. Véase S2.
+
+### S2: el webhook no llega, o llega con la base de datos caída
+
+**No se puede ejecutar de punta a punta en la pila local.** El tratamiento de `checkout.session.completed` llama a `stripe.subscriptions.retrieve` (`lib/billing/grant-pro.ts`), y la pila local solo tiene credenciales de Stripe de relleno (`.env.ci`), así que el webhook no llegaría a conceder Pro aunque llegara la firma bien formada.
+
+Lo que sí hay, y es mucho:
+
+- `app/api/stripe/webhook/route.test.ts` fija, con simulaciones: una caída de Stripe al consultar el cargo contesta `500` y devuelve la reclamación para que Stripe reintente; si no se puede registrar la reclamación contesta `500` y no procesa nada; un fallo no transitorio (un error, una restricción) se queda en un `200` registrado porque reintentar repetiría el error; una entrega ya procesada no vuelve a disparar el evento de embudo; y la toma de una reclamación caducada se avisa a Sentry.
+- Los escenarios `@requiere-stripe-real` corren cada semana contra `staging` con el modo de pruebas de Stripe (`stripe-e2e.yml`).
+
+Lo que **no** hay, y esto es el hueco: ninguna ejecución con la base de datos realmente caída mientras llega un webhook real. Para cerrarlo hace falta un Stripe falso que pueda contestar a `subscriptions.retrieve` y a `checkout.sessions.create` y, cuando se quiera, no contestar. Es la card FRESCO-1286.
+
+---
+
+## Decisión sobre el CI (FRESCO-1251, 2026-11-24)
+
+**Ningún experimento entra en el CI. Se ejecutan a mano en cada pasada de auditoría.** Decisión del dueño.
+
+Por qué:
+
+- **El presupuesto del job `test:e2e` es estrecho** y se vigila con `bun run ci:e2e-wallclock` (ADR-0018). Un paso más dentro de ese job lo gasta, y el margen se lee con ese comando, no aquí.
+- **Los flujos ya se ejercitan en cada PR.** Iniciar sesión, generar un menú, abrir la lista y marcar un producto son escenarios `@automatizado` del e2e. `flows` sin un fallo inyectado casi no añade señal; su valor está en compararlo con lo que sale cuando se rompe algo.
+- **Los experimentos con fallo no son de aprobado o suspenso.** Cuestan entre 30 y 60 s cada uno y su salida es una tabla que lee una persona y compara con una hipótesis.
+
+Un workflow semanal aparte que arrancara su propia pila (la opción que se descartó) seguiría siendo posible; no se descartó por imposible, sino porque la señal que daría ya la dan el e2e y la lectura manual.
+
+### Qué se ejecuta en cada pasada de auditoría
+
+Con la pila local arrancada (véase "Cómo ejecutar uno"):
+
+1. `scripts/chaos/local.sh flows` debe salir con `0`, con los cuatro flujos en `OK`. Si uno sale `SLOW` o `FAIL`, es un hallazgo.
+2. `edge-pause`, `rest-pause`, `db-restart` y `edge-stop`: se leen las tablas y se comparan con la fila del registro de la última vez. Un comportamiento distinto es un hallazgo.
+3. `bun run chaos:stripe-stall`, con la configuración real: debe rendirse dentro del límite que acuerde FRESCO-1285, no en 241 s.
+4. Se apunta una fila nueva en el registro con la fecha, y una card por cada debilidad nueva.
+
+### Cuándo reabrir esta decisión
+
+- Si `flows` falla en una pasada, porque entonces un paso automático habría avisado antes.
+- Cuando FRESCO-1286 (un Stripe falso) permita ejecutar el pago y el webhook de punta a punta: habrá más experimentos y puede compensar automatizar alguno.
+
+---
+
 ## Cómo añadir un experimento
 
 1. Escribe la hipótesis **antes** de ejecutar: "si falla X, el usuario ve Y y se recupera en Z".
@@ -174,7 +248,7 @@ Cómo se reproduce el corte de respuesta perdida: en una sesión de Playwright, 
 3. Ejecútalo y apunta una fila nueva en el registro con la fecha, lo que pasó y si la hipótesis se cumplió.
 4. Por cada debilidad, abre una card o escribe un test de regresión; un hallazgo sin tarea se olvida.
 
-Hipótesis pendientes de ejecutar: Stripe o su webhook sin responder. El corte de red a mitad de una escritura ya está en la sección de arriba.
+Hipótesis pendientes de ejecutar: el webhook de Stripe con la base de datos caída y el pago desde la pantalla con Stripe sin responder (FRESCO-1286). El corte de red a mitad de una escritura y la llamada a Stripe que no contesta ya están en las secciones de arriba.
 
 ---
 

@@ -178,6 +178,19 @@ or a check to run after the deploy, and `scripts/sync-jira-issues.ts` deliberate
 
 ---
 
+## 6. The chaos exercise in each pass
+
+No chaos experiment runs in the CI (decided with FRESCO-1251). They run by hand in every audit pass, with the local
+stack up, and the list of what to run, what to compare and when to reopen the decision lives in
+[docs/workflows/chaos-experiments.md](../../docs/workflows/chaos-experiments.md), section "Decisión sobre el CI".
+
+In short: `scripts/chaos/local.sh flows` must exit `0`; the fault scenarios are read against the last row of the
+registry; `bun run chaos:stripe-stall` must give up inside the agreed limit; and a new row and one card per new
+weakness are written down. A pass that skips it leaves resilience unmeasured, the same way the e2e wall-clock was
+before `bun run ci:e2e-wallclock`.
+
+---
+
 ## Revisit triggers for this doctrine
 
 Loosen or change the above when:
