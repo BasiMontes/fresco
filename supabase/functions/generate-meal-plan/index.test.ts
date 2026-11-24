@@ -46,8 +46,10 @@ const ALL_SLOTS = Object.fromEntries(
   ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'].map(d => [d, TIPOS]),
 )
 
+// `tiempo_max_semana_min` and `tiempo_max_finde_min` are NOT NULL in the database, with these defaults. A profile without them makes the
+// selector compare every recipe against `undefined`, and every plan gets "tiempo de preparación ... undefined minutos" warnings.
 function profile(over: Record<string, unknown> = {}) {
-  return { id: 'user_1', plan: 'free', plan_expires_at: null, payment_failed_at: null, alergenos: [], ingredientes_odiados: [], planning_selection: ALL_SLOTS, ...over }
+  return { id: 'user_1', plan: 'free', plan_expires_at: null, payment_failed_at: null, alergenos: [], ingredientes_odiados: [], planning_selection: ALL_SLOTS, tiempo_max_semana_min: 30, tiempo_max_finde_min: 60, ...over }
 }
 
 const OK = {
@@ -135,6 +137,8 @@ describe('generate-meal-plan/index.ts — write', () => {
     expect(args.p_fecha_inicio).toBe('2026-10-19')
     expect(args.p_explicacion_aprendizaje).toBeNull()
     expect(args.p_slots).toHaveLength(21)
+    // No warning on a plain plan: this also fails if the fixture loses its time limits and the selector starts warning about "undefined minutos".
+    expect(args.p_advertencias).toEqual([])
     const body = await res.json() as { meal_plan_id: string, explicacion_aprendizaje: unknown, menu: Record<string, Record<string, { id: string } | null>> }
     expect(body.meal_plan_id).toBe('mp_1')
     expect(body.explicacion_aprendizaje).toBeNull()
@@ -169,6 +173,50 @@ describe('generate-meal-plan/index.ts — write', () => {
     const excluded = slots.find(s => s.dia === 'lunes' && s.tipo_plato === 'desayuno')
     expect(excluded).toMatchObject({ estado: 'excluida', recipe_id: null })
     expect(slots.filter(s => s.estado === 'pendiente').every(s => s.recipe_id !== null)).toBe(true)
+  })
+})
+
+describe('generate-meal-plan/index.ts — a tipo with no safe recipe', () => {
+  // FRESCO-1262 (AC-4, FR-8.2): a franja nothing safe can fill is a gap, never a failure and never a forced pick.
+  // `menu-selector.test.ts` pins the selection; this pins what reaches the database and the caller.
+  const withoutDinners = [...CATALOG.filter(r => r.clasificacion?.tipo_plato !== 'cena'), recipe('comida-10', 'comida'), recipe('comida-11', 'comida')]
+
+  test('the dinners are stored with no recipe, the other 14 slots are delivered and the plan does not fail', async () => {
+    setup({ rpc: { get_filtered_recipes: { data: withoutDinners } } })
+
+    const res = await handler(edgeRequest(BODY))
+
+    expect(res.status).toBe(200)
+    const args = svc.rpcCalls[0][1] as { p_slots: Array<{ tipo_plato: string, estado: string, recipe_id: string | null }> }
+    expect(args.p_slots).toHaveLength(21)
+    const dinners = args.p_slots.filter(s => s.tipo_plato === 'cena')
+    expect(dinners).toHaveLength(7)
+    expect(dinners.every(s => s.recipe_id === null && s.estado === 'pendiente')).toBe(true)
+    const others = args.p_slots.filter(s => s.tipo_plato !== 'cena')
+    expect(others).toHaveLength(14)
+    expect(others.every(s => s.recipe_id !== null && s.estado === 'pendiente')).toBe(true)
+  })
+
+  test('the gap is said once, naming the tipo, in what is stored and in what the caller gets', async () => {
+    setup({ rpc: { get_filtered_recipes: { data: withoutDinners } } })
+
+    const res = await handler(edgeRequest(BODY))
+
+    const stored = (svc.rpcCalls[0][1] as { p_advertencias: string[] }).p_advertencias
+    expect(stored).toEqual(['No hay ninguna receta de cena compatible con tus alergias y tu dieta. Revisa tus restricciones o añade recetas propias.'])
+    expect(((await res.json()) as { advertencias: string[] }).advertencias).toEqual(stored)
+  })
+
+  test('no slot is filled with a recipe of another tipo', async () => {
+    setup({ rpc: { get_filtered_recipes: { data: withoutDinners } } })
+
+    await handler(edgeRequest(BODY))
+
+    const slots = (svc.rpcCalls[0][1] as { p_slots: Array<{ tipo_plato: string, recipe_id: string | null }> }).p_slots
+    const tipoOf = new Map(withoutDinners.map(r => [r.id, r.clasificacion?.tipo_plato]))
+    for (const slot of slots.filter(s => s.recipe_id !== null)) {
+      expect(String(tipoOf.get(slot.recipe_id as string))).toBe(slot.tipo_plato)
+    }
   })
 })
 
