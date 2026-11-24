@@ -27,6 +27,7 @@ import type {
   UpdateRecipeStatusResponse,
 } from './types';
 
+import { EdgeFunctionTimeoutError, timeoutMsFor } from '@/lib/api/edge-function-timeout';
 import { clientEnv } from '@/lib/env';
 
 // api-contracts.md §0: `POST https://<project>.functions.supabase.co/<function-name>`
@@ -45,12 +46,36 @@ async function callEdgeFunction<TResponse>(
   functionName: string,
   { body, accessToken }: { body: unknown, accessToken: string | null },
 ): Promise<TResponse> {
+  // FRESCO-1249: a function that does not answer used to hang the screen until the browser gave up. The timer
+  // runs until the body is read too, and aborting only stops THIS request: the server may still finish it.
+  const timeoutMs = timeoutMsFor(functionName);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await postToEdgeFunction<TResponse>({ functionName, body, accessToken, signal: controller.signal });
+  }
+  catch (error) {
+    // An error that already is an HTTP answer won the race with the timer: keep it.
+    if (controller.signal.aborted && !(error instanceof EdgeFunctionError)) {
+      throw new EdgeFunctionTimeoutError(functionName, timeoutMs);
+    }
+    throw error;
+  }
+  finally {
+    clearTimeout(timer);
+  }
+}
+
+async function postToEdgeFunction<TResponse>(
+  { functionName, body, accessToken, signal }: { functionName: string, body: unknown, accessToken: string | null, signal: AbortSignal },
+): Promise<TResponse> {
   // Read (and, on first call, validate) here rather than at module scope —
   // fails fast the moment an Edge Function is actually invoked, without
   // forcing every page that merely imports this module (e.g. during
   // `next build`'s static prerendering) to have real Supabase env vars set.
   const response = await fetch(`${clientEnv.NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL}/${functionName}`, {
     method: 'POST',
+    signal,
     headers: {
       'Content-Type': 'application/json',
       // api-contracts.md §0: Authorization: Bearer <supabase-jwt> required on
@@ -79,7 +104,8 @@ async function callEdgeFunction<TResponse>(
     throw new EdgeFunctionError(response.status, errorBody);
   }
 
-  return response.json() as Promise<TResponse>;
+  // `await` so a body that stalls after the headers is still inside the timeout.
+  return await response.json() as TResponse;
 }
 
 /**
@@ -180,4 +206,4 @@ export async function deleteCatalogRecipe(
   return callEdgeFunction<DeleteCatalogRecipeResponse>('delete-catalog-recipe', { body: request, accessToken });
 }
 
-export { EdgeFunctionError };
+export { EdgeFunctionError, EdgeFunctionTimeoutError };
