@@ -1583,8 +1583,10 @@ Característica: Flujo completo de usuario en Fresco
     # Nota aparte, fuera de este ticket: el límite de 100 caracteres
     # (FRESCO-107) sí sigue siendo solo client-side, sin backstop en DB.
 
-  @biblioteca @edge-case @verificado-manual-2026-08-07 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1266: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @biblioteca @edge-case @verificado-manual-2026-08-07 @solo-manual
+  # @solo-manual (FRESCO-1266): cubierto por `components/recipes/recipe-detail.test.tsx`: el botón añade la receta a favoritos (llama a `addFavorite` con
+  # el id y pasa a "Quitar de favoritos"), quita un favorito existente y revierte el botón si guardar falla. El job test:e2e va cerca de su aviso de
+  # presupuesto (ADR-0018).
   Escenario: Se puede marcar/desmarcar favorito desde el detalle de una receta del catálogo
     Dado que Laura abre el detalle de una receta de catálogo
     Cuando busca el control de favorito en esa pantalla
@@ -1594,12 +1596,18 @@ Característica: Flujo completo de usuario en Fresco
     # optimista que FavoriteRecipeCard. Verificado en vivo: toggle funciona
     # y persiste tras reload.
 
-  @biblioteca @edge-case @verificado-manual-2026-08-07 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1266: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
-  Escenario: El filtro de tipo de comida soporta navegación por flechas de teclado (patrón radiogroup)
-    Dado que Laura tabula hasta el grupo "Filtrar por tipo de comida" en la Biblioteca
-    Cuando usa las flechas izquierda/derecha
-    Entonces la selección se mueve entre las opciones, con Tab deteniéndose solo en la opción activa
+  @a11y @edge-case @solo-manual
+  # @solo-manual (FRESCO-1266): cubierto por `components/ui/segmented-control.test.tsx`: marca la opción elegida con aria-checked, las flechas mueven la
+  # selección y dan la vuelta en los extremos, y hay un único punto de Tab con tabindex itinerante. El job test:e2e va cerca de su aviso de presupuesto
+  # (ADR-0018).
+  # REESCRITO el 2026-11-24 (FRESCO-1266): la versión anterior hablaba del filtro "Filtrar por tipo de comida" de la Biblioteca. FRESCO-273 lo reemplazó
+  # por el cajón "Filtrar y ordenar", con casillas de verificación y selección múltiple, así que ese radiogroup ya no existe allí. El control segmentado
+  # sigue vivo en un único sitio, el selector "Plan de facturación" del resumen de Pro (`components/profile/pro-checkout-summary.tsx`), con el mismo
+  # contrato de teclado.
+  Escenario: El control segmentado se maneja con el teclado como un radiogroup
+    Dado que una persona tabula hasta el selector "Plan de facturación" del resumen de la suscripción a Pro
+    Cuando usa las flechas izquierda y derecha
+    Entonces la selección se mueve entre las opciones, dando la vuelta en los extremos, con Tab deteniéndose solo en la opción activa
     # FRESCO-119 (arreglado 2026-08-07): components/ui/segmented-control.tsx
     # ahora implementa roving tabindex + flechas izquierda/derecha (con
     # wrap). Verificado en vivo con Playwright sobre /recipes: solo la
