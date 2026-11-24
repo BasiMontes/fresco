@@ -73,6 +73,19 @@ El estado de cada card vive en Jira, no aquí.
 
 El helper es `sessionCheckFailure` en `supabase/functions/_shared/auth.ts`: solo un error de red de Auth o una respuesta 5xx cuenta como transitorio; cualquier otro, y cualquier error ambiguo, sigue siendo `401`. Lo usan `requireAuthenticatedUser`, `reassign-guest-data` y `delete-account`.
 
+### 2026-11-24: la llamada a una función que no responde, tras FRESCO-1249
+
+Se ejecutó a mano en el navegador sobre la pila local (no con `scripts/chaos/local.sh`): se pulsa "Generar mi menú" con el runtime de Edge Functions averiado y se mide cuánto tarda en salir un mensaje.
+
+| Escenario | ¿Se cumplió la hipótesis? | Qué pasó |
+|---|---|---|
+| `docker stop` del runtime | Matiz sobre el hallazgo 1 | Hipótesis: la llamada se queda colgada. Resultado: la pasarela acaba respondiendo `502 Bad Gateway` a los ~25 s y la pantalla muestra el aviso genérico con la opción de reintentar. El `edge-stop` del script parecía no fallar nunca porque su sonda se rinde a los 8 s |
+| `docker pause` del runtime | Sí | Hipótesis: con el límite de FRESCO-1249 la pantalla ya no espera sin fin. Resultado: la pasarela no responde, y a los 30 s sale "Está tardando más de lo normal. Puede que ya se haya generado: recarga la página." con el botón activo. Al `docker unpause` y reintentar, el menú se genera (0 planes antes, 1 después) y la pantalla pasa a `/calendar` |
+
+Lo que esta ejecución **no** cubre: el caso en que la generación termina en el servidor después del corte y el reintento recibe `409`. Aquí el primer intento, abortado por el cliente, no llegó a generar nada. Ese camino lo cubren solo las pruebas unitarias de `generate-week-button` y de `use-generate-meal-plan`.
+
+Para reproducir un servidor que no contesta usa `docker pause`, no `docker stop`: con un contenedor parado la pasarela acaba rindiéndose sola.
+
 ---
 
 ## Cómo añadir un experimento
