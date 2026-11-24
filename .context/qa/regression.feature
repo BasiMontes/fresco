@@ -943,16 +943,21 @@ Característica: Flujo completo de usuario en Fresco
     Cuando recarga /calendar
     Entonces ve el menú en el orden que dejó, no el orden original generado
 
-  @calendario @edge-case @verificado-manual-2026-07-31 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1263: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @calendario @edge-case @verificado-manual-2026-07-31 @solo-manual
+  # @solo-manual (FRESCO-1263): cubierto por pruebas, sin e2e. `components/calendar/use-calendar-drag-drop.test.tsx` cubre las dos ramas del
+  # fallo: el rechazo del RPC (`MealPlanError`, "el menú cambió mientras tanto") y el error de red. En las dos la rejilla vuelve a su posición,
+  # los huecos dejan de estar pendientes y sale un mensaje de que el nuevo orden no se guardó. Un e2e exigiría romper la red a mitad de un
+  # arrastre, y el job test:e2e va cerca de su aviso de presupuesto (ADR-0018).
   Escenario: El intercambio falla por error de red o de base de datos
     Dado que el usuario arrastra un plato a otro hueco
     Cuando el guardado del nuevo orden falla
     Entonces el plato vuelve visualmente a su posición original
     Y ve un mensaje claro de que el cambio no se guardó
 
-  @calendario @edge-case @verificado-manual-2026-07-29 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1263: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @calendario @edge-case @verificado-manual-2026-07-29 @solo-manual
+  # @solo-manual (FRESCO-1263): cubierto por `tests/db/own-menu-readable.test.ts`, contra la base real: un usuario normal, con su propio JWT, lee su
+  # plan con las recetas embebidas con el mismo select que usa el calendario (`lib/api/meal-plan.ts`). Comprobado que falla si la policy de
+  # `recipes` vuelve a dejar entrar solo al rol anon. No es un recorrido de Playwright, y el job test:e2e va cerca de su aviso de presupuesto (ADR-0018).
   Escenario: Un usuario autenticado puede leer de vuelta su propio menú generado
     Dado que un usuario generó un menú y tiene su propia sesión (no admin)
     Cuando visita /menu o /calendar
@@ -1006,8 +1011,10 @@ Característica: Flujo completo de usuario en Fresco
     # flecha de día siguiente pisaba la cabecera. El número de días visibles
     # ahora sale del ancho del contenedor, no del de la ventana.
 
-  @calendario @edge-case @verificado-manual-2026-07-31 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1263: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @calendario @edge-case @verificado-manual-2026-07-31 @solo-manual
+  # @solo-manual (FRESCO-1263): cubierto por `components/calendar/use-calendar-drag-drop.test.tsx`: "a slot that is already being saved cannot be
+  # dragged again" (no hay segunda llamada) y "marks both slots as pending while the save is in flight". La guarda es el conjunto de huecos
+  # pendientes del hook. Un e2e exigiría retrasar el RPC en el servidor, y el job test:e2e va cerca de su aviso de presupuesto (ADR-0018).
   Escenario: Dos arrastres simultáneos sobre huecos que se solapan
     Dado que un primer intercambio todavía no ha terminado de guardarse
     Cuando el usuario arrastra de nuevo uno de esos dos huecos
