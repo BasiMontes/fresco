@@ -32,6 +32,13 @@ Given(/^que Laura está en \/profile$/, async ({ page, testUserFactory }) => {
   await loginAndGoToProfile(page, testUser);
 });
 
+// FRESCO-1282: the goal, level and cuisine block is editable only with Pro.
+Given(/^que Laura, con plan Pro, está en \/profile$/, async ({ page, testUserFactory }) => {
+  const testUser = await testUserFactory({ plan: 'pro' });
+  ctx.testUser = testUser;
+  await loginAndGoToProfile(page, testUser);
+});
+
 Given(/^que Laura está en \/profile con sesión activa$/, async ({ page, testUserFactory }) => {
   const testUser = await testUserFactory();
   ctx.testUser = testUser;
@@ -67,6 +74,12 @@ When(/^activa un chip de dieta y confirma "Actualizar Preferencias"$/, async ({ 
   await page.getByTestId('actualizar_preferencias_button').click();
 });
 
+When(/^cambia su objetivo a "Ahorrar dinero", añade la cocina "Italiana" y confirma "Actualizar Preferencias"$/, async ({ page }) => {
+  await page.getByTestId('preferencia_objetivo_group_option_ahorrar_dinero').click();
+  await page.getByTestId('preferencia_cocina_option').filter({ hasText: 'Italiana' }).click();
+  await page.getByTestId('actualizar_preferencias_button').click();
+});
+
 When(/^pulsa "Descargar" en Backup CSV$/, async ({ page }) => {
   const downloadPromise = page.waitForEvent('download');
   await page.getByTestId('export_data_link').click();
@@ -93,6 +106,13 @@ Then(/^la preferencia queda guardada y sigue activa tras recargar la página$/, 
   await expect(page.getByTestId('preferencias_saved_message')).toBeVisible();
   await page.reload();
   await expect(page.locator('[data-testid="preferencia_dieta_option"][aria-pressed="true"]').first()).toBeVisible();
+});
+
+Then(/^su objetivo y su cocina siguen elegidos tras recargar la página$/, async ({ page }) => {
+  await expect(page.getByTestId('preferencias_saved_message')).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId('preferencia_objetivo_group_option_ahorrar_dinero')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('preferencia_cocina_option').filter({ hasText: 'Italiana' })).toHaveAttribute('aria-pressed', 'true');
 });
 
 // FRESCO-1189: this step used to check only the URL, so an empty or wrong file would have passed. It reads the
