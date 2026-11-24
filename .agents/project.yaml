@@ -129,6 +129,11 @@ git_strategy:
         revisit_when: >-
           a second committer joins, or a promoted SHA reaches main with a red staging run despite git:promote
   branch_prefixes:
+    # FRESCO-1281: `precedence` is the tiebreaker for a change that MIXES types (the dominant one wins), not a list of
+    # prefixes a branch may use. `ci/` and `perf/` are valid Conventional Commit types (git-flow-master
+    # references/conventional-commits.md) and fit a branch whose whole change is CI configuration or a measured
+    # performance change; they are not ranked here because a pure one has no tie to break. Run `bun run git:policy verify`
+    # to see what the host enforces.
     precedence: [feat, fix, refactor, test, docs, chore]
     naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'
     naming_without_key: '{prefix}/{kebab-slug}'
