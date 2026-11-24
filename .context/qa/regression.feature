@@ -1360,14 +1360,19 @@ Característica: Flujo completo de usuario en Fresco
     Cuando se ejecuta el job de reconciliación de suscripciones
     Entonces esa fila queda degradada a plan Free
 
-  @seguridad @edge-case @verificado-manual-2026-10-04 @pendiente
+  @seguridad @edge-case @verificado-manual-2026-11-24 @solo-manual
   # FRESCO-840: el `notFound()` de la página corría bajo el Suspense de
   # `app/(app)/loading.tsx`, con la respuesta ya en streaming, así que el estado
   # quedaba en 200 (reproducido en local y en staging con la cuenta no admin).
-  # La decisión se toma ahora en `proxy.ts`, antes del render. Cubierto por
-  # `proxy.test.ts` (gateado por `bun test` en CI); la rama admin no se verificó
-  # en vivo porque la cuenta de automatización no es admin.
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1267: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  # La decisión se toma ahora en `proxy.ts`, antes del render: un usuario con sesión
+  # que no es admin se reescribe a `/__admin-not-found`, una ruta que no existe a propósito.
+  # @solo-manual (FRESCO-1267): cubierto por `proxy.test.ts` (gateado por `bun test` en CI): 404 para un no admin en `/admin/recipes`, con la cabecera
+  # CSP y una sola llamada a `getUser`; reescritura a `/__admin-not-found` (y que esa ruta no exista); el admin pasa sin tocar; sin sesión cae al layout,
+  # que redirige a /login; y ni una llamada a GoTrue fuera de /admin. Lo que se ve es `app/not-found.tsx`, cubierto por `app/not-found.test.tsx`.
+  # Comprobado en vivo el 2026-11-24 en la pila local, con la cuenta de automatización (no admin) y el código actual: `/admin/recipes` responde 404, la
+  # URL se mantiene y se ve "Página no encontrada" con "Volver al inicio"; una ruta de control (`/menu`) responde 200. Sin comprobar en vivo: la rama
+  # admin, porque la cuenta de automatización no lo es (la cubre `proxy.test.ts`). Un e2e no compensa: el job test:e2e va cerca de su aviso de
+  # presupuesto (ADR-0018) y el contrato ya está fijado en el proxy.
   Escenario: Un usuario sin rol admin recibe un 404 real en el catálogo de administración
     Dado que un usuario con sesión no figura en la lista de administradores
     Cuando abre la ruta /admin/recipes
