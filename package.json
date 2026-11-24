@@ -55,6 +55,7 @@
     "agents:compat": "bun scripts/agent-compatibility.ts",
     "agents:compat:check": "bun scripts/agent-compatibility.ts --check",
     "//codex": "RETIRED launcher (ADR-0058), kept for reference: dotenv -o -e .env -- codex",
+    "ci:e2e-wallclock": "bun scripts/e2e-wallclock.ts",
     "context:hydrate": "bun scripts/sync-jira-issues.ts pull --include-comments",
     "git:checks": "bun scripts/required-checks.ts",
     "git:policy": "bun scripts/git-policy.ts",
