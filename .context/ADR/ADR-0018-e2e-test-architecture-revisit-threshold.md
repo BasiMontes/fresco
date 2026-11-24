@@ -78,3 +78,7 @@ The Decision above describes the state on 2026-08-31 and is kept as written. Sin
 - FRESCO-310 / FRESCO-266 — warm local Supabase stack + pre-built prod server, why per-scenario cost is 1–3s
 - `playwright.config.ts` — `workers: 1` / `fullyParallel: false` rationale (inline comment, updated to point here)
 - `.context/qa/README.md` — ratchet section (updated with the revised trigger)
+
+## Update 2026-11-24 (FRESCO-1280): the trigger is measured
+
+Nothing measured the trigger above; `audit-process.md` quoted a duration that went stale. `bun run ci:e2e-wallclock` (`scripts/e2e-wallclock.ts`) now reads the last green `test:e2e` jobs of the `staging` pushes from GitHub Actions, prints their durations and exits 1 when two consecutive runs pass the early warning or the hard trigger (exit 2 when it cannot tell). The thresholds in this ADR are unchanged. It runs by hand in each audit pass; a CI warning was considered and left out, because it needs `actions: read` on the workflow and nobody opens a CI annotation.

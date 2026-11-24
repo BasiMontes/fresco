@@ -135,7 +135,10 @@ that had been marked `Finalizada` while the finding's metric was still non-zero.
 
 ## 4. CI optimization is frozen
 
-The `test:e2e` CI job is **green and inside budget** (~5.5 min as of 2026-09-02).
+The `test:e2e` CI job is **inside budget** unless the ADR-0018 trigger below has fired. The duration
+is not quoted here because it changes with the repo: measure it with `bun run ci:e2e-wallclock`
+(FRESCO-1280), which reads the last green `test:e2e` jobs of the `staging` pushes from GitHub Actions
+(`pr-check.yml`) and exits 1 when the early warning or the hard trigger fired. Run it in every audit pass.
 No further work goes into speeding it up until a real trigger fires.
 
 - The **only** condition that reopens e2e-CI optimization is the wall-clock trigger
