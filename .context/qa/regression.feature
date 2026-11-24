@@ -314,16 +314,28 @@ Característica: Flujo completo de usuario en Fresco
     Cuando pulsa "Ver mi menú"
     Entonces llega a /menu y la semana sigue teniendo un único menú
 
-  @generacion-menu @edge-case @verificado-manual-2026-07-29 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1262: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
-  Escenario: El catálogo filtrado no tiene recetas específicas para todos los huecos
-    Dado que las restricciones del usuario dejan un catálogo con recetas insuficientes para desayuno o cena
+  @generacion-menu @edge-case @solo-manual
+  # @solo-manual (FRESCO-1262): cubierto por pruebas, sin e2e. Selección: `supabase/functions/generate-meal-plan/menu-selector.test.ts`
+  # (un tipo de plato sin recetas compatibles recibe el centinela y un aviso, A4-M3). Persistencia y respuesta:
+  # `supabase/functions/generate-meal-plan/index.test.ts`, bloque "a tipo with no safe recipe". Automatizarlo como e2e no compensa:
+  # el job test:e2e va cerca de su aviso de presupuesto (ADR-0018).
+  # REESCRITO el 2026-11-24 (FRESCO-1262): la versión anterior decía que "la IA rellena esos huecos con recetas de tipo comida" y que
+  # salía un aviso "Antes de continuar…". Eso era del diseño con Gemini (ADR-0005): hoy no se sustituye nada, en línea con AC-4 y FR-8.2
+  # ("nunca inventada ni forzada"), y ese aviso no existe en el menú.
+  Escenario: Un tipo de plato sin ninguna receta segura deja esas franjas sin receta y lo avisa
+    Dado que las restricciones del usuario dejan sin ninguna receta compatible a un tipo de plato (por ejemplo, la cena)
+    Y que el catálogo filtrado conserva al menos 21 recetas de los otros tipos
     Cuando se genera el menú
-    Entonces la IA rellena esos huecos con recetas de tipo "comida" como sustituto
-    Y el sistema muestra un aviso explícito ("Antes de continuar…") explicando qué se sustituyó y por qué
+    Entonces las franjas de ese tipo se guardan sin receta, sin sustituirlas por recetas de otro tipo
+    Y el plan lleva un aviso que nombra el tipo ("No hay ninguna receta de cena compatible con tus alergias y tu dieta")
+    Y el resto de franjas se entrega con normalidad
 
-  @generacion-menu @edge-case @verificado-manual-2026-08-01 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1262: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @generacion-menu @edge-case @verificado-manual-2026-08-01 @solo-manual
+  # @solo-manual (FRESCO-1262): cubierto por pruebas, sin e2e. Backend: `supabase/functions/generate-meal-plan/index.test.ts` (422 con el
+  # catálogo recortado a 20 recetas y con el RPC del filtro caído, sin escribir nada). Mensaje amable:
+  # `components/onboarding/use-generate-meal-plan.test.tsx` y `components/calendar/generate-week-button.test.tsx`. Un e2e depende de una
+  # intersección de restricciones que el catálogo puede dejar de reproducir (ver el comentario de abajo) y el job test:e2e va cerca de su
+  # aviso de presupuesto (ADR-0018).
   Escenario: El catálogo filtrado no llega al mínimo de 21 recetas para el perfil declarado (ADR-0005)
     Dado que las restricciones combinadas del usuario dejan menos de 21 recetas disponibles tras el filtro SQL
     Cuando intenta generar el menú
@@ -372,18 +384,17 @@ Característica: Flujo completo de usuario en Fresco
     Cuando intenta generar de nuevo sin eliminar el plan existente
     Entonces el sistema responde 409 y no crea un plan duplicado
 
-  @onboarding @edge-case @verificado-manual-2026-08-06 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1262: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @onboarding @edge-case @verificado-manual-2026-08-06 @solo-manual
+  # @solo-manual (FRESCO-1262): cubierto por pruebas, sin e2e. El 409 se distingue en `components/onboarding/use-generate-meal-plan.test.tsx`, el
+  # mensaje informativo en `components/onboarding/onboarding-generate-status.test.tsx` y la salida ("Ver mi menú" en lugar de "Empezar") en
+  # `components/onboarding/onboarding-footer.test.tsx`. Llegar al 409 por la interfaz exige repetir el onboarding completo sobre una semana ya generada.
   Escenario: El 409 de "ya existe un menú" muestra un mensaje accionable en /onboarding
     Dado que el usuario ya generó un menú para la semana actual
     Cuando repite el flujo de onboarding completo para la misma semana
     Entonces ve un mensaje específico ("ya tienes un menú esta semana") con una salida clara a /menu o /calendar
-    # FRESCO-104 (MAJOR, sin fix todavía): app/onboarding/page.tsx
-    # (handleGenerate) solo distingue el caso 422 — el 409 real cae al
-    # mensaje genérico "No pudimos guardar tu perfil... Intenta de nuevo.",
-    # engañoso (reintentar nunca funciona) y sin salida. El equivalente en
-    # components/calendar/generate-week-button.tsx SÍ maneja el 409
-    # correctamente — confirma que es un gap, no una limitación técnica.
+    # FRESCO-104 (arreglado): `components/onboarding/use-generate-meal-plan.ts` distingue el 409, `onboarding-generate-status.tsx` lo
+    # dice sin tono de error y `onboarding-footer.tsx` ofrece "Ver mi menú". Antes caía en el mensaje genérico "No pudimos guardar tu
+    # perfil... Intenta de nuevo.", engañoso (reintentar nunca funciona) y sin salida.
 
   @onboarding @edge-case @verificado-manual-2026-08-07 @automatizado
   # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-463)
@@ -416,15 +427,19 @@ Característica: Flujo completo de usuario en Fresco
     Y sube y baja los adultos y los niños con los botones del paso 3
     Entonces las tarjetas elegidas figuran en el resumen y los botones respetan el mínimo y el máximo del hogar
 
-  @generacion-menu @edge-case @verificado-manual-2026-07-31 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1262: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @generacion-menu @edge-case @verificado-manual-2026-07-31 @solo-manual
+  # @solo-manual (FRESCO-1262): cubierto por `supabase/functions/generate-meal-plan/index.test.ts` ("404 when the profile does not exist"). No es un
+  # recorrido de usuario: el onboarding guarda el perfil antes de generar, así que solo se llega a este 404 llamando a la función a mano.
   Escenario: El perfil de usuario no existe todavía
     Dado que un usuario autenticado nunca completó el onboarding
     Cuando se intenta generar un menú para él
     Entonces el sistema responde 404 "Perfil de usuario no encontrado"
 
-  @generacion-menu @edge-case @verificado-manual-2026-07-31 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1262: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @generacion-menu @edge-case @verificado-manual-2026-07-31 @solo-manual
+  # @solo-manual (FRESCO-1262): cubierto por pruebas, sin e2e. Selección: `supabase/functions/generate-meal-plan/menu-selector.test.ts`.
+  # Persistencia, resto de franjas y respuesta sin fallo: `supabase/functions/generate-meal-plan/index.test.ts`, bloque "a tipo with no safe recipe"
+  # (recipe_id nulo, las otras 14 franjas con receta de su tipo, un solo aviso). La parte del frontend es el escenario @automatizado
+  # "El frontend muestra la franja sin receta".
   Escenario: Ninguna receta del catálogo es segura para una franja concreta (AC-4, FR-8.2)
     Dado que ningún ítem del catálogo filtrado cumple una regla absoluta para un día/tipo concreto
     Cuando se genera el menú
