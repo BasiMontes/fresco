@@ -34,10 +34,12 @@ export type OnboardingProfilePayload = Pick<
 // `planning_selection` (FRESCO-135/136/199), and
 // `nivel_experiencia` (FRESCO-137) are optional here — `/profile`'s
 // preferences editor (FRESCO-70) round-trips this same type through
-// `getUserDietaryPreferences` without selecting these columns, and a save
-// from there must NOT wipe them (an omitted key drops out of Supabase's
-// upsert SET clause entirely, leaving the existing value untouched; a
-// missing key on INSERT falls back to the column's DB default).
+// `getUserDietaryPreferences`, and a save from there must NOT wipe them (an
+// omitted key drops out of Supabase's upsert SET clause entirely, leaving the
+// existing value untouched; a missing key on INSERT falls back to the column's
+// DB default). Since FRESCO-1282 that read does select `objetivo` and
+// `nivel_experiencia` so Pro can edit them, and the form sends them back only
+// when Pro changed one of the three soft preferences.
 > & Partial<Pick<
   UserProfile,
   | 'nombre'
@@ -236,7 +238,7 @@ export async function getUserDietaryPreferences(
 
   const { data, error } = await client
     .from('user_profiles')
-    .select('num_personas, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas, planning_selection')
+    .select('num_personas, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas, planning_selection, objetivo, nivel_experiencia')
     .eq('id', resolvedUserId)
     .maybeSingle();
 

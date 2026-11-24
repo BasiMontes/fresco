@@ -32,7 +32,7 @@ const PREFERENCES = {
 let loaderSpy: ReturnType<typeof spyOn<typeof profileLoader, 'loadPreferencesPageData'>>;
 
 beforeEach(() => {
-  loaderSpy = spyOn(profileLoader, 'loadPreferencesPageData').mockResolvedValue({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true });
+  loaderSpy = spyOn(profileLoader, 'loadPreferencesPageData').mockResolvedValue({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true, plan: 'free' });
 });
 
 afterEach(() => { loaderSpy.mockRestore(); });
@@ -54,5 +54,22 @@ describe('ProfilePreferencesPage', () => {
   test('renders the form with what was saved', async () => {
     await renderPage();
     expect(screen.getByTestId('preferencesForm')).toBeInTheDocument();
+  });
+
+  // FRESCO-1282: the plan the loader read decides whether the goal, level and cuisine block is editable.
+  test('a Free plan gets the locked block', async () => {
+    await renderPage();
+    expect(screen.getByTestId('preferencias_pro_bloqueado')).toBeInTheDocument();
+    expect(screen.queryByTestId('preferencias_pro_bloque')).toBeNull();
+  });
+
+  test('a Pro and a Family plan get the editable block', async () => {
+    for (const plan of ['pro', 'family'] as const) {
+      loaderSpy.mockResolvedValue({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true, plan });
+      const { unmount } = renderWithProviders(await PreferencesPage());
+      expect(screen.getByTestId('preferencias_pro_bloque')).toBeInTheDocument();
+      expect(screen.queryByTestId('preferencias_pro_bloqueado')).toBeNull();
+      unmount();
+    }
   });
 });

@@ -45,7 +45,7 @@ afterEach(() => {
 
 function render(props: { hasHealthDataConsent: boolean, initialPreferences?: OnboardingProfilePayload }) {
   return renderWithProviders(
-    <PreferencesForm initialPreferences={props.initialPreferences ?? emptyPreferences} hasHealthDataConsent={props.hasHealthDataConsent} />,
+    <PreferencesForm initialPreferences={props.initialPreferences ?? emptyPreferences} hasHealthDataConsent={props.hasHealthDataConsent} isPro={false} />,
   );
 }
 

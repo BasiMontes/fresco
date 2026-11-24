@@ -1649,6 +1649,15 @@ Característica: Flujo completo de usuario en Fresco
     Y activa un chip de dieta y confirma "Actualizar Preferencias"
     Entonces la preferencia queda guardada y sigue activa tras recargar la página
 
+  @perfil @automatizado
+  # Automatizado: tests/steps/perfil.steps.ts (FRESCO-1282)
+  # Solo Pro edita el objetivo, el nivel y las cocinas favoritas: un Free los ve bloqueados (pruebas de componente).
+  Escenario: Un usuario Pro cambia su objetivo y sus cocinas favoritas desde el perfil
+    Dado que Laura, con plan Pro, está en /profile
+    Cuando abre "Preferencias" desde su perfil
+    Y cambia su objetivo a "Ahorrar dinero", añade la cocina "Italiana" y confirma "Actualizar Preferencias"
+    Entonces su objetivo y su cocina siguen elegidos tras recargar la página
+
   @perfil @verificado-manual-2026-08-04 @automatizado
   # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355)
   # FRESCO-1189: el fichero es un CSV (FRESCO-163), no un JSON, y el paso final no comprobaba nada del contenido:

@@ -42,7 +42,7 @@ afterEach(() => {
 });
 
 function renderForm(initialPreferences: OnboardingProfilePayload = PREFERENCES) {
-  return renderWithProviders(<PreferencesForm initialPreferences={initialPreferences} hasHealthDataConsent />);
+  return renderWithProviders(<PreferencesForm initialPreferences={initialPreferences} hasHealthDataConsent isPro={false} />);
 }
 
 const dieta = (label: string) => screen.getAllByTestId('preferencia_dieta_option').find(button => button.textContent?.trim() === label)!;

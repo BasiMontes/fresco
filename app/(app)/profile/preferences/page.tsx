@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 export const metadata: Metadata = { title: 'Preferencias · Fresco' };
 
 /**
- * `/profile/preferences` (FRESCO-1070) — the diet, allergen and meal-planning form, moved off
+ * `/profile/preferences` (FRESCO-1070) — the diet, allergen and meal-planning form (FRESCO-1282: plus the Pro goal, level and cuisines), moved off
  * `/profile` where it shared a two-column grid with a short Ayuda list. The form itself is
  * unchanged, including the health-data consent it asks for before saving. Session access is the
  * `(app)` layout's, the same as `/profile`.
@@ -23,7 +23,7 @@ export default async function ProfilePreferencesPage() {
   // FRESCO-483: shared verified session read (React.cache) — no extra GoTrue round trip.
   const { data: { user } } = await getAuthUser();
 
-  const { dietaryPreferences, hasHealthDataConsent } = await loadPreferencesPageData(supabase, user?.id);
+  const { dietaryPreferences, hasHealthDataConsent, plan } = await loadPreferencesPageData(supabase, user?.id);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -42,7 +42,7 @@ export default async function ProfilePreferencesPage() {
 
       <Card className="mt-4">
         <CardContent>
-          <PreferencesForm initialPreferences={dietaryPreferences} hasHealthDataConsent={hasHealthDataConsent} />
+          <PreferencesForm initialPreferences={dietaryPreferences} hasHealthDataConsent={hasHealthDataConsent} isPro={plan !== 'free'} />
         </CardContent>
       </Card>
     </div>
