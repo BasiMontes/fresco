@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { NextRequest } from 'next/server';
 
@@ -101,6 +103,17 @@ describe('proxy — admin routes answer a real 404 to non-admins', () => {
     expect(res.status).toBe(404);
     expect(res.headers.get('Content-Security-Policy')).toBeTruthy();
     expect(getUserCalls).toBe(1);
+  });
+
+  // FRESCO-1267: the body the person sees ("no encontrada") comes from rewriting to a path no route serves, so Next renders
+  // `app/not-found.tsx`. The status test above would also pass with another mechanism that leaves the body of the admin page.
+  it('rewrites the non-admin to a path no route serves, so the not-found page is what they see', async () => {
+    currentUser = { id: 'user-2' };
+    const res = await proxy(requestTo('/admin/recipes'));
+
+    const target = new URL(res.headers.get('x-middleware-rewrite') ?? '');
+    expect(target.pathname).toBe('/__admin-not-found');
+    expect(existsSync(join(process.cwd(), 'app', '__admin-not-found'))).toBe(false);
   });
 
   it('lets the admin through untouched', async () => {
