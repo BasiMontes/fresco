@@ -292,7 +292,13 @@ export function PreferencesForm({ initialPreferences, hasHealthDataConsent, isPr
     setSaveError(null);
     setSaved(false);
     try {
-      await upsertUserProfile(preferences);
+      // FRESCO-1282: the form reads `objetivo` and `nivel_experiencia` so it can show them, but a save that did not
+      // edit them must not send them: an omitted key stays out of the upsert's SET clause, so a stale tab or a plan
+      // downgrade between load and save cannot overwrite a newer value. Free never edits them.
+      const { objetivo, nivel_experiencia: nivelExperiencia, ...rest } = preferences;
+      await upsertUserProfile(isPro && isSoftPreferencesDirty(preferences, initialPreferences)
+        ? { ...rest, objetivo, nivel_experiencia: nivelExperiencia }
+        : rest);
       setSaved(true);
     }
     catch (error) {

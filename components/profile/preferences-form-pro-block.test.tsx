@@ -100,6 +100,19 @@ describe('PreferencesForm — Pro edits goal, level and cuisines', () => {
     expect(sent.ingredientes_odiados).toEqual(['cebolla']);
   });
 
+  test('a Pro save that only changes the diet does not send the goal or the level either', async () => {
+    const user = setupUser();
+    renderForm(true);
+    await user.click(screen.getAllByTestId('preferencia_dieta_option').find(button => button.textContent?.trim() === 'Keto')!);
+
+    await user.click(saveButton());
+
+    await waitFor(() => expect(upsert).toHaveBeenCalledTimes(1));
+    const sent = upsert.mock.calls[0][0];
+    expect('objetivo' in sent).toBe(false);
+    expect('nivel_experiencia' in sent).toBe(false);
+  });
+
   test('a user who never chose a goal or a level can save a cuisine without sending them', async () => {
     const user = setupUser();
     renderForm(true, { ...PREFERENCES, objetivo: undefined, nivel_experiencia: undefined });
@@ -148,7 +161,7 @@ describe('PreferencesForm — Free sees them locked', () => {
     expect(text('preferencia_cocinas_valor')).toBe('Sin indicar');
   });
 
-  test('saving a diet change keeps the goal, level and cuisines exactly as they were', async () => {
+  test('saving a diet change does not send the goal or the level, so it cannot overwrite them', async () => {
     const user = setupUser();
     renderForm(false);
     await user.click(screen.getAllByTestId('preferencia_dieta_option').find(button => button.textContent?.trim() === 'Keto')!);
@@ -156,11 +169,9 @@ describe('PreferencesForm — Free sees them locked', () => {
     await user.click(saveButton());
 
     await waitFor(() => expect(upsert).toHaveBeenCalledTimes(1));
-    expect(upsert.mock.calls[0][0]).toMatchObject({
-      dieta_keto: true,
-      objetivo: 'comer_sano',
-      nivel_experiencia: 'novato',
-      cocinas_favoritas: ['española'],
-    });
+    const sent = upsert.mock.calls[0][0];
+    expect(sent).toMatchObject({ dieta_keto: true, cocinas_favoritas: ['española'] });
+    expect('objetivo' in sent).toBe(false);
+    expect('nivel_experiencia' in sent).toBe(false);
   });
 });
