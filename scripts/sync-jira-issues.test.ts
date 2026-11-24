@@ -314,6 +314,17 @@ describe('extractClosingCriteria', () => {
     expect(extractClosingCriteria(md)).toBe('```gherkin\n# comentario\n## no soy un titulo\nGiven algo\n```');
   });
 
+  // FRESCO-1279: a `Verificación` section is a measurement or a post-deploy check, not the closing criteria.
+  test('a Verificación section alone is not read as the closing criteria', () => {
+    const md = ['Contexto.', '', '## Verificación', '', 'Medido en producción: la captura pesa 26 KiB.'].join('\n');
+    expect(extractClosingCriteria(md)).toBe('');
+  });
+
+  test('with both sections, only the closing criteria come out', () => {
+    const md = ['## Verificación', '', 'Remedir tras el despliegue.', '', '## Criterio de cierre', '', '- A pasa', '', '## Notas', '', 'otra cosa'].join('\n');
+    expect(extractClosingCriteria(md)).toBe('- A pasa');
+  });
+
   test('falls back to the inline label older cards use, up to the end of the text', () => {
     const md = 'Hoy la regla no existe. Fuera de alcance: regenerar. Criterio de cierre: una receta sin temporada no se puede guardar, y el informe está revisado.';
     expect(extractClosingCriteria(md)).toBe('una receta sin temporada no se puede guardar, y el informe está revisado.');
