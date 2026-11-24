@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import * as edgeFunctions from '@/lib/api/edge-functions';
 import * as authApi from '@/lib/client-api/auth';
 import * as userProfile from '@/lib/client-api/user-profile';
+import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
 import * as events from '@/lib/posthog/events';
 import { renderWithProviders, screen, setupUser, waitFor } from '@/tests/component-render';
 import { routerMock } from '@/tests/mocks/next-navigation';
@@ -54,7 +55,7 @@ describe('GenerateWeekButton', () => {
 // success, and which message each failure gets. The edge function and the session
 // are the only boundaries replaced.
 
-const { EdgeFunctionError } = edgeFunctions;
+const { EdgeFunctionError, EdgeFunctionTimeoutError } = edgeFunctions;
 
 describe('GenerateWeekButton generation', () => {
   let generateSpy: ReturnType<typeof spyOn<typeof edgeFunctions, 'generateMealPlan'>>;
@@ -128,5 +129,39 @@ describe('GenerateWeekButton generation', () => {
     await generate();
     expect(await screen.findByTestId('generate_week_error_message')).toHaveTextContent('No pudimos generar tu menú. Intenta de nuevo.');
     expect(screen.getByTestId('generate_week_button')).toBeEnabled();
+  });
+
+  // FRESCO-1249 — a generation that did not answer in time may still have landed on the server.
+  test('a timeout says the menu may already exist and the button works again', async () => {
+    generateSpy.mockRejectedValue(new EdgeFunctionTimeoutError('generate-meal-plan', 30_000));
+    await generate();
+    expect(await screen.findByTestId('generate_week_error_message')).toHaveTextContent('Puede que ya se haya generado');
+    expect(screen.getByTestId('generate_week_button')).toBeEnabled();
+    expect(routerMock.refresh).not.toHaveBeenCalled();
+  });
+
+  test('a 409 right after a timeout is that menu: it refreshes instead of asking to delete it', async () => {
+    generateSpy
+      .mockRejectedValueOnce(new EdgeFunctionTimeoutError('generate-meal-plan', 30_000))
+      .mockRejectedValueOnce(new EdgeFunctionError(409, { error: 'ya existe' }));
+    await generate();
+    expect(await screen.findByTestId('generate_week_error_message')).toHaveTextContent('Puede que ya se haya generado');
+
+    await setupUser().click(screen.getByTestId('generate_week_button'));
+
+    await waitFor(() => expect(routerMock.refresh).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId('generate_week_error_message')).toBeNull();
+    expect(captureSpy.mock.calls.map(call => call[0])).not.toContain(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED);
+  });
+
+  test('a 409 with no timeout before it keeps asking to delete the existing menu', async () => {
+    generateSpy.mockRejectedValue(new EdgeFunctionError(409, { error: 'ya existe' }));
+    await generate();
+    await screen.findByTestId('generate_week_error_message');
+
+    await setupUser().click(screen.getByTestId('generate_week_button'));
+
+    expect(await screen.findByTestId('generate_week_error_message')).toHaveTextContent('Elimínalo antes de generar uno nuevo');
+    expect(routerMock.refresh).not.toHaveBeenCalled();
   });
 });

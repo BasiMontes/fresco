@@ -204,6 +204,21 @@ describe('DeleteAccountDialog — handleDelete', () => {
     expect(deleteAccountMock).not.toHaveBeenCalled();
   });
 
+  // FRESCO-1249 — a timeout does not say whether the account was deleted, so it never says "try again".
+  test('a timeout says it could not be confirmed and how to find out, never to retry', async () => {
+    deleteAccountMock.mockImplementation(async () => {
+      throw new realEdgeFunctions.EdgeFunctionTimeoutError('delete-account', 30_000);
+    });
+
+    await confirmAsRegisteredUser();
+
+    const message = await screen.findByTestId('delete_account_error_message');
+    expect(message).toHaveTextContent('No hemos podido confirmar el borrado');
+    expect(message).toHaveTextContent('Inicia sesión para comprobar');
+    expect(message.textContent?.toLowerCase()).not.toContain('inténtalo');
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
   test('an EdgeFunctionError surfaces its own message', async () => {
     deleteAccountMock.mockImplementation(async () => {
       throw new (await import('@/lib/api/edge-functions')).EdgeFunctionError(429, { error: 'Demasiados intentos, prueba en unos minutos.' });

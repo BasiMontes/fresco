@@ -175,6 +175,17 @@ describe('useSignupReassign failures', () => {
     expect(hook.result.current.isReassigning).toBe(false);
   });
 
+  test('a timeout says it is taking longer than usual and to try again (FRESCO-1249)', async () => {
+    reassignSpy.mockRejectedValueOnce(new edgeFunctions.EdgeFunctionTimeoutError('reassign-guest-data', 15_000));
+    const hook = setup();
+
+    await reassign(hook);
+
+    expect(hook.result.current.reassignError).toBe('Está tardando más de lo normal. Inténtalo de nuevo.');
+    expect(adoptSpy).not.toHaveBeenCalled();
+    expect(hook.result.current.isReassigning).toBe(false);
+  });
+
   test('any other thrown error falls back to the generic verification message', async () => {
     reassignSpy.mockRejectedValueOnce(new TypeError('network down'));
     const hook = setup();

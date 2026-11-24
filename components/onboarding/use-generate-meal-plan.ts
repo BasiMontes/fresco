@@ -1,6 +1,7 @@
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
+import { useRef, useState } from 'react';
+import { GENERATION_TIMEOUT_MESSAGE } from '@/lib/api/edge-function-timeout';
+import { EdgeFunctionError, EdgeFunctionTimeoutError, generateMealPlan } from '@/lib/api/edge-functions';
 import { UserProfileError } from '@/lib/api/user-profile';
 import { getSession } from '@/lib/client-api/auth';
 import { getPlanTierForAnalytics, upsertUserProfile } from '@/lib/client-api/user-profile';
@@ -35,6 +36,22 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
   const [generateSuccess, setGenerateSuccess] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const hasExistingMenu = generateError === EXISTING_MENU_FOR_WEEK_MESSAGE;
+  // FRESCO-1249: set when a generation timed out. The server may have finished it anyway, so a 409 right after is that
+  // menu, not a clash: the wizard goes on to it instead of saying a menu already exists.
+  const timedOutRef = useRef(false);
+
+  async function leaveForMenu() {
+    // FRESCO-152: brief explicit confirmation before leaving.
+    setGenerateSuccess(true);
+    await new Promise(resolve => setTimeout(resolve, 900));
+    // FRESCO-94: the store persists to sessionStorage so a mid-wizard reload survives — reset so a later same-tab
+    // visit to /onboarding doesn't resurface this run's stale answers (deferred to unmount, see the funnel-tracking
+    // hook — FRESCO-201).
+    markShouldReset();
+    // FRESCO-372 (A4-H15): mark the moment of value for PushPromptBanner — the FIRST menu, generated seconds ago.
+    markFirstMenuGenerated();
+    router.push('/menu');
+  }
 
   async function handleGenerate() {
     setIsGenerating(true);
@@ -69,21 +86,8 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
         ? await getPlanTierForAnalytics(session.user.id)
         : 'free';
       captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED, { semana_iso: semanaIso, tier });
-      // FRESCO-152: brief explicit confirmation before leaving — the
-      // redirect used to fire immediately with no acknowledgment that
-      // the generation actually succeeded.
-      setGenerateSuccess(true);
-      await new Promise(resolve => setTimeout(resolve, 900));
-      // FRESCO-94: the store now persists to sessionStorage so a mid-wizard
-      // reload survives — reset so a later same-tab visit to /onboarding
-      // doesn't resurface this run's stale answers (deferred to unmount,
-      // see the funnel-tracking hook — FRESCO-201).
-      markShouldReset();
-      // FRESCO-372 (A4-H15): mark the moment of value for PushPromptBanner —
-      // the FIRST menu, generated seconds ago, not a settings toggle buried
-      // in /profile.
-      markFirstMenuGenerated();
-      router.push('/menu');
+      timedOutRef.current = false;
+      await leaveForMenu();
     }
     catch (error) {
       // FRESCO (2026-08-08, live bug report): this catch used to collapse
@@ -92,10 +96,15 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
       // catalog-too-small case were all indistinguishable to the user (and
       // to us debugging her report afterward). Each branch below is a real,
       // previously-observed failure mode, not speculative:
+      // FRESCO-1249: the function did not answer in time. The server may still finish it, so the message says so.
+      if (error instanceof EdgeFunctionTimeoutError) {
+        timedOutRef.current = true;
+        setGenerateError(GENERATION_TIMEOUT_MESSAGE);
+      }
       // AC-4 ("La generación no puede producir un menú válido"): index.ts
       // throws a 422 only when the filtered candidate catalog itself is too
       // small (fewer than 21 safe recipes after allergen/diet filtering).
-      if (error instanceof EdgeFunctionError && error.status === 422) {
+      else if (error instanceof EdgeFunctionError && error.status === 422) {
         setGenerateError(
           'No pudimos generar un menú válido con tus restricciones actuales. Prueba a ampliar tus preferencias o inténtalo de nuevo más tarde.',
         );
@@ -103,6 +112,11 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
       // FRESCO-104: index.ts throws 409 when a plan for this week already
       // exists — reintentar el formulario nunca lo resuelve. Mismo caso que
       // components/calendar/generate-week-button.tsx ya maneja.
+      else if (error instanceof EdgeFunctionError && error.status === 409 && timedOutRef.current) {
+        // The generation that timed out did land: carry on to it. No completed-event: this run never saw it finish.
+        timedOutRef.current = false;
+        await leaveForMenu();
+      }
       else if (error instanceof EdgeFunctionError && error.status === 409) {
         setGenerateError(EXISTING_MENU_FOR_WEEK_MESSAGE);
       }

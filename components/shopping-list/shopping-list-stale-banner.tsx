@@ -4,6 +4,7 @@ import { RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { edgeFailureMessage } from '@/lib/api/edge-function-timeout';
 import { generateShoppingList } from '@/lib/api/edge-functions';
 import { getAccessToken } from '@/lib/client-api/auth';
 
@@ -30,7 +31,7 @@ export function ShoppingListStaleBanner({ mealPlanId }: { mealPlanId: string }) 
     }
     catch (error) {
       console.error('[ShoppingListStaleBanner] refresh failed', error);
-      setErrorMessage('No pudimos actualizar la lista. Inténtalo de nuevo.');
+      setErrorMessage(edgeFailureMessage(error, 'No pudimos actualizar la lista. Inténtalo de nuevo.'));
     }
     finally {
       setIsUpdating(false);

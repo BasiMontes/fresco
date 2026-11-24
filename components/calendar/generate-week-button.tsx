@@ -4,7 +4,8 @@ import { Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { buttonVariants } from '@/components/ui/button';
-import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
+import { GENERATION_TIMEOUT_MESSAGE } from '@/lib/api/edge-function-timeout';
+import { EdgeFunctionError, EdgeFunctionTimeoutError, generateMealPlan } from '@/lib/api/edge-functions';
 import { getSession } from '@/lib/client-api/auth';
 import { getPlanTierForAnalytics } from '@/lib/client-api/user-profile';
 import { getIsoWeekMonday } from '@/lib/date/iso-week';
@@ -47,6 +48,9 @@ export function GenerateWeekButton({ semanaIso, fechaInicio, redirectTo }: { sem
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // FRESCO-1249: set when a generation timed out. The server may have finished it anyway, so a 409 right after is that
+  // menu, not a clash, and the screen shows it instead of asking the person to delete it.
+  const timedOutRef = React.useRef(false);
   const isPastWeek = fechaInicio < getIsoWeekMonday();
 
   async function handleGenerate() {
@@ -74,6 +78,7 @@ export function GenerateWeekButton({ semanaIso, fechaInicio, redirectTo }: { sem
         ? await getPlanTierForAnalytics(session.user.id)
         : 'free';
       captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED, { semana_iso: semanaIso, tier });
+      timedOutRef.current = false;
       if (redirectTo) {
         router.push(redirectTo);
       }
@@ -82,7 +87,22 @@ export function GenerateWeekButton({ semanaIso, fechaInicio, redirectTo }: { sem
       }
     }
     catch (caught) {
-      if (caught instanceof EdgeFunctionError && caught.status === 422) {
+      if (caught instanceof EdgeFunctionTimeoutError) {
+        timedOutRef.current = true;
+        setError(GENERATION_TIMEOUT_MESSAGE);
+      }
+      else if (caught instanceof EdgeFunctionError && caught.status === 409 && timedOutRef.current) {
+        // The generation that timed out did land: show it. No completed-event: this run never saw it finish.
+        timedOutRef.current = false;
+        if (redirectTo) {
+          router.push(redirectTo);
+        }
+        else {
+          router.refresh();
+        }
+        return;
+      }
+      else if (caught instanceof EdgeFunctionError && caught.status === 422) {
         setError('No pudimos generar un menú válido con tus restricciones actuales. Prueba a ampliar tus preferencias o inténtalo de nuevo más tarde.');
       }
       else if (caught instanceof EdgeFunctionError && caught.status === 409) {

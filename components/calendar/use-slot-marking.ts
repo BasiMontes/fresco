@@ -1,5 +1,6 @@
 import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import * as React from 'react';
+import { edgeFailureMessage } from '@/lib/api/edge-function-timeout';
 import { EdgeFunctionError, updateRecipeStatus } from '@/lib/api/edge-functions';
 import { slotId } from '@/lib/calendar/apply-slot-swap';
 import { getAccessToken } from '@/lib/client-api/auth';
@@ -86,7 +87,7 @@ export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, 
       setErrorMessage(
         error instanceof EdgeFunctionError && error.status === 409
           ? 'Este plato ya fue marcado. Actualiza la página para ver su estado actual.'
-          : 'No se pudo guardar el estado del plato. Vuelve a intentarlo.',
+          : edgeFailureMessage(error, 'No se pudo guardar el estado del plato. Vuelve a intentarlo.'),
       );
     }
     finally {
