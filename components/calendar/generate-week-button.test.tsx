@@ -154,6 +154,34 @@ describe('GenerateWeekButton generation', () => {
     expect(captureSpy.mock.calls.map(call => call[0])).not.toContain(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED);
   });
 
+  // FRESCO-1283 — a dropped connection is the commonest way to lose the response, and the menu may still have been made.
+  test('a 409 right after a dropped connection is that menu: it refreshes instead of asking to delete it', async () => {
+    generateSpy
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockRejectedValueOnce(new EdgeFunctionError(409, { error: 'ya existe' }));
+    await generate();
+    expect(await screen.findByTestId('generate_week_error_message')).toHaveTextContent('No pudimos generar tu menú. Intenta de nuevo.');
+
+    await setupUser().click(screen.getByTestId('generate_week_button'));
+
+    await waitFor(() => expect(routerMock.refresh).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId('generate_week_error_message')).toBeNull();
+    expect(captureSpy.mock.calls.map(call => call[0])).not.toContain(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED);
+  });
+
+  test('a 409 after a server error keeps asking to delete: the server answered, so it did not make a menu', async () => {
+    generateSpy
+      .mockRejectedValueOnce(new EdgeFunctionError(500, { error: 'boom' }))
+      .mockRejectedValueOnce(new EdgeFunctionError(409, { error: 'ya existe' }));
+    await generate();
+    await screen.findByTestId('generate_week_error_message');
+
+    await setupUser().click(screen.getByTestId('generate_week_button'));
+
+    expect(await screen.findByTestId('generate_week_error_message')).toHaveTextContent('Elimínalo antes de generar uno nuevo');
+    expect(routerMock.refresh).not.toHaveBeenCalled();
+  });
+
   test('a 409 with no timeout before it keeps asking to delete the existing menu', async () => {
     generateSpy.mockRejectedValue(new EdgeFunctionError(409, { error: 'ya existe' }));
     await generate();

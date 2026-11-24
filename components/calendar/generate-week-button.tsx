@@ -4,7 +4,7 @@ import { Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { buttonVariants } from '@/components/ui/button';
-import { GENERATION_TIMEOUT_MESSAGE } from '@/lib/api/edge-function-timeout';
+import { GENERATION_TIMEOUT_MESSAGE, mayHaveLanded } from '@/lib/api/edge-function-timeout';
 import { EdgeFunctionError, EdgeFunctionTimeoutError, generateMealPlan } from '@/lib/api/edge-functions';
 import { getSession } from '@/lib/client-api/auth';
 import { getPlanTierForAnalytics } from '@/lib/client-api/user-profile';
@@ -48,9 +48,10 @@ export function GenerateWeekButton({ semanaIso, fechaInicio, redirectTo }: { sem
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  // FRESCO-1249: set when a generation timed out. The server may have finished it anyway, so a 409 right after is that
-  // menu, not a clash, and the screen shows it instead of asking the person to delete it.
-  const timedOutRef = React.useRef(false);
+  // FRESCO-1249 / FRESCO-1283: set when a generation got no answer (a timeout or a dropped connection). The server may
+  // have finished it anyway, so a 409 right after is that menu, not a clash, and the screen shows it instead of asking
+  // the person to delete it.
+  const mayHaveLandedRef = React.useRef(false);
   const isPastWeek = fechaInicio < getIsoWeekMonday();
 
   async function handleGenerate() {
@@ -78,7 +79,7 @@ export function GenerateWeekButton({ semanaIso, fechaInicio, redirectTo }: { sem
         ? await getPlanTierForAnalytics(session.user.id)
         : 'free';
       captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED, { semana_iso: semanaIso, tier });
-      timedOutRef.current = false;
+      mayHaveLandedRef.current = false;
       if (redirectTo) {
         router.push(redirectTo);
       }
@@ -87,13 +88,15 @@ export function GenerateWeekButton({ semanaIso, fechaInicio, redirectTo }: { sem
       }
     }
     catch (caught) {
+      if (mayHaveLanded(caught)) {
+        mayHaveLandedRef.current = true;
+      }
       if (caught instanceof EdgeFunctionTimeoutError) {
-        timedOutRef.current = true;
         setError(GENERATION_TIMEOUT_MESSAGE);
       }
-      else if (caught instanceof EdgeFunctionError && caught.status === 409 && timedOutRef.current) {
-        // The generation that timed out did land: show it. No completed-event: this run never saw it finish.
-        timedOutRef.current = false;
+      else if (caught instanceof EdgeFunctionError && caught.status === 409 && mayHaveLandedRef.current) {
+        // The generation that got no answer did land: show it. No completed-event: this run never saw it finish.
+        mayHaveLandedRef.current = false;
         if (redirectTo) {
           router.push(redirectTo);
         }

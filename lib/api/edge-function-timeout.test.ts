@@ -5,6 +5,7 @@ import {
   edgeFailureMessage,
   EdgeFunctionTimeoutError,
   GENERATION_TIMEOUT_MESSAGE,
+  mayHaveLanded,
   timeoutMsFor,
 } from './edge-function-timeout';
 import { deleteAccount, EdgeFunctionError, generateMealPlan, updateRecipeStatus } from './edge-functions';
@@ -203,6 +204,19 @@ describe('timeoutMsFor and the messages', () => {
     expect(edgeFailureMessage(new EdgeFunctionTimeoutError('x', 1), 'propio')).toBe(EDGE_FUNCTION_TIMEOUT_MESSAGE);
     expect(edgeFailureMessage(new TypeError('x'), 'propio')).toBe('propio');
     expect(edgeFailureMessage(undefined, 'propio')).toBe('propio');
+  });
+
+  // FRESCO-1283 — which failures leave the person not knowing whether the work happened.
+  test('mayHaveLanded is true for a failure with no answer: a timeout or a dropped connection', () => {
+    expect(mayHaveLanded(new EdgeFunctionTimeoutError('generate-meal-plan', 30_000))).toBe(true);
+    expect(mayHaveLanded(new TypeError('Failed to fetch'))).toBe(true);
+  });
+
+  test('mayHaveLanded is false when the server answered, because then it knows it failed', () => {
+    expect(mayHaveLanded(new EdgeFunctionError(500, { error: 'x' }))).toBe(false);
+    expect(mayHaveLanded(new EdgeFunctionError(409, { error: 'ya existe' }))).toBe(false);
+    expect(mayHaveLanded(new Error('plain'))).toBe(false);
+    expect(mayHaveLanded(undefined)).toBe(false);
   });
 
   test('a timed-out generation says it may exist, and a timed-out deletion never says to retry', () => {

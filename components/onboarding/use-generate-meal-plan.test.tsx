@@ -205,6 +205,32 @@ describe('useGenerateMealPlan failures', () => {
     expect(routerMock.push).not.toHaveBeenCalled();
   });
 
+  // FRESCO-1283 — a dropped connection is the commonest way to lose the response, and the menu may still have been made.
+  test('a 409 right after a dropped connection is that menu: she goes on to it, with no completed-event', async () => {
+    generateSpy.mockRejectedValueOnce(new TypeError('Failed to fetch')).mockRejectedValueOnce(edgeError(409));
+    const hook = setup();
+
+    await generate(hook);
+    expect(hook.result.current.generateError).toContain('Revisa tu conexión a internet');
+    await generate(hook);
+
+    expect(routerMock.push).toHaveBeenCalledWith('/menu');
+    expect(markShouldReset).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.generateError).toBeNull();
+    expect(eventNames()).not.toContain(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED);
+  });
+
+  test('a 409 after a server error is a real clash: the server answered, so it did not make a menu', async () => {
+    generateSpy.mockRejectedValueOnce(edgeError(500)).mockRejectedValueOnce(edgeError(409));
+    const hook = setup();
+
+    await generate(hook);
+    await generate(hook);
+
+    expect(hook.result.current.generateError).toBe('Ya existe un menú para esta semana.');
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
   test('a dropped connection says to check the internet', async () => {
     generateSpy.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     const hook = setup();
