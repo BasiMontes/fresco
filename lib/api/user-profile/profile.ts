@@ -236,7 +236,7 @@ export async function getUserDietaryPreferences(
 
   const { data, error } = await client
     .from('user_profiles')
-    .select('num_personas, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas, planning_selection')
+    .select('num_personas, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas, planning_selection, objetivo, nivel_experiencia')
     .eq('id', resolvedUserId)
     .maybeSingle();
 

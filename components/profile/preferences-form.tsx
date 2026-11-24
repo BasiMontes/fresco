@@ -1,5 +1,6 @@
 'use client';
 
+import type { NivelExperienciaCulinaria, ObjetivoUsuario, TipoCocina } from '@schemas';
 import type { FormEvent } from 'react';
 import type { OnboardingProfilePayload } from '@/lib/api/user-profile';
 import type { DietaKey } from '@/lib/constants/dietary-options';
@@ -8,6 +9,7 @@ import { Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { HealthConsentBlock } from '@/components/onboarding/health-consent-block';
 import { PlanningSelectionGrid } from '@/components/onboarding/planning-selection-grid';
+import { isSoftPreferencesDirty, SoftPreferencesBlock } from '@/components/profile/preferences-soft-block';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { upsertUserProfile } from '@/lib/client-api/user-profile';
@@ -49,6 +51,13 @@ export interface PreferencesFormProps {
    * it, so the form asks for it before saving when health data is filled in.
    */
   hasHealthDataConsent: boolean
+  /**
+   * FRESCO-1282: whether the plan is paid. The goal, the level and the favourite cuisines lean the
+   * menu only for Pro (ADR-0071, `isPro` in `generate-meal-plan`), so only Pro edits them here; Free sees
+   * what it saved at onboarding, read-only. This is a screen rule, not a data rule: Free still writes
+   * these three columns at onboarding, so the database does not restrict them.
+   */
+  isPro: boolean
 }
 
 // FRESCO-199: fallback for a profile read before `planning_selection` existed.
@@ -114,12 +123,13 @@ function isPreferencesDirty(current: OnboardingProfilePayload, initial: Onboardi
  * `components/profile/nombre-form.tsx` exactly.
  *
  * The dietary flags, `alergenos`, and (FRESCO-153, FRESCO-199) the meal/day
- * planning selection are editable here — household size, disliked ingredients,
- * and favorite cuisines stay onboarding-only for this story, but their
- * current values are still carried in `preferences` state so a save
- * round-trips them unchanged through `upsertUserProfile`.
+ * planning selection are editable here — household size and disliked ingredients
+ * stay onboarding-only, but their current values are still carried in
+ * `preferences` state so a save round-trips them unchanged through
+ * `upsertUserProfile`. FRESCO-1282 adds the goal, the cooking level and the
+ * favourite cuisines for Pro; Free sees them read-only with a link to Pro.
  */
-export function PreferencesForm({ initialPreferences, hasHealthDataConsent }: PreferencesFormProps) {
+export function PreferencesForm({ initialPreferences, hasHealthDataConsent, isPro }: PreferencesFormProps) {
   const [preferences, setPreferences] = useState(initialPreferences);
   const [healthConsent, setHealthConsent] = useState(hasHealthDataConsent);
   const [isSaving, setIsSaving] = useState(false);
@@ -185,7 +195,8 @@ export function PreferencesForm({ initialPreferences, hasHealthDataConsent }: Pr
     if (shakeTimerRef.current) { clearTimeout(shakeTimerRef.current); }
   }, []);
 
-  const isDirty = isPreferencesDirty(preferences, initialPreferences);
+  // FRESCO-1282: only Pro can edit the soft preferences, so a Free user is never dirty because of them.
+  const isDirty = isPreferencesDirty(preferences, initialPreferences) || (isPro && isSoftPreferencesDirty(preferences, initialPreferences));
 
   // FRESCO-917: allergies and diet are health data (GDPR art. 9) and the database
   // refuses to store them without the `health_data` consent, so a save with any of
@@ -249,6 +260,30 @@ export function PreferencesForm({ initialPreferences, hasHealthDataConsent }: Pr
     setSaved(false);
     clearError();
     setPreferences(prev => ({ ...prev, planning_selection: next }));
+  }
+
+  // FRESCO-1282: the three Pro soft preferences. Same reset of the saved/error state as every other edit.
+  function handleObjetivoChange(value: ObjetivoUsuario) {
+    setSaved(false);
+    clearError();
+    setPreferences(prev => ({ ...prev, objetivo: value }));
+  }
+
+  function handleNivelChange(value: NivelExperienciaCulinaria) {
+    setSaved(false);
+    clearError();
+    setPreferences(prev => ({ ...prev, nivel_experiencia: value }));
+  }
+
+  function toggleCocina(value: TipoCocina) {
+    setSaved(false);
+    clearError();
+    setPreferences(prev => ({
+      ...prev,
+      cocinas_favoritas: prev.cocinas_favoritas.includes(value)
+        ? prev.cocinas_favoritas.filter(v => v !== value)
+        : [...prev.cocinas_favoritas, value],
+    }));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -338,6 +373,14 @@ export function PreferencesForm({ initialPreferences, hasHealthDataConsent }: Pr
           onChange={handlePlanningSelectionChange}
         />
       </div>
+
+      <SoftPreferencesBlock
+        isPro={isPro}
+        preferences={preferences}
+        onObjetivoChange={handleObjetivoChange}
+        onNivelChange={handleNivelChange}
+        onCocinaToggle={toggleCocina}
+      />
 
       {saved && (
         <div className="mt-3 flex items-center gap-1.5">

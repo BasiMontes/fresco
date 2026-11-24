@@ -99,12 +99,21 @@ export async function loadProfilePageData(supabase: Client, userId: string | und
   return { plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable };
 }
 
-/** The two reads the `/profile/preferences` form needs (FRESCO-1070), each with the same fallback as on `/profile`. */
+/**
+ * The reads the `/profile/preferences` form needs (FRESCO-1070), each with the same fallback as on `/profile`.
+ * FRESCO-1282: the plan decides whether the goal, level and cuisine block is editable. Unlike the reads above,
+ * a failed plan read falls back to `'free'`: the safe default hides the edit controls instead of offering Pro
+ * ones to someone who may not have Pro.
+ */
 export async function loadPreferencesPageData(supabase: Client, userId: string | undefined) {
-  const [dietaryPreferences, hasHealthDataConsent] = await Promise.all([
+  const [dietaryPreferences, hasHealthDataConsent, plan] = await Promise.all([
     readDietaryPreferences({ supabase, userId, route: '/profile/preferences' }),
     readHasHealthDataConsent({ supabase, userId, route: '/profile/preferences' }),
+    getUserPlan(supabase, userId).catch((error) => {
+      console.error('[/profile/preferences] getUserPlan failed, defaulting to free', error);
+      return 'free' as const;
+    }),
   ]);
 
-  return { dietaryPreferences, hasHealthDataConsent };
+  return { dietaryPreferences, hasHealthDataConsent, plan };
 }

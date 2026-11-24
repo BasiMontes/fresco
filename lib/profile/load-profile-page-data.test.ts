@@ -104,26 +104,41 @@ describe('loadProfilePageData', () => {
 describe('loadPreferencesPageData (FRESCO-1070)', () => {
   let preferences: ReturnType<typeof spyOn>;
   let consent: ReturnType<typeof spyOn>;
+  let plan: ReturnType<typeof spyOn>;
   let consoleError: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
     consoleError = spyOn(console, 'error').mockImplementation(() => {});
     preferences = spyOn(userProfile, 'getUserDietaryPreferences').mockResolvedValue(PREFERENCES);
     consent = spyOn(userProfile, 'getHasHealthDataConsent').mockResolvedValue(true);
+    plan = spyOn(userProfile, 'getUserPlan').mockResolvedValue('pro');
   });
 
   afterEach(() => {
     preferences.mockRestore();
     consent.mockRestore();
+    plan.mockRestore();
     consoleError.mockRestore();
   });
 
-  test('returns the saved preferences and the consent', async () => {
+  test('returns the saved preferences, the consent and the plan', async () => {
     const data = await loadPreferencesPageData(supabase, 'user-1');
 
-    expect(data).toEqual({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true });
+    expect(data).toEqual({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true, plan: 'pro' });
     expect(preferences).toHaveBeenCalledWith(supabase, 'user-1');
     expect(consent).toHaveBeenCalledWith(supabase, 'user-1');
+    expect(plan).toHaveBeenCalledWith(supabase, 'user-1');
+  });
+
+  // FRESCO-1282: an unreadable plan must hide the Pro edit controls, never offer them.
+  test('an unreadable plan falls back to free', async () => {
+    plan.mockRejectedValue(new Error('db down'));
+
+    const data = await loadPreferencesPageData(supabase, 'user-1');
+
+    expect(data.plan).toBe('free');
+    expect(data.dietaryPreferences).toBe(PREFERENCES);
+    expect(consoleError).toHaveBeenCalledTimes(1);
   });
 
   test('an unreadable profile falls back to empty preferences and an unreadable consent is asked again', async () => {
