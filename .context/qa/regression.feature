@@ -1219,8 +1219,12 @@ Característica: Flujo completo de usuario en Fresco
     # (favoritos → ingredientes no presentes en la lista actual). "Nuevo"
     # queda fuera — sin tracking de recencia en shopping_lists.
 
-  @lista-compra @edge-case @verificado-manual-2026-07-31 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1264: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @lista-compra @edge-case @verificado-manual-2026-07-31 @solo-manual
+  # @solo-manual (FRESCO-1264): cubierto por pruebas, sin e2e. Backend: `supabase/functions/generate-shopping-list/index.test.ts` (409 cuando el plan
+  # ya tiene lista, sin escribir nada, y 409 y no 500 cuando una petición concurrente gana la carrera de `unique_plan_lista`). Frontend:
+  # `components/shopping-list/shopping-list-generator.test.tsx` (ante un 409 relee la página y no muestra error) y
+  # `app/(app)/shopping-list/page.test.tsx` (con lista, la página muestra la lista y no el generador). El job test:e2e va cerca de su aviso de
+  # presupuesto (ADR-0018).
   Escenario: Ya existe una lista de la compra para ese menú
     Dado que el usuario ya generó una lista de la compra para su menú semanal actual
     Cuando intenta generar la lista de nuevo
@@ -1230,8 +1234,10 @@ Característica: Flujo completo de usuario en Fresco
     # existente. El backstop de backend sigue vigente: segunda llamada
     # directa a la API → 409, tratado como "ya existe → re-lee".
 
-  @lista-compra @edge-case @verificado-manual-2026-07-31 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1264: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @lista-compra @edge-case @verificado-manual-2026-07-31 @solo-manual
+  # @solo-manual (FRESCO-1264): cubierto por pruebas, sin e2e. Backend: `supabase/functions/generate-shopping-list/index.test.ts` (responde 422 y no escribe
+  # ninguna lista). Frontend: `components/shopping-list/shopping-list-generator.test.tsx` (el 422 dice que el menú no se puede convertir en lista y
+  # deja el botón). El job test:e2e va cerca de su aviso de presupuesto (ADR-0018).
   Escenario: La consolidación de ingredientes no produce ningún resultado
     Dado que el menú semanal del usuario no tiene ingredientes que se puedan consolidar
     Cuando solicita la lista de la compra
