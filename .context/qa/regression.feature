@@ -576,13 +576,19 @@ Característica: Flujo completo de usuario en Fresco
     Cuando marca que tiene 14 años o más y acepta los términos y la privacidad, y sigue como invitada
     Entonces quedan registrados sus consentimientos de edad, términos y privacidad en la versión vigente
 
-  @invitado @notificaciones @verificado-manual-2026-09-01 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1265: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
-  Escenario: Tras generar su primer menú, se le pide permiso de notificaciones push en un momento de valor
-    Dado que una visitante sin cuenta ni sesión completa el onboarding y genera su primer menú
+  @invitado @notificaciones @solo-manual
+  # @solo-manual (FRESCO-1265): cubierto por pruebas, sin e2e. `components/menu/push-prompt-banner.test.tsx` (se muestra a una usuaria registrada y
+  # nunca a una invitada, se registra una sola vez, "Ahora no" lo oculta sin suscribir, "Activar" suscribe y registra la concesión, una denegación
+  # nativa lo oculta sin ruido, no sale si el navegador ya respondió ni si no acaba de generarse el primer menú) y `lib/push/first-menu-signal.test.ts`
+  # (la señal se consume una sola vez, así que recargar no lo resucita). Un e2e no es posible: Chromium headless reporta el permiso en "denied".
+  # REESCRITO el 2026-11-24 (FRESCO-1265): la versión anterior decía que lo veía "una visitante sin cuenta ni sesión". Desde FRESCO-779 una sesión
+  # anónima no puede guardar una suscripción push y el aviso no se le ofrece nunca; lo ve una usuaria registrada, una sola vez.
+  Escenario: Tras generar su primer menú, a una usuaria registrada se le pide permiso de notificaciones push en un momento de valor
+    Dado que una usuaria registrada completa el onboarding y genera su primer menú
     Cuando llega a /menu
     Entonces ve una sola vez el aviso "Te avisamos cuando sea buen momento para planificar tu próximo menú"
     Y "Activar" lanza el permiso nativo del navegador; "Ahora no" lo descarta sin que vuelva a aparecer
+    Y una invitada con sesión anónima nunca lo ve, porque no puede guardar una suscripción push
     # FRESCO-372 (A4-H15): el único opt-in vivía enterrado en /profile (0
     # suscripciones a la fecha). NO @automatizado: el aviso está gateado por
     # `Notification.permission === 'default'`, y Chromium headless (CI)
@@ -713,8 +719,12 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve un error claro
     Y no se mueve ni se modifica ningún dato
 
-  @invitado @edge-case @verificado-manual-2026-08-07 @pendiente
-  # @pendiente (FRESCO-1260): se cierra con FRESCO-1265: automatizarlo (prueba de componente, de ruta o e2e, según el presupuesto del job test:e2e, ADR-0018) o pasarlo a @solo-manual con motivo.
+  @invitado @edge-case @verificado-manual-2026-08-07 @solo-manual
+  # @solo-manual (FRESCO-1265): cubierto por pruebas, sin e2e. Que la invitada pasa por el diálogo y que no se cierra sesión hasta confirmar, mientras
+  # que una cuenta registrada sale directa: `components/layout/sidebar-account.test.tsx` (y `components/profile/danger-zone.test.tsx` desde /profile).
+  # Lo que el diálogo DICE (que se pierde el menú generado, sin forma de recuperarlo, y que hay que crear una cuenta para conservarlo):
+  # `components/layout/guest-logout-dialog.test.tsx`, nuevo en esta card. Crear una invitada con perfil exige una generación real de menú, y el job
+  # test:e2e va cerca de su aviso de presupuesto (ADR-0018).
   Escenario: Cerrar sesión como invitada advierte antes de borrar el menú generado
     Dado que una invitada generó un menú y tiene sesión anónima activa
     Cuando toca "Cerrar sesión" en el sidebar
