@@ -159,6 +159,25 @@ about **not starting FRESCO-358**, not reverting anything.
 
 ---
 
+## 5. The closing criterion on new cards
+
+Cards carry their closing criteria in the description under `## Criterio de cierre` (FRESCO-1253). The audit
+checks it forward only, from the day the convention started, and never backfills the cards that came before.
+
+```
+project = FRESCO AND created >= "2026-11-24" AND status not in (Aplazada, Rechazos) AND description !~ "Criterio de cierre"
+```
+
+It must return **0**. Run it with `acli jira workitem search --jql '<query>'` in every audit pass and fix whatever
+it lists. Jira's text search is fuzzy: it can miss a card that mentions the words without the section, so a 0
+is a screen, not a proof.
+
+`Verificación` is not a closing-criteria heading. Where cards use it, it holds a measurement taken after the work
+or a check to run after the deploy, and `scripts/sync-jira-issues.ts` deliberately does not read it as criteria
+(FRESCO-1279, audit 10 F9). Older cards that use only that heading, or no heading at all, are not backfilled.
+
+---
+
 ## Revisit triggers for this doctrine
 
 Loosen or change the above when:
