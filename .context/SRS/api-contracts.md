@@ -1,5 +1,7 @@
 # API & Prompt Contracts — Fresco
 
+> **Validity note (FRESCO-1274, audit 10).** This document is the SRS contract written at the start of the MVP and reconciled only where an ADR or a ticket said so. It does not describe everything the product does today. For current behaviour read the maps (`bun run context:map business-feature-context`, `business-api-context`, `business-data-context`) and the ADRs under `.context/ADR/`; when this file and a map disagree, the map and the code win.
+
 > SRS output of `/project-foundation` Phase 3 (Architecture — Software side). Traces to `functional-requirements.md`. Primary source: `fresco-core-tecnico.md` §3–4, `fresco-edge-function-generate.md`, `fresco-shopping-list.md`, `fresco-aprendizaje.md`.
 >
 > **Format note, deliberate deviation from the SRS template default:** the template (`srs-api-contracts.md`) asks for an OpenAPI 3.0 `api-contracts.yaml`. Fresco's actual system surface is not a conventional public REST API — it is three authenticated Supabase Edge Functions. This document treats each as an HTTP contract, and — for the two generation functions — documents the selection/classification logic as a contract in its own right (input shape → output schema → the rules constraining that output), nested inside the Edge Function that runs it.
