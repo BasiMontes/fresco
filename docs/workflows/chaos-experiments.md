@@ -36,6 +36,40 @@ Antes de romper nada, `baseline` mide lo que significa "todo va bien". El criter
 
 ---
 
+## Estado estable de los flujos completos (FRESCO-1251, fase 2)
+
+Las tres sondas de arriba miden la infraestructura. Un usuario no usa sondas: usa **flujos**. El escenario `flows` ejecuta de verdad los cuatro que importan, con una cuenta desechable, y comprueba el resultado **leyéndolo del destino**, no por el código de respuesta: un `200` dice que la petición estaba bien formada, no que ocurriera lo que se esperaba.
+
+Son flujos **a nivel de API** contra la pila local. El tiempo que tarda la interfaz en pintar no entra, y la pantalla de acceso solo entra por su parte de servidor (la concesión por contraseña).
+
+### Expectativa (escrita antes de medir, 2026-11-24)
+
+| Flujo | Qué hace | Qué espero que sea "todo va bien" |
+|---|---|---|
+| `login` | Concesión por contraseña de Auth, lo que hace el formulario de acceso | `200` con un token de acceso, en menos de 1 s |
+| `generar-menu` | Llama a `generate-meal-plan` (el perfil se guarda antes, como hace el onboarding, y no se mide) | `200` con un `meal_plan_id` y 21 franjas en la base de datos, en menos de 5 s (ADR-0005: la selección es determinista y se observó ~2-3 s) |
+| `abrir-lista` | `generate-shopping-list` y la lectura que hace la página | `200` y una lista con al menos un producto leída de la base de datos, en menos de 3 s |
+| `marcar-producto` | `jsonb_set_comprado` sobre el primer producto | `204` y, al leerlo de vuelta, `comprado = true`, en menos de 1 s |
+
+### Criterio medible y medición (2026-11-24)
+
+`scripts/chaos/local.sh flows`: una cuenta desechable, los cuatro flujos en orden y una línea por flujo con `OK`, `SLOW` (resultado correcto pero fuera de tiempo) o `FAIL` (resultado incorrecto). Sale con `0` si todo va bien y con `1` si algún flujo no. Medido tres veces seguidas en la pila local, en caliente:
+
+| Flujo | Criterio de "todo va bien" | Medido |
+|---|---|---|
+| `login` | `200` con un token de acceso, en 1 s o menos | 0,118 a 0,124 s |
+| `generar-menu` | `200`, un `meal_plan_id` y 21 franjas en la base de datos, en 3 s o menos | 0,064 a 0,072 s (0,25 s la primera vez, en frío) |
+| `abrir-lista` | `generate-shopping-list` `200` y la lectura de la página `200` con al menos un producto, en 2 s o menos entre las dos | 0,044 a 0,050 s, con 39 a 43 productos |
+| `marcar-producto` | `204` y, al leerlo de vuelta, `comprado = true`, en 1 s o menos | 0,004 a 0,005 s |
+
+**Mi expectativa estaba equivocada por un orden de magnitud.** Esperaba 5 s para generar el menú y salen unos 0,07 s: los 2-3 s que cita la ADR-0005 eran el recorrido completo en el navegador, no la función.
+
+**Los límites son holgados a propósito.** Entre 8 y 200 veces lo medido. Sirven para separar "todo va bien" de "algo falla", no son un presupuesto de rendimiento: un fallo de verdad, como un servidor que no contesta, aparece como `FAIL` con código `000` a los 15 s, que es el tiempo máximo de cada llamada del script. Si se quisiera vigilar la velocidad, habría que medir mucho más (en el CI, con máquinas más lentas y ruidosas) antes de apretarlos.
+
+**Control negativo.** Con el runtime de Edge Functions congelado (`docker pause`), `login` sigue `OK` y `generar-menu` sale `FAIL` (`http 000`, 0 franjas en la base de datos, 15,0 s), el resto de flujos no se ejecutan y el script sale con `1`. Descongelado, vuelve a salir con `0`. El script borra su usuario al salir en los dos casos.
+
+---
+
 ## Escenarios disponibles
 
 | Comando | Fallo que provoca | Hipótesis escrita antes de ejecutar |
@@ -43,6 +77,7 @@ Antes de romper nada, `baseline` mide lo que significa "todo va bien". El criter
 | `rest-pause` | Congela PostgREST ~14 s | Las lecturas y la función fallan rápido y todo vuelve solo en 2 s o menos |
 | `db-restart` | Reinicia el contenedor de la base de datos | PostgREST y las funciones se reconectan solas en menos de 15 s |
 | `edge-stop` | Para el runtime de Edge Functions ~19 s | Las funciones fallan rápido con un 5xx y vuelven en menos de 5 s |
+| `flows` | Ninguno: mide los cuatro flujos completos | Los cuatro terminan bien y dentro de su criterio (véase arriba) |
 | `edge-pause` | Congela el runtime de Edge Functions ~18 s (`docker pause`) | La sonda de la función no recibe respuesta (`000`) mientras dure el corte, y la primera sonda tras reanudar ya responde `404` |
 
 ---
