@@ -51,6 +51,18 @@ export const GENERATION_TIMEOUT_MESSAGE = 'Está tardando más de lo normal. Pue
 /** An irreversible operation that timed out: say what is unknown and how to find out, never "try again". */
 export const DELETE_ACCOUNT_TIMEOUT_MESSAGE = 'No hemos podido confirmar el borrado. Inicia sesión para comprobar si tu cuenta sigue ahí.';
 
+/**
+ * FRESCO-1283: did this failure come with no answer at all, so the server may have finished the work anyway?
+ *
+ * A timeout is one case. A network failure is the other, and the more common: the connection drops after the request
+ * went out and before the response came back, and `fetch` rejects with a plain `TypeError`. An HTTP error is NOT this
+ * case: the server answered, so it knows it failed. Callers use it to treat a `409` on the retry as the menu the first
+ * attempt created, instead of telling the person to delete it.
+ */
+export function mayHaveLanded(error: unknown): boolean {
+  return error instanceof EdgeFunctionTimeoutError || error instanceof TypeError;
+}
+
 /** The message for a failed call: the shared timeout wording when it timed out, otherwise the caller's own. */
 export function edgeFailureMessage(error: unknown, fallback: string): string {
   return error instanceof EdgeFunctionTimeoutError ? EDGE_FUNCTION_TIMEOUT_MESSAGE : fallback;

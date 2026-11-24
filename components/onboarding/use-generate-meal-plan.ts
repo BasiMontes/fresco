@@ -1,6 +1,6 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
-import { GENERATION_TIMEOUT_MESSAGE } from '@/lib/api/edge-function-timeout';
+import { GENERATION_TIMEOUT_MESSAGE, mayHaveLanded } from '@/lib/api/edge-function-timeout';
 import { EdgeFunctionError, EdgeFunctionTimeoutError, generateMealPlan } from '@/lib/api/edge-functions';
 import { UserProfileError } from '@/lib/api/user-profile';
 import { getSession } from '@/lib/client-api/auth';
@@ -36,9 +36,10 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
   const [generateSuccess, setGenerateSuccess] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const hasExistingMenu = generateError === EXISTING_MENU_FOR_WEEK_MESSAGE;
-  // FRESCO-1249: set when a generation timed out. The server may have finished it anyway, so a 409 right after is that
-  // menu, not a clash: the wizard goes on to it instead of saying a menu already exists.
-  const timedOutRef = useRef(false);
+  // FRESCO-1249 / FRESCO-1283: set when a generation got no answer (a timeout or a dropped connection). The server may
+  // have finished it anyway, so a 409 right after is that menu, not a clash: the wizard goes on to it instead of saying
+  // a menu already exists.
+  const mayHaveLandedRef = useRef(false);
 
   async function leaveForMenu() {
     // FRESCO-152: brief explicit confirmation before leaving.
@@ -86,10 +87,13 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
         ? await getPlanTierForAnalytics(session.user.id)
         : 'free';
       captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED, { semana_iso: semanaIso, tier });
-      timedOutRef.current = false;
+      mayHaveLandedRef.current = false;
       await leaveForMenu();
     }
     catch (error) {
+      if (mayHaveLanded(error)) {
+        mayHaveLandedRef.current = true;
+      }
       // FRESCO (2026-08-08, live bug report): this catch used to collapse
       // every failure mode into one generic message — a real network drop,
       // an expired/missing session, a genuine server error, and the
@@ -98,7 +102,6 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
       // previously-observed failure mode, not speculative:
       // FRESCO-1249: the function did not answer in time. The server may still finish it, so the message says so.
       if (error instanceof EdgeFunctionTimeoutError) {
-        timedOutRef.current = true;
         setGenerateError(GENERATION_TIMEOUT_MESSAGE);
       }
       // AC-4 ("La generación no puede producir un menú válido"): index.ts
@@ -112,9 +115,9 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
       // FRESCO-104: index.ts throws 409 when a plan for this week already
       // exists — reintentar el formulario nunca lo resuelve. Mismo caso que
       // components/calendar/generate-week-button.tsx ya maneja.
-      else if (error instanceof EdgeFunctionError && error.status === 409 && timedOutRef.current) {
-        // The generation that timed out did land: carry on to it. No completed-event: this run never saw it finish.
-        timedOutRef.current = false;
+      else if (error instanceof EdgeFunctionError && error.status === 409 && mayHaveLandedRef.current) {
+        // The generation that got no answer did land: carry on to it. No completed-event: this run never saw it finish.
+        mayHaveLandedRef.current = false;
         await leaveForMenu();
       }
       else if (error instanceof EdgeFunctionError && error.status === 409) {
