@@ -246,7 +246,8 @@ Con la pila local arrancada (véase "Cómo ejecutar uno"):
 1. Escribe la hipótesis **antes** de ejecutar: "si falla X, el usuario ve Y y se recupera en Z".
 2. Añade el escenario a `scripts/chaos/local.sh` (un fallo, una forma de deshacerlo).
 3. Ejecútalo y apunta una fila nueva en el registro con la fecha, lo que pasó y si la hipótesis se cumplió.
-4. Por cada debilidad, abre una card o escribe un test de regresión; un hallazgo sin tarea se olvida.
+4. Por cada debilidad, abre una card o escribe un test de regresión; un hallazgo sin tarea se olvida. Si el usuario la ve (un mensaje falso, una marca que se revierte, una pantalla que no cuadra con la base de datos), la card es un `Error`, no una `Tarea`: así le aplican la fila de defecto de `.context/backlog/definition-of-done.md` y `bun run jira:closure-evidence` (decisión del dueño del 2026-11-24, auditoría 11).
+5. Después del arreglo, repite el experimento y apunta una fila fechada nueva en el registro antes de cerrar la card: esa fila es la prueba de que ya no se reproduce. Un despliegue en verde no lo es.
 
 Hipótesis pendientes de ejecutar: el webhook de Stripe con la base de datos caída y el pago desde la pantalla con Stripe sin responder (FRESCO-1286). El corte de red a mitad de una escritura y la llamada a Stripe que no contesta ya están en las secciones de arriba.
 

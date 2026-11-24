@@ -93,6 +93,18 @@ its pull request has no reliable key today. A mechanical check on `fix(` pull re
 (a changed `*.test.*` file or an explicit exemption line in the body) is possible and
 left as a decision for the founder.
 
+## Chaos findings are defects (decision 2026-11-24, audit 11 A11-F1)
+
+A weakness found by a chaos experiment (`docs/workflows/chaos-experiments.md`) that the user can see (a wrong
+message, a reverted mark, a screen that disagrees with the database) is a **defect**: open it as `Error`, not
+`Tarea`, so the Defect row above and `bun run jira:closure-evidence` apply to it. Its reproduction is the
+experiment itself: before the card closes, re-run that experiment after the fix and record the dated row in the
+registry. That row is the evidence that the reproduction no longer reproduces; a deploy status is not.
+
+A weakness with no effect the user can see (a slower recovery nobody notices, a log line) stays a `Tarea`.
+Origin: FRESCO-1283 and FRESCO-1284 were opened as `Tarea`, and FRESCO-1283 was closed on "code on `main`, deploy
+success" without the re-run its own plan listed.
+
 ## Where this plugs in
 
 - **`bug-fix-workflow.md`** — Phase 3 (reproduction-or-rejection gate) and Phase 7
