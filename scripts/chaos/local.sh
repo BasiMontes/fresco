@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # FRESCO-1248: chaos experiments against the LOCAL Supabase stack only.
 #
-# usage: scripts/chaos/local.sh <baseline|rest-pause|db-restart|edge-stop>
+# usage: scripts/chaos/local.sh <baseline|rest-pause|db-restart|edge-stop|edge-pause>
 #
 # It creates a throwaway user, probes three flows once a second (a PostgREST read, a password login and an Edge
 # Function that goes through the database) and injects ONE fault in the middle, printing "<http code>/<seconds>"
@@ -72,5 +72,9 @@ case "${1:-}" in
     timeline "database container restarted" 55 4 999 "docker restart supabase_db_fresco" "true" ;;
   edge-stop)
     timeline "edge runtime stopped" 34 4 14 "docker stop supabase_edge_runtime_fresco" "docker start supabase_edge_runtime_fresco" ;;
-  *) echo "usage: $0 <baseline|rest-pause|db-restart|edge-stop>"; exit 2 ;;
+  # FRESCO-1251: a stopped container is not a silent one (the gateway answers 502 by itself after ~25 s, longer than the function
+  # probe waits), a frozen process is. Each probe waits its full 8 s here, so the timeline is longer than the others.
+  edge-pause)
+    timeline "edge runtime frozen" 46 4 22 "docker pause supabase_edge_runtime_fresco" "docker unpause supabase_edge_runtime_fresco" ;;
+  *) echo "usage: $0 <baseline|rest-pause|db-restart|edge-stop|edge-pause>"; exit 2 ;;
 esac
