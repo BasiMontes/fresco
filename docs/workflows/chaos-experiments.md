@@ -215,7 +215,7 @@ Lo que **no** hay, y esto es el hueco: ninguna ejecución con la base de datos r
 
 ## Decisión sobre el CI (FRESCO-1251, 2026-11-24)
 
-**Ningún experimento entra en el CI. Se ejecutan a mano en cada pasada de auditoría.** Decisión del dueño.
+**Ningún experimento entra en el CI. Se ejecutan a mano justo antes de cada pasada de auditoría.** Decisión del dueño.
 
 Por qué:
 
@@ -225,9 +225,9 @@ Por qué:
 
 Un workflow semanal aparte que arrancara su propia pila (la opción que se descartó) seguiría siendo posible; no se descartó por imposible, sino porque la señal que daría ya la dan el e2e y la lectura manual.
 
-### Qué se ejecuta en cada pasada de auditoría
+### Qué se ejecuta antes de cada pasada de auditoría
 
-Con la pila local arrancada (véase "Cómo ejecutar uno"):
+Lo ejecuta la sesión de trabajo justo antes de la auditoría, con la pila local arrancada (véase "Cómo ejecutar uno"). El auditor trabaja en solo lectura: no arranca la pila, solo lee la fila fechada del registro y la da por buena si es de esa misma semana (decisión del dueño del 2026-11-24, auditoría 11).
 
 1. `scripts/chaos/local.sh flows` debe salir con `0`, con los cuatro flujos en `OK`. Si uno sale `SLOW` o `FAIL`, es un hallazgo.
 2. `edge-pause`, `rest-pause`, `db-restart` y `edge-stop`: se leen las tablas y se comparan con la fila del registro de la última vez. Un comportamiento distinto es un hallazgo.
