@@ -196,9 +196,11 @@ describe('generate-shopping-list/index.ts', () => {
     expect(names).not.toContain('merluza')
   })
 
-  test('422 when slots carry no recipe or no ingredients', async () => {
+  test('422 when slots carry no recipe or no ingredients, and no list is written', async () => {
     config.slots = [{ recipe_id: null, dia: 'lunes', sustitucion_ingrediente: null, recipes: null }]
     expect((await call()).status).toBe(422)
+    // FRESCO-1264: "never an empty list presented as valid". A 422 with a list stored behind it would be exactly that.
+    expect(inserted).toEqual([])
   })
 
   test('200 persists the list for the verified user and returns it with a cost range', async () => {
