@@ -1407,7 +1407,13 @@ function renderFieldStub(
   ].join('\n');
 }
 
-/** Headings that open the acceptance-criteria section of a story description. */
+/**
+ * Headings that open the acceptance-criteria section of a story description.
+ *
+ * `Verificación` is deliberately NOT one of them (FRESCO-1279, audit 10 F9). Where cards use that heading it holds
+ * what was measured after the work or a check to run after the deploy, which is a result or a step, not the
+ * condition that closes the card. Reading it here would put measurements into `acceptance-criteria.md`.
+ */
 const CLOSING_CRITERIA_HEADING = /^(#{1,6})\s+(?:criterios?\s+de\s+cierre|criterios?\s+de\s+aceptaci[oó]n|acceptance\s+criteria)\s*$/i;
 
 /**
