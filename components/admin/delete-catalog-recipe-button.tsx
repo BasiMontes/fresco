@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { edgeFailureMessage } from '@/lib/api/edge-function-timeout';
 import { deleteCatalogRecipe, EdgeFunctionError } from '@/lib/api/edge-functions';
 import { getAccessToken } from '@/lib/client-api/auth';
 
@@ -38,7 +39,7 @@ export function DeleteCatalogRecipeButton({ recipeId, recipeName, onDeleted }: D
       onDeleted(recipeId);
     }
     catch (caught) {
-      const message = caught instanceof EdgeFunctionError ? caught.body.error : 'No se pudo eliminar la receta.';
+      const message = caught instanceof EdgeFunctionError ? caught.body.error : edgeFailureMessage(caught, 'No se pudo eliminar la receta.');
       console.error('[DeleteCatalogRecipeButton] deleteCatalogRecipe failed', caught);
       setError(message);
       setPending(false);

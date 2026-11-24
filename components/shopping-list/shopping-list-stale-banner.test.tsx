@@ -44,6 +44,26 @@ describe('ShoppingListStaleBanner', () => {
     expect(JSON.parse(init.body as string)).toEqual({ meal_plan_id: 'plan-1', refresh: true });
   });
 
+  test('a refresh that times out says it is taking longer than usual (FRESCO-1249)', async () => {
+    const edgeFunctions = await import('@/lib/api/edge-functions');
+    const generateSpy = spyOn(edgeFunctions, 'generateShoppingList').mockRejectedValue(new edgeFunctions.EdgeFunctionTimeoutError('generate-shopping-list', 15_000));
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const user = setupUser();
+      renderWithProviders(<ShoppingListStaleBanner mealPlanId="plan-1" />);
+
+      await user.click(screen.getByTestId('shopping_list_refresh_button'));
+
+      expect(await screen.findByTestId('shopping_list_refresh_error_message')).toHaveTextContent('Está tardando más de lo normal. Inténtalo de nuevo.');
+      expect(routerMock.refresh).not.toHaveBeenCalled();
+    }
+    finally {
+      console.error = original;
+      generateSpy.mockRestore();
+    }
+  });
+
   test('a failed refresh says so, does not re-read the page and lets the person try again', async () => {
     fetchSpy.mockResolvedValue(new Response(JSON.stringify({ error: 'boom' }), { status: 500 }));
     const original = console.error;

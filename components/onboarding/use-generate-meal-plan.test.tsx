@@ -24,6 +24,7 @@ type EdgeErrorBody = ConstructorParameters<typeof edgeFunctions.EdgeFunctionErro
 
 const registeredSession = { access_token: 'access-token', user: { id: 'user-id' } } as unknown as SessionResult;
 const edgeError = (status: number, message = 'server said no') => new edgeFunctions.EdgeFunctionError(status, { error: message });
+const timeoutError = () => new edgeFunctions.EdgeFunctionTimeoutError('generate-meal-plan', 30_000);
 
 let sessionSpy: ReturnType<typeof spyOn<typeof authApi, 'getSession'>>;
 let upsertSpy: ReturnType<typeof spyOn<typeof profileClient, 'upsertUserProfile'>>;
@@ -163,6 +164,45 @@ describe('useGenerateMealPlan failures', () => {
 
     expect(hook.result.current.generateError).toBe('Ya existe un menú para esta semana.');
     expect(hook.result.current.hasExistingMenu).toBe(true);
+  });
+
+  // FRESCO-1249 — a generation that did not answer in time may still have landed on the server.
+  test('a timeout says the menu may already exist, and is not flagged as an existing menu', async () => {
+    generateSpy.mockRejectedValueOnce(timeoutError());
+    const hook = setup();
+
+    await generate(hook);
+
+    expect(hook.result.current.generateError).toContain('Puede que ya se haya generado');
+    expect(hook.result.current.hasExistingMenu).toBe(false);
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
+  test('a 409 right after a timeout is that menu: she goes on to it, with no completed-event', async () => {
+    generateSpy.mockRejectedValueOnce(timeoutError()).mockRejectedValueOnce(edgeError(409));
+    const hook = setup();
+
+    await generate(hook);
+    await generate(hook);
+
+    expect(routerMock.push).toHaveBeenCalledWith('/menu');
+    expect(markShouldReset).toHaveBeenCalledTimes(1);
+    expect(firstMenuSpy).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.generateError).toBeNull();
+    expect(eventNames()).not.toContain(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED);
+  });
+
+  test('a 409 after a timeout is only forgiven once: the next 409 is a real clash', async () => {
+    generateSpy.mockRejectedValueOnce(timeoutError()).mockRejectedValueOnce(edgeError(409)).mockRejectedValueOnce(edgeError(409));
+    const hook = setup();
+
+    await generate(hook);
+    await generate(hook);
+    routerMock.push.mockClear();
+    await generate(hook);
+
+    expect(hook.result.current.generateError).toBe('Ya existe un menú para esta semana.');
+    expect(routerMock.push).not.toHaveBeenCalled();
   });
 
   test('a dropped connection says to check the internet', async () => {

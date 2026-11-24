@@ -7,7 +7,8 @@ import { useCaptcha } from '@/components/auth/use-captcha';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { deleteAccount, EdgeFunctionError } from '@/lib/api/edge-functions';
+import { DELETE_ACCOUNT_TIMEOUT_MESSAGE } from '@/lib/api/edge-function-timeout';
+import { deleteAccount, EdgeFunctionError, EdgeFunctionTimeoutError } from '@/lib/api/edge-functions';
 import { getAccessToken, signInWithPassword, signOut } from '@/lib/client-api/auth';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
@@ -96,11 +97,17 @@ export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: 
       router.push('/login?account_deleted=1');
     }
     catch (error) {
-      const message = error instanceof EdgeFunctionError
-        ? error.body.error
-        : 'No se pudo eliminar la cuenta. Inténtalo de nuevo.';
       console.error('[DeleteAccountDialog] deleteAccount failed', error);
-      setDeleteError(message);
+      // FRESCO-1249: a timeout does not say whether the account was deleted (the server may still be working), so the
+      // message never invites a blind retry: it says how to find out.
+      if (error instanceof EdgeFunctionTimeoutError) {
+        setDeleteError(DELETE_ACCOUNT_TIMEOUT_MESSAGE);
+      }
+      else {
+        setDeleteError(error instanceof EdgeFunctionError
+          ? error.body.error
+          : 'No se pudo eliminar la cuenta. Inténtalo de nuevo.');
+      }
     }
     finally {
       setIsDeleting(false);

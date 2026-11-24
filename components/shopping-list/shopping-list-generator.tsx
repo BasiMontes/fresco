@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { edgeFailureMessage } from '@/lib/api/edge-function-timeout';
 import { EdgeFunctionError, generateShoppingList } from '@/lib/api/edge-functions';
 import { getAccessToken } from '@/lib/client-api/auth';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
@@ -68,7 +69,7 @@ export function ShoppingListGenerator({ mealPlanId, autoGenerate = false }: Shop
         setErrorMessage('No pudimos generar una lista de la compra a partir de este menú.');
       }
       else {
-        setErrorMessage('No pudimos generar la lista de la compra. Intenta de nuevo.');
+        setErrorMessage(edgeFailureMessage(error, 'No pudimos generar la lista de la compra. Intenta de nuevo.'));
       }
       setIsGenerating(false);
     }

@@ -10,7 +10,7 @@ import { ShoppingListGenerator } from './shopping-list-generator';
 // after a failure, and what each failure tells the user. A 409 is not a failure:
 // another generation already made the list, so the page just re-reads it.
 
-const { EdgeFunctionError } = edgeFunctions;
+const { EdgeFunctionError, EdgeFunctionTimeoutError } = edgeFunctions;
 const RESULT = { resumen: { total_items: 12, coste_estimado_min: 20, coste_estimado_max: 30 } };
 
 let generateSpy: ReturnType<typeof spyOn<typeof edgeFunctions, 'generateShoppingList'>>;
@@ -61,6 +61,14 @@ describe('ShoppingListGenerator manual mode', () => {
     expect(await screen.findByTestId('shopping_list_generate_error_message')).toHaveTextContent('No pudimos generar una lista de la compra a partir de este menú.');
     expect(button()).toBeEnabled();
     expect(routerMock.refresh).not.toHaveBeenCalled();
+  });
+
+  test('a timeout says it is taking longer than usual and to try again (FRESCO-1249)', async () => {
+    generateSpy.mockRejectedValue(new EdgeFunctionTimeoutError('generate-shopping-list', 15_000));
+    renderWithProviders(<ShoppingListGenerator mealPlanId="plan1" />);
+    await setupUser().click(button());
+    expect(await screen.findByTestId('shopping_list_generate_error_message')).toHaveTextContent('Está tardando más de lo normal. Inténtalo de nuevo.');
+    expect(button()).toBeEnabled();
   });
 
   test('any other failure asks to try again', async () => {

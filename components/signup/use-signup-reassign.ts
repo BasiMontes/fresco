@@ -1,6 +1,7 @@
 import type { useCaptcha } from '@/components/auth/use-captcha';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { edgeFailureMessage } from '@/lib/api/edge-function-timeout';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
 import { adoptSession, getSession, proveAccountOwnership } from '@/lib/client-api/auth';
@@ -99,7 +100,7 @@ export function useSignupReassign({ email, captcha, setNavigating }: UseSignupRe
       setReassignError(
         err instanceof EdgeFunctionError
           ? err.message
-          : 'No pudimos verificar esa cuenta. Inténtalo de nuevo.',
+          : edgeFailureMessage(err, 'No pudimos verificar esa cuenta. Inténtalo de nuevo.'),
       );
     }
     finally {
