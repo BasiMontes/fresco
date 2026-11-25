@@ -640,7 +640,7 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve un banner "Crea una cuenta para no perder este menú"
     Y un enlace a /signup
 
-  @registro-progresivo @verificado-manual-2026-08-07 @solo-manual
+  @registro-progresivo @verificado-manual-2026-11-25 @solo-manual
   # FRESCO-353: NO automatizado — la conversión es un flujo de 2 pasos con
   # verificación de código OTP de 6 dígitos (FRESCO-89); el camino feliz
   # completo necesita un inbox real. Queda manual.
@@ -663,13 +663,29 @@ Característica: Flujo completo de usuario en Fresco
     Cuando confirma el formulario y verifica el código de 6 dígitos enviado a su correo
     Entonces su sesión anónima se actualiza a una cuenta real (mismo user_id)
     Y conserva el menú que ya había generado como invitada
+    # Verificado en local el 2026-11-25 (FRESCO-1289, excepción autorizada por el
+    # dueño). Pila local con tres ajustes temporales de supabase/config.toml, ya
+    # revertidos: correo local encendido, confirmaciones de email exigidas (sin ellas
+    # el cambio se aplica al instante y no reproduce producción) y la plantilla
+    # supabase/templates/email_change.html, que es la que lleva el código. Recorrido
+    # real de invitada: onboarding como invitada, menú generado, banner, /signup,
+    # correo recibido en la bandeja local con el código de 6 dígitos y código
+    # verificado. Resultado: aterriza en /menu, el mismo user_id pasa de
+    # is_anonymous true a false con el email puesto y sin cambio pendiente, y
+    # conserva su menú (1 plan). NO se probó la entrega por el SMTP del proyecto
+    # alojado ni Turnstile.
 
-  @registro-progresivo @edge-case @verificado-manual-2026-08-07 @solo-manual
+  @registro-progresivo @edge-case @verificado-manual-2026-11-25 @solo-manual
   # @solo-manual (FRESCO-1260): es el mismo flujo de conversión (594): necesita el código OTP real y no hay fixture de bandeja de correo en tests/.
   Escenario: La conversión de invitada a cuenta real no sobrevive a perder la sesión anónima original
     Dado que una invitada generó un menú y "creó su cuenta" en /signup con un email nuevo
     Cuando limpia cookies/localStorage (simula cerrar el navegador o cambiar de dispositivo) e intenta loguearse con esas mismas credenciales
     Entonces el login debería funcionar siempre, porque "crear cuenta" implica que quedó guardada de verdad
+    # Verificado en local el 2026-11-25 (FRESCO-1289, mismas condiciones que el
+    # escenario de arriba): tras la conversión se borraron cookies, localStorage y
+    # sessionStorage; /login se quedó sin sesión y, con el mismo email y la misma
+    # contraseña, entró a /menu con su menú (sin estado vacío y ya no como
+    # invitada). El mismo usuario ganó una sesión nueva en auth.sessions.
     # FRESCO-89 (arreglado 2026-08-07): root cause era `client.auth.
     # updateUser({email, password})` en una sola llamada — con secure email
     # change activado, Supabase solo encola el cambio (doble opt-in) y nunca
