@@ -154,11 +154,23 @@ export function exitCodeFor(warned: number, failOnStale: boolean): number {
 // Host access
 // ---------------------------------------------------------------------------
 
-/** Commit days that touched `path` after the end of `mapDate`, newest first. `null` when git fails: "could not tell" is not "none". */
-function gitCommitDaysSince(root: string, path: string, mapDate: string): string[] | null {
-  const result = Bun.spawnSync(['git', 'log', `--since=${mapDate} 23:59:59`, '--format=%cs', '--', path], { cwd: root, stdout: 'pipe', stderr: 'pipe' });
-  if (result.exitCode !== 0) { return null; }
-  return result.stdout.toString().split('\n').map(line => line.trim()).filter(Boolean);
+/**
+ * Test files change nothing a business map describes: a map is a synthesis of the product, not of its tests (FRESCO-1294).
+ * The first weekly run counted `app/page.test.tsx` as a change of `app/` and warned about it.
+ */
+export const TEST_FILE_PATHSPECS = [':(exclude,glob)**/*.test.ts', ':(exclude,glob)**/*.test.tsx'] as const;
+
+/** Commit days that touched `path` after the end of `mapDate` (test files excluded), newest first. `null` when git fails: "could not tell" is not "none". */
+export function commitDaysSince(root: string, path: string, mapDate: string): string[] | null {
+  try {
+    const result = Bun.spawnSync(['git', 'log', `--since=${mapDate} 23:59:59`, '--format=%cs', '--', path, ...TEST_FILE_PATHSPECS], { cwd: root, stdout: 'pipe', stderr: 'pipe' });
+    if (result.exitCode !== 0) { return null; }
+    return result.stdout.toString().split('\n').map(line => line.trim()).filter(Boolean);
+  }
+  catch {
+    // The directory is missing or git is not installed: Bun throws instead of returning an exit code.
+    return null;
+  }
 }
 
 function main(): number {
@@ -191,7 +203,7 @@ function main(): number {
       mapDate: mapDateOf(sections),
       undated: undatedSections(sections),
       migrationFiles,
-      commitDaysSince: (path, mapDate) => gitCommitDaysSince(root, path, mapDate),
+      commitDaysSince: (path, mapDate) => commitDaysSince(root, path, mapDate),
     });
     for (const finding of findings) {
       const mark = finding.level === 'ok' ? pc.green('✔') : finding.level === 'warn' ? pc.yellow('!') : pc.dim('·');
