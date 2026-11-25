@@ -20,6 +20,11 @@
 #                                    lógica ya cubierta en unit tests, o falta infra de
 #                                    test estructural — p.ej. lectura de inbox real).
 #                                    Lleva la razón en un comentario. (FRESCO-399 / A4-L14)
+#                                    Su garantía vigente es una de dos (FRESCO-1289): un
+#                                    comentario `# Cubierto por: <ruta del test>` con un
+#                                    fichero que existe, o una fecha @verificado-manual de
+#                                    menos de 6 semanas. `bun run qa:manual-stale` lista los
+#                                    que no tienen ninguna (README.md, receta de caducidad).
 #   @edge-case                     → causística además del camino feliz
 #   @smoke                         → subconjunto mínimo de happy paths ya
 #                                    @automatizado que corre tras cada deploy de
