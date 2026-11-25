@@ -80,6 +80,24 @@ describe('AyudaSection rows', () => {
   });
 });
 
+// regression.feature, "El FAQ de Ayuda describe correctamente cómo se genera el menú": Gemini was removed in 2026-08
+// and the menu is built by a deterministic algorithm, so the answer must say so and must not name Gemini.
+describe('AyudaSection FAQ menu-generation answer', () => {
+  test('describes a deterministic process and never names Gemini or claims an AI picks the recipes', () => {
+    renderSection();
+
+    fireEvent.click(screen.getByTestId('ayuda_row_faq'));
+
+    const answer = screen.getByText('¿Cómo genera Fresco mi menú semanal?').parentElement?.textContent ?? '';
+    expect(answer).toContain('determinista');
+    expect(answer).not.toMatch(/gemini/i);
+    // The only AI mentions left are negations: "No es una IA ..." and "sin llamadas a ningún modelo de IA".
+    expect(answer).toContain('No es una IA');
+    expect(answer).toContain('sin llamadas a ningún modelo de IA');
+    expect(answer).not.toMatch(/con IA|asistid[ao] por IA|impulsad[ao] por IA|inteligencia artificial/i);
+  });
+});
+
 describe('AyudaSection settings modal', () => {
   test('shows email, plan and member-since date', () => {
     renderSection();

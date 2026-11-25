@@ -80,4 +80,16 @@ describe('CreateRecipeForm', () => {
 
     expect(screen.getByTestId('receta_nombre_input')).toHaveValue('Salmorejo');
   });
+
+  test('caps the name at 100 characters so a pasted 1000-character name cannot reach the grid (maxLength)', async () => {
+    const user = setupUser();
+    renderWithProviders(<CreateRecipeForm open onOpenChange={() => {}} onCreated={() => {}} />);
+    const input = screen.getByTestId('receta_nombre_input');
+
+    await user.click(input);
+    await user.paste('x'.repeat(1000));
+
+    expect(input).toHaveAttribute('maxlength', '100');
+    expect((input as HTMLInputElement).value).toHaveLength(100);
+  });
 });

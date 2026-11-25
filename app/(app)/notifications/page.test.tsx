@@ -87,6 +87,22 @@ describe('NotificationsPage', () => {
     expect(latestSpy.mock.calls[0]?.[1]).toMatchObject({ userId: 'user-1', limit: 3 });
   });
 
+  // FRESCO-405 (Option A): recommendations do NOT exclude recipes the user already favorited.
+  test('a favorited recipe still shows among the recommendations, with its heart filled', async () => {
+    const recipes = makeFixtureRecipes(3);
+    latestSpy.mockResolvedValue(recipes);
+    favoritesSpy.mockResolvedValue(new Set([recipes[1].id]));
+    await renderPage();
+
+    for (const recipe of recipes) {
+      expect(screen.getByText(recipe.nombre)).toBeInTheDocument();
+    }
+    expect(screen.getAllByLabelText('Quitar de favoritos')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Guardar en favoritos')).toHaveLength(2);
+    // The query is the same with or without favorites: nothing is handed over to exclude.
+    expect(latestSpy.mock.calls[0]?.[1]).toEqual({ userId: 'user-1', limit: 3 });
+  });
+
   test('a Pro user with a failed payment sees the payment alert', async () => {
     planSpy.mockResolvedValue('pro');
     failedAtSpy.mockResolvedValue('2026-11-01T10:00:00.000Z');

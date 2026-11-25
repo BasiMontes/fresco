@@ -112,3 +112,19 @@ describe('/update-password current password (FRESCO-1015)', () => {
     expect(signOutMock).not.toHaveBeenCalled();
   });
 });
+
+describe('/update-password confirmation (regression.feature "no coincide con la anterior")', () => {
+  test('a confirmation that differs from the new password shows the mismatch message and sends nothing', async () => {
+    getClaimsMock.mockResolvedValueOnce(asMethods('recovery'));
+    const user = setupUser();
+    renderPage();
+
+    await user.type(await screen.findByTestId('update_password_new_input'), NEW_PASSWORD);
+    await user.type(screen.getByTestId('update_password_confirm_input'), 'otra-contraseña-larga-2');
+    await user.click(screen.getByTestId('update_password_submit_button'));
+
+    expect(await screen.findByText('Las contraseñas no coinciden.')).toBeInTheDocument();
+    expect(updateUserMock).not.toHaveBeenCalled();
+    expect(signOutMock).not.toHaveBeenCalled();
+  });
+});

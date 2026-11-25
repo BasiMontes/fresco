@@ -71,6 +71,12 @@ describe.skipIf(!(RUN && reachable))('client write quotas and caps (real DB)', (
       expect(ok.status).toBe(201);
     });
 
+    // regression.feature, "Receta propia con nombre vacío": the table CHECK char_length(trim(nombre)) > 0 holds
+    // even when the client skips its own validation.
+    test('a blank nombre (only spaces) is rejected', async () => {
+      expectCheckViolation(await insertReceta(user, { nombre: '   ' }), 'recetas_propias_nombre_check');
+    });
+
     test('nombre over 120 characters is rejected', async () => {
       expectCheckViolation(await insertReceta(user, { nombre: 'a'.repeat(121) }), 'recetas_propias_nombre_max_length');
     });

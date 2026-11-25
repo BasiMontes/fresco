@@ -23,6 +23,19 @@ describe('NombreForm', () => {
     expect(screen.getByTestId('guardar_nombre_button')).toBeDisabled();
   });
 
+  test('the name input has no error border on first render, and gets one once emptied after typing', async () => {
+    const user = setupUser();
+    renderWithProviders(<NombreForm nombreInicial={null} />);
+    const input = screen.getByTestId('nombre_input');
+
+    expect(input).not.toHaveClass('border-error');
+
+    await user.type(input, 'x');
+    await user.clear(input);
+
+    expect(input).toHaveClass('border-error');
+  });
+
   test('shows the error once the field is dirtied to empty', async () => {
     const user = setupUser();
     renderWithProviders(<NombreForm nombreInicial="Laura" />);

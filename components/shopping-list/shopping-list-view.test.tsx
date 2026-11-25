@@ -659,3 +659,42 @@ describe('ShoppingListView — stale list (FRESCO-1010)', () => {
     expect(screen.getByTestId('shopping_list_refresh_button')).toHaveTextContent('Actualizar lista');
   });
 });
+
+describe('ShoppingListView — "Nuevo" badge (regression.feature "solo los ingredientes que no estaban la semana pasada")', () => {
+  const LIST_NUEVOS: ShoppingListPersistido = {
+    id: 'list-nuevos',
+    mealPlanId: 'plan-list-nuevos',
+    desactualizada: false,
+    pasillos: [
+      {
+        nombre: 'Despensa',
+        orden: 1,
+        items: [
+          { nombre: 'Tomate', cantidad: 2, unidad: 'unidades', comprado: false },
+          { nombre: 'Lentejas', cantidad: 200, unidad: 'g', comprado: false },
+          { nombre: 'Pan', cantidad: 1, unidad: 'unidades', comprado: false },
+        ],
+      },
+    ],
+    resumen: { total_items: 3, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
+  };
+
+  test('the badge shows next to the items missing from last week and not next to the ones that were there', () => {
+    renderWithProviders(<ShoppingListView list={LIST_NUEVOS} nuevosNombres={new Set(['lentejas', 'pan'])} />);
+
+    expect(screen.getByTestId('shopping_list_item_0_1_nuevo')).toHaveTextContent('Nuevo');
+    expect(screen.getByTestId('shopping_list_item_0_2_nuevo')).toHaveTextContent('Nuevo');
+    expect(screen.queryByTestId('shopping_list_item_0_0_nuevo')).toBeNull();
+  });
+
+  test('a new item that is already bought drops its badge', () => {
+    const list: ShoppingListPersistido = {
+      ...LIST_NUEVOS,
+      pasillos: [{ ...LIST_NUEVOS.pasillos[0], items: LIST_NUEVOS.pasillos[0].items.map(item => (item.nombre === 'Pan' ? { ...item, comprado: true } : item)) }],
+    };
+    renderWithProviders(<ShoppingListView list={list} nuevosNombres={new Set(['lentejas', 'pan'])} />);
+
+    expect(screen.getByTestId('shopping_list_item_0_1_nuevo')).toBeInTheDocument();
+    expect(screen.queryByTestId('shopping_list_item_0_2_nuevo')).toBeNull();
+  });
+});

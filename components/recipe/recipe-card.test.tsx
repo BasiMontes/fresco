@@ -98,4 +98,12 @@ describe('RecipeCard', () => {
     expect(added).toBe(1);
     expect(toggled).toBe(0);
   });
+
+  // regression.feature, "dificultad y coste humanizados": the card shows the cost label, not the raw enum.
+  test('shows the cost as "muy bajo", never the raw muy_bajo enum value', () => {
+    renderWithProviders(<RecipeCard recipe={{ ...RECIPE, meta: { ...RECIPE.meta!, coste_estimado: 'muy_bajo' } }} />);
+
+    expect(screen.getByText(/muy bajo/)).toBeInTheDocument();
+    expect(screen.queryByText(/muy_bajo/)).toBeNull();
+  });
 });
