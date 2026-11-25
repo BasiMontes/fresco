@@ -73,6 +73,8 @@ It lists every manual scenario (`@solo-manual`, or a dated one that is not `@aut
 1. **A test guards it.** A comment line under its tags says `# Cubierto por: <path>[, <path>]`, and every path exists. The cheapest test that covers the risk is the guarantee, so the date stops mattering. A path that does not exist makes it `broken-guard`, never `guarded`.
 2. **A recent date.** Its `@verificado-manual-YYYY-MM-DD` is not older than 6 weeks (42 days).
 
+A guard does not have to be a test: for a scenario that lives in a third party's hosted UI (the Stripe Billing Portal), a read-only check of its configuration also counts, provided each audit pass runs it. `bun run qa:stripe-portal` is that check for the two portal scenarios; it needs the Stripe key through `varlock`, so it is run by hand, and it vouches for the mode of the key it loads (test or live).
+
 Otherwise it is `expired` (a date older than 6 weeks) or `undated` (no date and no guard). Each pass of the audit runs the script (`.context/audits/audit-process.md` section 8).
 
 ## How to consume

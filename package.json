@@ -70,6 +70,7 @@
     "context:map": "bun scripts/context-map.ts",
     "context:stale": "bun scripts/check-map-staleness.ts",
     "qa:manual-stale": "bun scripts/qa/manual-scenarios.ts",
+    "qa:stripe-portal": "bunx varlock run -- bun scripts/qa/stripe-portal-config.ts",
     "docs:check": "bun scripts/lint-docs.ts",
     "env:set": "bun scripts/env-set.ts",
     "harness:env": "bun scripts/harness-env.ts",

@@ -2081,6 +2081,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @suscripcion @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): ocurre dentro de la interfaz alojada de Stripe (Billing Portal), fuera de nuestra app; solo se observa con Stripe real y ya hay `@requiere-stripe-real` para la entrada al portal.
+# Cubierto por: scripts/qa/stripe-portal-config.ts (script de solo lectura que cada auditoría ejecuta con bun run qa:stripe-portal y comprueba el modo de la clave cargada: test o live)
+# Tests: "cancel-at-period-end"
   Escenario: Cancelar la suscripción
     Dado que Laura está en la gestión de su suscripción (Billing Portal)
     Cuando elige cancelarla
@@ -2090,6 +2092,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @suscripcion @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): ocurre dentro de la interfaz alojada de Stripe (Billing Portal), fuera de nuestra app; solo se observa con Stripe real.
+# Cubierto por: scripts/qa/stripe-portal-config.ts (script de solo lectura que cada auditoría ejecuta con bun run qa:stripe-portal y comprueba el modo de la clave cargada: test o live)
+# Tests: "invoice-history"
   Escenario: Ver mi próximo cobro
     Dado que Laura tiene una suscripción Pro activa
     Cuando abre la gestión de su suscripción
