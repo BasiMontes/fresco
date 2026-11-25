@@ -933,6 +933,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @calendario @edge-case @verificado-manual-2026-08-06 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: tests/steps/calendario.steps.ts (el paso del escenario e2e "El calendario no desborda horizontalmente" comprueba el botón a 360 y 768 px)
+# Tests: "el botón de eliminar semana queda dentro de la pantalla"
   Escenario: El botón de eliminar semana es alcanzable en mobile
     Dado que el usuario tiene un menú generado, viewport 375px
     Cuando busca el botón de eliminar semana en el header de /calendar
@@ -1068,6 +1070,7 @@ Característica: Flujo completo de usuario en Fresco
   Escenario: El calendario no desborda horizontalmente en móvil ni en tableta
     Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos
     Entonces la página no tiene scroll horizontal
+    Y el botón de eliminar semana queda dentro de la pantalla
     # FRESCO-786 — a 768 px la barra lateral deja ~442 px de contenido y el
     # grid pedía 2 columnas de 15rem (593 px): la página crecía a 884 px y la
     # flecha de día siguiente pisaba la cabecera. El número de días visibles
@@ -1419,6 +1422,8 @@ Característica: Flujo completo de usuario en Fresco
   # llamar al endpoint real dispara el bucle global de reconciliación contra
   # todas las filas de user_profiles y podría degradar el fixture Pro de otro
   # escenario e2e en paralelo.
+# Cubierto por: tests/db/stripe-reconcile-orphan-sweep.test.ts, app/api/cron/stripe-reconcile/route.test.ts (el test de base de datos corre solo con RUN_DB_INTEGRATION y en el job test:db-integration)
+# Tests: "downgrades the pro and family rows with no subscription and leaves everyone else alone"; "downgrades every pro/family row that has no stripe_subscription_id"
   Escenario: El cron de reconciliación degrada perfiles Pro huérfanos sin suscripción
     Dado que existe una fila de perfil con plan Pro y sin suscripción de Stripe
     Cuando se ejecuta el job de reconciliación de suscripciones
