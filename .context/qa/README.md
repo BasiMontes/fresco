@@ -62,14 +62,18 @@ Everything else `@pendiente` was either automated in FRESCO-399 (the notificacio
 ### Staleness recipe (`@verificado-manual` > 6 weeks — A4-L15)
 
 ```sh
-# manual-only scenarios whose last live check is now stale (>6 weeks):
-CUTOFF=$(date -v-6w +%Y-%m-%d 2>/dev/null || date -d '-6 weeks' +%Y-%m-%d)
-rg -o '@verificado-manual-[0-9-]+' .context/qa/regression.feature \
-  | sed 's/@verificado-manual-//' | sort -u \
-  | awk -v c="$CUTOFF" '$0 < c { print $0 "  ← re-verify" }'
+bun run qa:manual-stale                    # as of today
+bun run qa:manual-stale -- --today 2026-11-24
 ```
 
-A hit is not a failure — it means "the last human check of this manual-only path predates the cutoff; re-run it (or automate it) before quoting it as covered." `@automatizado` scenarios are exempt.
+It lists every manual scenario (`@solo-manual`, or a dated one that is not `@automatizado`) as `guarded`, `current`, `expired`, `undated` or `broken-guard`, with the line of each one that has no current guarantee (FRESCO-1289, audit 11 F5, replaces the old `rg | awk` recipe). A hit is not a failure: the script always exits 0. It means "the last human check of this manual-only path predates the cutoff, or there never was one: re-verify it, guard it with a test, or automate it before quoting it as covered." `@automatizado` scenarios are exempt.
+
+**A manual scenario has a current guarantee when** one of these holds, checked in this order:
+
+1. **A test guards it.** A comment line under its tags says `# Cubierto por: <path>[, <path>]`, and every path exists. The cheapest test that covers the risk is the guarantee, so the date stops mattering. A path that does not exist makes it `broken-guard`, never `guarded`.
+2. **A recent date.** Its `@verificado-manual-YYYY-MM-DD` is not older than 6 weeks (42 days).
+
+Otherwise it is `expired` (a date older than 6 weeks) or `undated` (no date and no guard). Each pass of the audit runs the script (`.context/audits/audit-process.md` section 8).
 
 ## How to consume
 

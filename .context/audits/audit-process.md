@@ -210,6 +210,18 @@ part of `repo:check`, so it never blocks a pull request.
 
 ---
 
+## 8. The guarantee of the manual scenarios
+
+Each pass runs `bun run qa:manual-stale` and reads its output as a **notice, never a blocker** (owner decision of
+2026-11-24, audit 11 F5, FRESCO-1289). It lists every manual scenario of `.context/qa/regression.feature` that has no
+current guarantee: a `@verificado-manual` date older than 6 weeks, no date, or a `# Cubierto por:` comment that names a
+file that does not exist. A scenario is guaranteed when a test named in `Cubierto por:` exists or when its date is under
+6 weeks old; `@automatizado` scenarios are exempt. The audit reports the counts the script printed instead of recounting
+the file by hand (audit 11 had to, and its first figures were wrong). The rule and the convention live in
+[`.context/qa/README.md`](../qa/README.md), section "Staleness recipe".
+
+---
+
 ## Revisit triggers for this doctrine
 
 Loosen or change the above when:
