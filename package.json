@@ -68,6 +68,7 @@
     "bootstrap:guard": "bun scripts/bootstrap-guard.ts",
     "browser:profiles": "bun scripts/browser-profiles.ts",
     "context:map": "bun scripts/context-map.ts",
+    "context:stale": "bun scripts/check-map-staleness.ts",
     "docs:check": "bun scripts/lint-docs.ts",
     "env:set": "bun scripts/env-set.ts",
     "harness:env": "bun scripts/harness-env.ts",

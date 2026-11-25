@@ -193,6 +193,23 @@ missing is a finding. A pass without it leaves resilience unmeasured, the same w
 
 ---
 
+## 7. The staleness notice of the business maps
+
+Each pass runs `bun run context:stale` and reads its output as a **notice, never a blocker** (owner decision of
+2026-11-24, audit 11 F6, FRESCO-1292). For each of the three business maps it compares the date the map was last brought
+up to date with what the map describes (migrations for the data map, routes and Edge Functions for the API map, pages
+and Edge Functions for the feature map) and warns when that is newer. The migrations stay the source of truth
+(`stack.database.schema_source: migrations`), so a stale map is a cost in orientation, not a defect in the product.
+
+The audit reports each warning with the figure the script printed. Refreshing a map is `project-context mode data`,
+`features` or `api` in UPDATE mode, which shows a section-level diff and waits for approval.
+
+The same check also runs **weekly** in `.github/workflows/map-staleness.yml` (owner decision of 2026-11-25): a stale map
+turns that scheduled run red and opens one issue labelled `map-staleness`, and the first clean week closes it. It is not
+part of `repo:check`, so it never blocks a pull request.
+
+---
+
 ## Revisit triggers for this doctrine
 
 Loosen or change the above when:
