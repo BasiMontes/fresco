@@ -236,7 +236,7 @@ Característica: Flujo completo de usuario en Fresco
     # no contraseñas distintas). Severidad: menor (edge-case de doble error,
     # no bloquea el flujo feliz — el usuario puede seguir corrigiendo).
 
-  @login @recuperar-password @solo-manual
+  @login @recuperar-password @verificado-manual-2026-11-25 @solo-manual
   # @solo-manual (FRESCO-399 / A4-L14): sin fixture de lectura de inbox real
   # en tests/ (mismo bloqueo que los OTP de registro progresivo) y la acción
   # es irreversible sobre la cuenta QA compartida. El formulario en sí
@@ -251,6 +251,15 @@ Característica: Flujo completo de usuario en Fresco
     # compartida (cambiaría su contraseña real). Verificado en cambio: el
     # formulario de /update-password renderiza y valida coincidencia +
     # longitud mínima correctamente sin llegar a enviar nada al backend.
+    # Verificado en local el 2026-11-25 (FRESCO-1289, excepción autorizada por el
+    # dueño): sobre un usuario desechable de la pila local se generó con la API de
+    # administración el mismo enlace que construye la plantilla del correo
+    # (/auth/confirm?token_hash=...&type=recovery&next=/update-password). Cayó en
+    # /update-password con el formulario visible; al confirmar una contraseña nueva
+    # redirigió a /login?password_reset=1; la contraseña vieja ya no entra
+    # ("Email o contraseña incorrectos.") y la nueva lleva a /menu. NO se probó la
+    # entrega del correo real, ni la petición desde /forgot-password, ni el modo
+    # alojado (Turnstile). Usuarios y credenciales se borraron al terminar.
 
   # ==========================================================================
   # Onboarding y generación de menú (EPIC-FRESCO-4 / EPIC-FRESCO-6)
