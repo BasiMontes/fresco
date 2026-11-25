@@ -12,7 +12,7 @@
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Staging run  | the SHA has no `pr-check.yml` push run on `staging`, or the latest one is pending or not `success`                                                               |
 | Identity     | any commit in the range has an author or committer `*@example.com`                                                                                               |
-| Pull request | a commit has no `(#PR)` in its subject and touches more than docs (`docs/`, `.context/`, root `*.md`, `.agents/**/*.md`, per `git_strategy.policy.docs_changes`). A merge commit is judged by the files it brings in against its first parent (FRESCO-1039), so a merge that only carries docs passes and one that carries code still needs a `(#PR)` |
+| Pull request | a commit has no `(#PR)` in its subject and touches more than docs (`docs/`, `.context/`, root `*.md`, top-level `.agents/*.md`, per `git_strategy.policy.docs_changes`; a `SKILL.md` or an instruction section under `.agents/` is NOT docs, it changes how the agent behaves and needs a PR). A merge commit is judged by the files it brings in against its first parent (FRESCO-1039), so a merge that only carries docs passes and one that carries code still needs a `(#PR)` |
 | Fast-forward | `dev` or `main` is not an ancestor of the staging SHA                                                                                                            |
 
 Only the latest run counts: a green re-run after a red one passes.
@@ -25,7 +25,7 @@ It also **refuses** when a migration of the SHA is not applied on the hosted pro
 | `✖ [migration] K migration(s) ... are NOT applied` | the promotion is refused and each pending migration is named; apply them with `supabase db push --linked --dry-run`, then without `--dry-run`, and run the gate again |
 | `✖ [migration] could not read the hosted migration list` | the Supabase CLI is missing, not logged in or the project is not linked, so nothing was checked and the gate does not assume "none pending": run `supabase migration list --linked` by hand, fix access and re-run |
 
-`--override-reason "<why>"` waives this problem like the run-status one, for the case where a pending migration is intended (a data migration applied right after the promotion). The reason is echoed, so it leaves a trail. The script never applies a migration itself.
+`--override-reason "<why>"` waives this problem like the run-status one, for the case where a pending migration is intended (a data migration applied right after the promotion). The override leaves a git tag (see Usage). The script never applies a migration itself.
 
 ## Usage
 
@@ -35,7 +35,9 @@ bun run git:promote --yes                        # pushes staging to dev and mai
 bun run git:promote --yes --override-reason "test:e2e flake, green on re-run <run url>"
 ```
 
-`--override-reason` waives the staging-run and pull-request refusals only. It is echoed in the output so it leaves a trail. A placeholder identity can never be overridden: fix the commit instead.
+`--override-reason` waives the staging-run and pending-migration refusals only: a flake confirmed by re-running, or a data migration meant to run right after the promotion. It never waives a placeholder identity (fix the commit) or a code commit without `(#PR)` (land it through a PR, FRESCO-1291).
+
+**The trail.** A forced promotion with `--yes` creates an annotated tag `promote-override/<UTC stamp>-<sha8>` on the promoted SHA. Its message holds the date, the author, the reason and each refusal that was waived. The tag is created before the push and travels in the same atomic push as the branches: if the tag cannot be created nothing is pushed, and if the push fails the local tag is deleted. Read the trail with `git tag -l 'promote-override/*'` and `git show <tag>`. A dry run only announces the tag name.
 
 ## The "merge and level" flow
 

@@ -26,8 +26,11 @@
  *     after the promotion needs `--override-reason`.
  *
  * Dry run by default. `--yes` pushes, never with force. `--override-reason`
- * waives the run-status, no-PR and pending-migration problems (a flake confirmed by
- * re-running, a data migration applied right after) and is echoed so it leaves a trail; it NEVER waives a placeholder identity.
+ * waives the run-status and pending-migration problems (a flake confirmed by
+ * re-running, a data migration applied right after). It NEVER waives a placeholder identity or a
+ * code commit without `(#PR)` (FRESCO-1291). A forced promotion leaves an annotated tag
+ * `promote-override/<UTC stamp>-<sha8>` on the promoted SHA, with date, reason and author, pushed in
+ * the same atomic push as the branches: the terminal echo is not a trail, the tag is.
  * This script is project-owned, `bun run up` does not overwrite it.
  */
 
@@ -65,7 +68,9 @@ const WORKFLOW = 'pr-check.yml';
 // Pure helpers (unit-tested in git-promote.test.ts)
 // ---------------------------------------------------------------------------
 
-const DOCS_PATTERNS = [/^docs\//, /^\.context\//, /^[^/]+\.md$/, /^\.agents\/.+\.md$/];
+// Mirrors `git_strategy.policy.docs_changes` in `.agents/project.yaml`. `.agents/` counts only at its top
+// level (README-style notes): a SKILL.md or an instruction section changes how the agent behaves, so it needs a PR.
+const DOCS_PATTERNS = [/^docs\//, /^\.context\//, /^[^/]+\.md$/, /^\.agents\/[^/]+\.md$/];
 
 export function isDocsOnly(files: string[]): boolean {
   return files.length > 0 && files.every(file => DOCS_PATTERNS.some(pattern => pattern.test(file)));
@@ -104,10 +109,37 @@ export function evaluatePromotion(input: PromotionInput): Problem[] {
   return [...(run ? [run] : []), ...commitProblems(input.commits)];
 }
 
-/** Drops what an override may waive. A placeholder identity is never waivable. */
+/** What an override may waive: a flaky or unfinished run, and a migration meant to run after the promotion. */
+const WAIVABLE: ReadonlyArray<Problem['kind']> = ['run', 'migration'];
+
+/** Drops what an override may waive. A placeholder identity and a code commit without `(#PR)` are never waivable. */
 export function applyOverride(problems: Problem[], reason: string | undefined): Problem[] {
   if (!reason?.trim()) { return problems; }
-  return problems.filter(problem => problem.kind === 'identity');
+  return problems.filter(problem => !WAIVABLE.includes(problem.kind));
+}
+
+export interface OverrideTag {
+  name: string
+  message: string
+}
+
+/** The annotated tag a forced promotion leaves on the promoted SHA: who forced what, when and why. */
+export function overrideTag(input: { sha: string, reason: string, author: string, date: Date, waived: Problem[] }): OverrideTag {
+  const iso = input.date.toISOString();
+  const stamp = iso.replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  const kinds = [...new Set(input.waived.map(problem => problem.kind))].join(', ');
+  return {
+    name: `promote-override/${stamp}-${input.sha.slice(0, 8)}`,
+    message: [
+      `Promotion forced past: ${kinds}`,
+      `Date: ${iso}`,
+      `Author: ${input.author}`,
+      `SHA: ${input.sha}`,
+      `Reason: ${input.reason.trim()}`,
+      '',
+      ...input.waived.map(problem => `- [${problem.kind}] ${problem.message}`),
+    ].join('\n'),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -297,11 +329,20 @@ function main(): number {
     console.log(`${pc.red('✖')} [${problem.kind}] ${problem.message}`);
   }
   if (remaining.length > 0) {
-    console.log(`\n${pc.red('Promotion refused.')} Fix the above and re-run${problems.some(p => p.kind === 'identity') ? ' (a placeholder identity cannot be overridden)' : ', or pass --override-reason "<why>" for a confirmed flake or a data migration meant to run after the promotion'}.`);
+    const hint = problems.some(p => p.kind === 'identity')
+      ? ' (a placeholder identity cannot be overridden)'
+      : problems.some(p => p.kind === 'pull-request')
+        ? ' (a code commit without (#PR) cannot be overridden: land it through a PR)'
+        : ', or pass --override-reason "<why>" for a confirmed flake or a data migration meant to run after the promotion';
+    console.log(`\n${pc.red('Promotion refused.')} Fix the above and re-run${hint}.`);
     return 1;
   }
-  if (problems.length > 0) {
+  const tag = problems.length > 0
+    ? overrideTag({ sha, reason: overrideReason ?? '', author: Bun.spawnSync(['git', 'config', 'user.name'], { stdout: 'pipe', stderr: 'pipe' }).stdout.toString().trim() || 'unknown', date: new Date(), waived: problems })
+    : null;
+  if (tag) {
     console.log(`${pc.yellow('!')} OVERRIDE accepted: ${overrideReason}`);
+    console.log(`  annotated tag ${tag.name} will record it on ${sha.slice(0, 8)}.`);
   }
   console.log(`${pc.green('✔')} gate passed for ${pending.join(' + ')}.`);
 
@@ -315,7 +356,14 @@ function main(): number {
     console.log(`\nDry run. Re-run with ${pc.bold('--yes')} to push ${sha.slice(0, 8)} to ${pending.join(' and ')} (fast-forward only, no force).`);
     return 0;
   }
-  const push = Bun.spawnSync(['git', 'push', 'origin', ...pending.map(target => `${sha}:refs/heads/${target}`)], { stdout: 'inherit', stderr: 'inherit' });
+  // A forced promotion without its trail is worse than no promotion: create the tag BEFORE pushing and stop if it fails.
+  if (tag) {
+    const created = Bun.spawnSync(['git', 'tag', '-a', tag.name, '-m', tag.message, sha], { stdout: 'pipe', stderr: 'pipe' });
+    if (created.exitCode !== 0) { fail(`could not create the override tag, nothing was pushed: ${created.stderr.toString().trim()}`); }
+  }
+  const refs = [...pending.map(target => `${sha}:refs/heads/${target}`), ...(tag ? [`refs/tags/${tag.name}`] : [])];
+  const push = Bun.spawnSync(['git', 'push', ...(tag ? ['--atomic'] : []), 'origin', ...refs], { stdout: 'inherit', stderr: 'inherit' });
+  if (push.exitCode !== 0 && tag) { Bun.spawnSync(['git', 'tag', '-d', tag.name], { stdout: 'pipe', stderr: 'pipe' }); }
   return push.exitCode === 0 ? 0 : 1;
 }
 
