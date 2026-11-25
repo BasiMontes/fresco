@@ -28,9 +28,13 @@ import { join } from 'node:path';
 
 import process from 'node:process';
 
-import pc from 'picocolors';
+import picocolors from 'picocolors';
 import { CONTEXT_MAP_SKILLS, isPlaceholderMap, mapRelPath } from '../cli/lib/context-maps.ts';
 import { parseMap } from './context-map.ts';
+
+// Colour only for a person at a terminal. picocolors turns it on whenever `CI` is set, even through a pipe, and
+// the weekly workflow pipes this output into a GitHub issue body, where the escape codes show up as `^[[1m`.
+const pc = picocolors.createColors(Boolean(process.stdout.isTTY) && !process.env.NO_COLOR);
 
 type Level = 'ok' | 'warn' | 'info';
 
