@@ -1,0 +1,83 @@
+name: Business map staleness
+
+# FRESCO-1292 (audit 11 F6, rest of A10-F4). The three business maps (data, API, features) are a synthesis written
+# on a given day. Audit 10 found two of them behind the code and audit 11 found the data map 24 migrations behind,
+# and nothing said so between audits. `scripts/check-map-staleness.ts` compares each map's date with what it
+# describes (migrations, routes, Edge Functions, pages).
+#
+# Weekly, not in `repo:check`, on purpose: the `repo:check` checkout is shallow (no `fetch-depth`), so
+# `git log --since` would warn on every pull request, and a notice inside the job that blocks a PR is read by
+# nobody. Here the checkout is full, a stale map turns this scheduled run red and opens ONE issue labelled
+# `map-staleness`; no pull request is ever affected. Each red week comments on that issue, and the first green
+# week closes it. The owner decision (2026-11-24) is "a notice, never a blocker".
+#
+# Refreshing a map is `project-context mode data | features | api` in UPDATE mode (section-level diff, waits for
+# approval). Run this one by hand with `workflow_dispatch`, or locally with `bun run context:stale`.
+
+on:
+  schedule:
+    - cron: '31 6 * * 1' # Mondays 06:31 UTC (offset from the other weekly jobs)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  staleness:
+    name: maps vs what they describe
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Third-party actions pinned by commit SHA, not a mutable tag (FRESCO-417 / A4-L16). Bump the SHA and the
+      # trailing version comment together (Dependabot does this, see .github/dependabot.yml).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The check reads `git log --since=<map date>` per area: a shallow clone would see only the tip commit.
+          fetch-depth: 0
+          # Read-only job: no push, no authenticated git op after checkout.
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.3.14'
+
+      - run: bun install --frozen-lockfile
+
+      - name: Fail when a map is behind what it describes
+        id: stale
+        # `set -o pipefail` so the step fails on the script's exit, not on `tee`'s.
+        run: |
+          set -o pipefail
+          bun scripts/check-map-staleness.ts --fail-on-stale | tee staleness-report.txt
+
+      - name: Open or update the staleness issue
+        # One issue at a time: every red week comments on it instead of stacking new ones.
+        if: failure() && steps.stale.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create map-staleness --color fbca04 --description "A business map is behind what it describes" 2>/dev/null || true
+          number=$(gh issue list --label map-staleness --state open --json number --jq '.[0].number // empty')
+          report=$(head -40 staleness-report.txt)
+          if [ -z "$number" ]; then
+            body=$(printf '`bun run context:stale` found a business map behind what it describes on [run %s](%s).\n\n```\n%s\n```\n\nThis is a notice, not a blocker: the migrations stay the source of truth. Refresh the map with `project-context` mode `data`, `features` or `api` in UPDATE mode (it shows a section-level diff and waits for approval). This issue stays open until a week comes back clean.' \
+              "${{ github.run_id }}" "$RUN_URL" "$report")
+            gh issue create \
+              --title "A business map is behind what it describes" \
+              --label map-staleness \
+              --body "$body"
+            exit 0
+          fi
+          gh issue comment "$number" --body "Still behind on [run ${{ github.run_id }}]($RUN_URL):"$'\n\n```\n'"$report"$'\n```'
+
+      - name: Close the staleness issue once every map is current
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for number in $(gh issue list --label map-staleness --state open --json number --jq '.[].number'); do
+            gh issue close "$number" --comment "Clean on [run ${{ github.run_id }}]($RUN_URL): every map is at least as new as what it describes."
+          done
