@@ -163,7 +163,19 @@ Pila local, cuenta Free sembrada, navegador con Playwright. Las cuatro hipótesi
 - **FRESCO-1283** (E1): FRESCO-1249 arregló el reintento tras un corte **por tiempo**, pero un error de red, que es la causa más habitual de perder una respuesta, sigue diciendo que el menú ya existe y que hay que eliminarlo. Es el menú que la persona quería.
 - **FRESCO-1284** (E2 y E4): ante una respuesta perdida la pantalla revierte una marca que sí llegó. No pierde ni duplica datos y se corrige al reintentar o recargar, pero el mensaje "Vuelve a intentarlo" es falso.
 
-Cómo se reproduce el corte de respuesta perdida: en una sesión de Playwright, `page.route('**/functions/v1/<función>', async route => { await route.fetch(); await route.abort('connectionreset'); })` (para una RPC de PostgREST, `'**/rest/v1/rpc/<nombre>'`), y `page.unroute(...)` para quitarlo. El estado de la base de datos se lee con `supabase db query --local`.
+Cómo se reproduce el corte de respuesta perdida: en una sesión de Playwright, `page.route('**/functions/v1/<función>', async route => { await route.fetch(); await route.abort('connectionreset'); })` (para una RPC de PostgREST, `'**/rest/v1/rpc/<nombre>'`), y `page.unroute(...)` para quitarlo. El estado de la base de datos se lee con `supabase db query --local`. Un corte puesto con `page.route` dentro de `run-code` se quita con `page.unroute` en otro `run-code`: el `unroute` del CLI no lo toca y el "reintento" sigue cortado (pasó en la primera pasada del 2026-11-25).
+
+### 2026-11-25: E1 repetido tras FRESCO-1283 (FRESCO-1288)
+
+Misma pila y misma forma de corte que el 2026-11-24, con el código de `staging` que ya lleva #1078. Cuenta Free sembrada, `/menu`, Playwright; sin Turnstile (`NEXT_PUBLIC_TURNSTILE_SITE_KEY` vacío).
+
+| Paso | Qué pasó |
+|---|---|
+| Antes | La pantalla dijo "Todavía no tienes un menú para esta semana" y la base tenía 0 planes del usuario |
+| Primer intento, respuesta perdida | La petición a `generate-meal-plan` llegó y el navegador vio `ERR_CONNECTION_RESET`. La pantalla dijo "No pudimos generar tu menú. Intenta de nuevo." y la base ya tenía 1 plan |
+| Reintento con el corte quitado | El servidor respondió `409 Conflict`. La pantalla pasó a `/calendar` ("Calendario semanal") y enseñó el menú. No salió "Ya existe un menú para esta semana. Elimínalo antes de generar uno nuevo." y la base siguió en 1 plan, sin duplicar |
+
+**Resultado:** la debilidad de E1 ya no se reproduce. El primer mensaje ("Intenta de nuevo") sigue saliendo, y es cierto: el cliente no sabe si el menú llegó. Lo que cambió es el reintento, que ya no pide eliminar el menú que la persona quería. Capturas en FRESCO-1283.
 
 ---
 
