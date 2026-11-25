@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
-import { applyOverride, evaluatePromotion, hasPullRequestRef, isDocsOnly, migrationNotice, migrationProblem, migrationVersion, parseAppliedVersions, pendingMigrations, readCommits } from './git-promote';
+import { applyOverride, evaluatePromotion, hasPullRequestRef, isDocsOnly, migrationNotice, migrationProblem, migrationVersion, overrideTag, parseAppliedVersions, pendingMigrations, readCommits } from './git-promote';
 
 /**
  * FRESCO-829 (external audit 6): the staging -> main promotion is a manual
@@ -62,6 +62,13 @@ describe('evaluatePromotion, commits', () => {
     expect(evaluatePromotion({ runs: [green], commits: [docs] })).toEqual([]);
   });
 
+  test('refuses a SKILL.md or an instruction section without (#PR): they change how the agent behaves (FRESCO-1291)', () => {
+    for (const file of ['.agents/skills/git-flow-master/SKILL.md', '.agents/instructions/agent-git.md', '.agents/project.yaml']) {
+      const problems = evaluatePromotion({ runs: [green], commits: [{ ...clean, subject: 'docs: tweak', files: [file] }] });
+      expect(problems.map(p => p.kind)).toEqual(['pull-request']);
+    }
+  });
+
   test('reports a commit with both problems twice', () => {
     const bad = { ...clean, authorEmail: 'test@example.com', subject: 'fix: direct' };
     expect(evaluatePromotion({ runs: [green], commits: [bad] }).map(p => p.kind)).toEqual(['identity', 'pull-request']);
@@ -80,14 +87,40 @@ describe('applyOverride', () => {
     expect(applyOverride(problems, '   ')).toEqual(problems);
   });
 
-  test('with a reason waives run and pull-request problems but never identity', () => {
-    expect(applyOverride(problems, 'flake confirmed after re-run').map(p => p.kind)).toEqual(['identity']);
+  test('with a reason waives run and migration problems only', () => {
+    const withMigration = [...problems, { kind: 'migration' as const, message: 'pending' }];
+    expect(applyOverride(withMigration, 'flake confirmed after re-run').map(p => p.kind)).toEqual(['pull-request', 'identity']);
+  });
+
+  test('never lets a code commit without (#PR) through, even with a reason (FRESCO-1291)', () => {
+    const code = evaluatePromotion({ runs: [green], commits: [{ ...clean, subject: 'fix: direct', files: ['lib/x.ts'] }] });
+    expect(applyOverride(code, 'flake confirmed after re-run').map(p => p.kind)).toEqual(['pull-request']);
+  });
+});
+
+describe('overrideTag', () => {
+  const sha = 'abcdef0123456789'.repeat(2).slice(0, 40);
+  const date = new Date('2026-11-25T10:15:30.123Z');
+  const waived = [{ kind: 'run' as const, message: 'latest pr-check.yml run concluded failure, not success' }];
+
+  test('names the tag by UTC stamp and short SHA', () => {
+    expect(overrideTag({ sha, reason: 'flake', author: 'Basilio', date, waived }).name).toBe('promote-override/20261125T101530Z-abcdef01');
+  });
+
+  test('carries date, reason, author, SHA and what was waived', () => {
+    const { message } = overrideTag({ sha, reason: '  e2e flake, green on re-run  ', author: 'Basilio', date, waived });
+    expect(message).toContain('Date: 2026-11-25T10:15:30.123Z');
+    expect(message).toContain('Author: Basilio');
+    expect(message).toContain(`SHA: ${sha}`);
+    expect(message).toContain('Reason: e2e flake, green on re-run');
+    expect(message).toContain('Promotion forced past: run');
+    expect(message).toContain('- [run] latest pr-check.yml run concluded failure');
   });
 });
 
 describe('helpers', () => {
   test('isDocsOnly follows the docs_changes policy paths', () => {
-    expect(isDocsOnly(['docs/a.md', '.context/b.md', 'README.md', '.agents/x/SKILL.md'])).toBe(true);
+    expect(isDocsOnly(['docs/a.md', '.context/b.md', 'README.md', '.agents/README.md'])).toBe(true);
     expect(isDocsOnly(['docs/a.md', 'lib/x.ts'])).toBe(false);
     expect(isDocsOnly([])).toBe(false);
   });
