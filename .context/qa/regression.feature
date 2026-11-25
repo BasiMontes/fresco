@@ -129,6 +129,8 @@ Característica: Flujo completo de usuario en Fresco
   # cookie aterriza (sin recargar, vía evento), el sheet móvil replica el
   # estado, 0 errores de consola.
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/landing/site-nav.test.tsx
+# Tests: "swaps the guest calls to action for a link to the app"; "greets the user by the name kept in the identity cookie"; "picks up the name when the cookie is written after the first paint"; "the mobile sheet mirrors the signed-in state and closes on navigation"
   Escenario: La nav de la landing refleja el estado logueado
     Dado que un visitante con sesión activa y nombre en su perfil abre la landing
     Cuando la nav termina de resolver la sesión en cliente
@@ -139,6 +141,8 @@ Característica: Flujo completo de usuario en Fresco
   # FRESCO-486: rama sin nombre disponible (perfil sin `nombre`, o cookie aún
   # no escrita en la primera visita tras iniciar sesión).
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/landing/site-nav.test.tsx (no se comprueba el salto de layout porque es cosmético)
+# Tests: "swaps the guest calls to action for a link to the app"; "the mobile sheet omits the greeting when no name is known"; "a visitor whose cookie holds no live session stays on the guest nav"
   Escenario: La nav de la landing con sesión pero sin nombre muestra solo el enlace a la app
     Dado que un visitante con sesión activa y sin nombre en su perfil abre la landing
     Cuando la nav termina de resolver la sesión en cliente
@@ -327,6 +331,8 @@ Característica: Flujo completo de usuario en Fresco
   # REESCRITO el 2026-11-24 (FRESCO-1262): la versión anterior decía que "la IA rellena esos huecos con recetas de tipo comida" y que
   # salía un aviso "Antes de continuar…". Eso era del diseño con Gemini (ADR-0005): hoy no se sustituye nada, en línea con AC-4 y FR-8.2
   # ("nunca inventada ni forzada"), y ese aviso no existe en el menú.
+# Cubierto por: supabase/functions/generate-meal-plan/index.test.ts, supabase/functions/generate-meal-plan/menu-selector.test.ts
+# Tests: "the dinners are stored with no recipe, the other 14 slots are delivered and the plan does not fail"; "the gap is said once, naming the tipo, in what is stored and in what the caller gets"; "no slot is filled with a recipe of another tipo"; "zero safe recipes for a whole tipo -> that slot is the sentinel everywhere + ONE advertencia naming the franja"
   Escenario: Un tipo de plato sin ninguna receta segura deja esas franjas sin receta y lo avisa
     Dado que las restricciones del usuario dejan sin ninguna receta compatible a un tipo de plato (por ejemplo, la cena)
     Y que el catálogo filtrado conserva al menos 21 recetas de los otros tipos
@@ -341,6 +347,8 @@ Característica: Flujo completo de usuario en Fresco
   # `components/onboarding/use-generate-meal-plan.test.tsx` y `components/calendar/generate-week-button.test.tsx`. Un e2e depende de una
   # intersección de restricciones que el catálogo puede dejar de reproducir (ver el comentario de abajo) y el job test:e2e va cerca de su
   # aviso de presupuesto (ADR-0018).
+# Cubierto por: supabase/functions/generate-meal-plan/index.test.ts, components/onboarding/use-generate-meal-plan.test.tsx, components/calendar/generate-week-button.test.tsx
+# Tests: "422 when fewer than 21 safe recipes survive the filter, and nothing is written"; "422 when the filter RPC errors (never plans from an unfiltered catalogue)"; "a catalogue too small for her restrictions (422) says to widen her preferences"; "a 422 tells the user to widen their preferences"
   Escenario: El catálogo filtrado no llega al mínimo de 21 recetas para el perfil declarado (ADR-0005)
     Dado que las restricciones combinadas del usuario dejan menos de 21 recetas disponibles tras el filtro SQL
     Cuando intenta generar el menú
@@ -393,6 +401,8 @@ Característica: Flujo completo de usuario en Fresco
   # @solo-manual (FRESCO-1262): cubierto por pruebas, sin e2e. El 409 se distingue en `components/onboarding/use-generate-meal-plan.test.tsx`, el
   # mensaje informativo en `components/onboarding/onboarding-generate-status.test.tsx` y la salida ("Ver mi menú" en lugar de "Empezar") en
   # `components/onboarding/onboarding-footer.test.tsx`. Llegar al 409 por la interfaz exige repetir el onboarding completo sobre una semana ya generada.
+# Cubierto por: components/onboarding/use-generate-meal-plan.test.tsx, components/onboarding/onboarding-generate-status.test.tsx, components/onboarding/onboarding-footer.test.tsx
+# Tests: "a week that already has a menu (409) is flagged so the page can offer the way out"; "when a menu already exists the same text is only informational"; "with an existing menu, offers Ver mi menú instead of Empezar"
   Escenario: El 409 de "ya existe un menú" muestra un mensaje accionable en /onboarding
     Dado que el usuario ya generó un menú para la semana actual
     Cuando repite el flujo de onboarding completo para la misma semana
@@ -435,6 +445,8 @@ Característica: Flujo completo de usuario en Fresco
   @generacion-menu @edge-case @verificado-manual-2026-07-31 @solo-manual
   # @solo-manual (FRESCO-1262): cubierto por `supabase/functions/generate-meal-plan/index.test.ts` ("404 when the profile does not exist"). No es un
   # recorrido de usuario: el onboarding guarda el perfil antes de generar, así que solo se llega a este 404 llamando a la función a mano.
+# Cubierto por: supabase/functions/generate-meal-plan/index.test.ts (se comprueba el estado 404 pero no el texto del mensaje)
+# Tests: "404 when the profile does not exist"
   Escenario: El perfil de usuario no existe todavía
     Dado que un usuario autenticado nunca completó el onboarding
     Cuando se intenta generar un menú para él
@@ -445,6 +457,8 @@ Característica: Flujo completo de usuario en Fresco
   # Persistencia, resto de franjas y respuesta sin fallo: `supabase/functions/generate-meal-plan/index.test.ts`, bloque "a tipo with no safe recipe"
   # (recipe_id nulo, las otras 14 franjas con receta de su tipo, un solo aviso). La parte del frontend es el escenario @automatizado
   # "El frontend muestra la franja sin receta".
+# Cubierto por: supabase/functions/generate-meal-plan/index.test.ts, supabase/functions/generate-meal-plan/menu-selector.test.ts
+# Tests: "the dinners are stored with no recipe, the other 14 slots are delivered and the plan does not fail"; "zero safe recipes for a whole tipo -> that slot is the sentinel everywhere + ONE advertencia naming the franja"
   Escenario: Ninguna receta del catálogo es segura para una franja concreta (AC-4, FR-8.2)
     Dado que ningún ítem del catálogo filtrado cumple una regla absoluta para un día/tipo concreto
     Cuando se genera el menú
@@ -588,6 +602,8 @@ Característica: Flujo completo de usuario en Fresco
   # (la señal se consume una sola vez, así que recargar no lo resucita). Un e2e no es posible: Chromium headless reporta el permiso en "denied".
   # REESCRITO el 2026-11-24 (FRESCO-1265): la versión anterior decía que lo veía "una visitante sin cuenta ni sesión". Desde FRESCO-779 una sesión
   # anónima no puede guardar una suscripción push y el aviso no se le ofrece nunca; lo ve una usuaria registrada, una sola vez.
+# Cubierto por: components/menu/push-prompt-banner.test.tsx, lib/push/first-menu-signal.test.ts
+# Tests: "a registered user sees the nudge right after the first menu"; "a guest never sees it"; ""Ahora no" hides it and subscribes to nothing"; ""Activar" subscribes, records the grant and hides the banner"; "it stays hidden when no first menu was just generated"; "markFirstMenuGenerated then consumeFirstMenuSignal returns true exactly once"
   Escenario: Tras generar su primer menú, a una usuaria registrada se le pide permiso de notificaciones push en un momento de valor
     Dado que una usuaria registrada completa el onboarding y genera su primer menú
     Cuando llega a /menu
@@ -691,6 +707,8 @@ Característica: Flujo completo de usuario en Fresco
   # dígitos real, y no hay ningún fixture en `tests/` que lea un inbox real
   # (ni siquiera para PRO_USER_EMAIL). Pendiente de QA manual con
   # inbox real.
+# Cubierto por: components/signup/use-signup-otp.test.tsx, components/signup/use-signup-submit.test.tsx, components/signup/signup-email-conflict.test.tsx
+# Tests: "an email that belongs to another account is a conflict, not a code error"; "an email conflict surfacing when the password is set is also flagged as a conflict"; "flags an email that belongs to another account"; "explains the conflict and offers the manual login"; "the button is enabled with a password and a ready captcha"
   Escenario: El email de conversión ya pertenece a una cuenta real distinta
     Dado que una invitada intenta convertir su sesión con un email ya registrado
     Cuando confirma el formulario de /signup y verifica el código de 6 dígitos
@@ -705,6 +723,8 @@ Característica: Flujo completo de usuario en Fresco
   # (`handleReassign`, `reassign_guest_data()`) no se tocó en FRESCO-89 y
   # sigue siendo el mismo verificado de punta a punta el 2026-07-31 — lo que
   # cambió es solo cómo se llega a esta pantalla.
+# Cubierto por: components/signup/use-signup-reassign.test.tsx, supabase/functions/reassign-guest-data/index.test.ts, tests/db/reassign-guest-data-filters.test.ts (que la cuenta real conserve su plan se cumple por construcción y ningún test lo afirma)
+# Tests: "proves ownership, moves the guest data, adopts the real session and returns her to the menu"; "200 { reassigned: true, slots_quitados: 0 } and cleans up the orphaned guest identity"; "slots failing the target diet, dislikes, activity or allergens are neutralized; a safe one is kept"
   Escenario: La invitada resuelve el conflicto con la contraseña correcta de la cuenta existente
     Dado que la invitada ve el conflicto de email y conoce la contraseña de esa cuenta
     Cuando la ingresa y confirma
@@ -718,6 +738,8 @@ Característica: Flujo completo de usuario en Fresco
   @registro-progresivo @edge-case @solo-manual
   # @solo-manual (FRESCO-399 / A4-L14): mismo bloqueo que los dos escenarios
   # anteriores (OTP real, sin fixture de inbox).
+# Cubierto por: components/signup/use-signup-reassign.test.tsx
+# Tests: "a wrong password shows the translated error and moves nothing"
   Escenario: La invitada ingresa una contraseña incorrecta al intentar reasignar
     Dado que la invitada ve el conflicto de email
     Cuando ingresa una contraseña incorrecta para esa cuenta
@@ -730,6 +752,8 @@ Característica: Flujo completo de usuario en Fresco
   # Lo que el diálogo DICE (que se pierde el menú generado, sin forma de recuperarlo, y que hay que crear una cuenta para conservarlo):
   # `components/layout/guest-logout-dialog.test.tsx`, nuevo en esta card. Crear una invitada con perfil exige una generación real de menú, y el job
   # test:e2e va cerca de su aviso de presupuesto (ADR-0018).
+# Cubierto por: components/layout/sidebar-account.test.tsx, components/layout/guest-logout-dialog.test.tsx
+# Tests: "a guest is routed through the confirmation dialog instead of logging out immediately"; "a non-guest calls the logout flow directly"; "says the generated menu is lost, with no way to get it back"; "names the guest case, not a plain logout"
   Escenario: Cerrar sesión como invitada advierte antes de borrar el menú generado
     Dado que una invitada generó un menú y tiene sesión anónima activa
     Cuando toca "Cerrar sesión" en el sidebar
@@ -746,6 +770,8 @@ Característica: Flujo completo de usuario en Fresco
   # (invitada ve el aviso, cuenta registrada sale directa, confirmar cierra sesión) está
   # cubierta por components/profile/danger-zone.test.tsx. Re-comprobar si el setup de una
   # invitada con perfil deja de depender de Gemini.
+# Cubierto por: components/profile/danger-zone.test.tsx
+# Tests: "a guest sees the data-loss warning first and nothing is signed out yet"; "a guest who confirms the warning is then signed out"; "a registered account signs out directly, without the guest warning"; "is not hidden below md, where it is the only way out"
   Escenario: Cerrar sesión como invitada desde /profile en móvil advierte antes de borrar el menú generado
     Dado que una invitada generó un menú y tiene sesión anónima activa
     Cuando pulsa "Salir" en /profile a 360 px
@@ -764,6 +790,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @panel-inicio @edge-case @verificado-manual-2026-08-02 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/menu/menu-header.test.tsx
+# Tests: "without a name, links to the "Tu nombre" field on /profile"
   Escenario: El saludo de Inicio cae a un mensaje genérico cuando el nombre no está cargado
     Dado que el usuario no tiene un nombre guardado en su perfil
     Cuando abre /menu (Inicio)
@@ -797,6 +825,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @panel-inicio @edge-case @verificado-manual-2026-08-07 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/menu/horizontal-scroll-row.test.tsx (el botón cargar más ya no existe en Inicio y las flechas se comprueban por su etiqueta)
+# Tests: "at the start only the forward arrow shows"; "scrolling into the middle shows both arrows"
   Escenario: "Ver más recetas" del scroll horizontal y "cargar más" de la lista tienen nombres accesibles distintos
     Dado que Laura está en la sección "Últimas recetas añadidas" de Inicio
     Cuando un lector de pantalla anuncia la flecha de scroll y el botón de cargar más
@@ -880,6 +910,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @calendario @edge-case @verificado-manual-2026-08-07 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: lib/date/iso-week.test.ts
+# Tests: "a week crossing a month boundary shows both months (FRESCO-109)"; "a week crossing a year boundary shows both months"
   Escenario: La etiqueta de semana distingue los meses cuando la semana cruza de mes
     Dado que el usuario navega a una semana que empieza en un mes y termina en el siguiente (ej. 27 jul – 2 ago)
     Cuando mira la etiqueta de semana
@@ -963,6 +995,8 @@ Característica: Flujo completo de usuario en Fresco
   # fallo: el rechazo del RPC (`MealPlanError`, "el menú cambió mientras tanto") y el error de red. En las dos la rejilla vuelve a su posición,
   # los huecos dejan de estar pendientes y sale un mensaje de que el nuevo orden no se guardó. Un e2e exigiría romper la red a mitad de un
   # arrastre, y el job test:e2e va cerca de su aviso de presupuesto (ADR-0018).
+# Cubierto por: components/calendar/use-calendar-drag-drop.test.tsx
+# Tests: "a rejected save puts the grid back and says the menu changed under the user"; "a network failure puts the grid back and asks the user to check the connection"
   Escenario: El intercambio falla por error de red o de base de datos
     Dado que el usuario arrastra un plato a otro hueco
     Cuando el guardado del nuevo orden falla
@@ -973,6 +1007,8 @@ Característica: Flujo completo de usuario en Fresco
   # @solo-manual (FRESCO-1263): cubierto por `tests/db/own-menu-readable.test.ts`, contra la base real: un usuario normal, con su propio JWT, lee su
   # plan con las recetas embebidas con el mismo select que usa el calendario (`lib/api/meal-plan.ts`). Comprobado que falla si la policy de
   # `recipes` vuelve a dejar entrar solo al rol anon. No es un recorrido de Playwright, y el job test:e2e va cerca de su aviso de presupuesto (ADR-0018).
+# Cubierto por: tests/db/own-menu-readable.test.ts
+# Tests: "the menu comes back with its slots and the recipe behind each one, as the calendar reads it"; "the recipes themselves are readable with the user token, without any join"
   Escenario: Un usuario autenticado puede leer de vuelta su propio menú generado
     Dado que un usuario generó un menú y tiene su propia sesión (no admin)
     Cuando visita /menu o /calendar
@@ -1030,6 +1066,8 @@ Característica: Flujo completo de usuario en Fresco
   # @solo-manual (FRESCO-1263): cubierto por `components/calendar/use-calendar-drag-drop.test.tsx`: "a slot that is already being saved cannot be
   # dragged again" (no hay segunda llamada) y "marks both slots as pending while the save is in flight". La guarda es el conjunto de huecos
   # pendientes del hook. Un e2e exigiría retrasar el RPC en el servidor, y el job test:e2e va cerca de su aviso de presupuesto (ADR-0018).
+# Cubierto por: components/calendar/use-calendar-drag-drop.test.tsx
+# Tests: "a slot that is already being saved cannot be dragged again"; "marks both slots as pending while the save is in flight"
   Escenario: Dos arrastres simultáneos sobre huecos que se solapan
     Dado que un primer intercambio todavía no ha terminado de guardarse
     Cuando el usuario arrastra de nuevo uno de esos dos huecos
@@ -1240,6 +1278,8 @@ Característica: Flujo completo de usuario en Fresco
   # `components/shopping-list/shopping-list-generator.test.tsx` (ante un 409 relee la página y no muestra error) y
   # `app/(app)/shopping-list/page.test.tsx` (con lista, la página muestra la lista y no el generador). El job test:e2e va cerca de su aviso de
   # presupuesto (ADR-0018).
+# Cubierto por: supabase/functions/generate-shopping-list/index.test.ts, components/shopping-list/shopping-list-generator.test.tsx, app/(app)/shopping-list/page.test.tsx
+# Tests: "409 when the plan already has a list, and nothing is written"; "409 (not 500) when a concurrent request wins the unique_plan_lista race"; "a 409 means the list already exists: it re-reads the page and shows no error"
   Escenario: Ya existe una lista de la compra para ese menú
     Dado que el usuario ya generó una lista de la compra para su menú semanal actual
     Cuando intenta generar la lista de nuevo
@@ -1253,6 +1293,8 @@ Característica: Flujo completo de usuario en Fresco
   # @solo-manual (FRESCO-1264): cubierto por pruebas, sin e2e. Backend: `supabase/functions/generate-shopping-list/index.test.ts` (responde 422 y no escribe
   # ninguna lista). Frontend: `components/shopping-list/shopping-list-generator.test.tsx` (el 422 dice que el menú no se puede convertir en lista y
   # deja el botón). El job test:e2e va cerca de su aviso de presupuesto (ADR-0018).
+# Cubierto por: supabase/functions/generate-shopping-list/index.test.ts, components/shopping-list/shopping-list-generator.test.tsx
+# Tests: "422 when slots carry no recipe or no ingredients, and no list is written"; "a 422 says the menu cannot be turned into a list, and the button stays"
   Escenario: La consolidación de ingredientes no produce ningún resultado
     Dado que el menú semanal del usuario no tiene ingredientes que se puedan consolidar
     Cuando solicita la lista de la compra
@@ -1283,6 +1325,8 @@ Característica: Flujo completo de usuario en Fresco
   # (lib/grocery/estimacion-cadenas.test.ts, components/shopping-list/shopping-list-comparison.test.tsx).
   # Un escenario e2e exigiría sembrar una lista con leche/arroz con precio de Mercadona vigente
   # (el catálogo caduca a los 30 días) y sumaría tiempo al job test:e2e sin cubrir riesgo nuevo.
+# Cubierto por: components/shopping-list/shopping-list-comparison.test.tsx
+# Tests: "every estimated figure sits in a row that carries the visible label"; "the estimate is its own block: names the staples and the coverage, and says it is not comparable with the totals"; "a list with staples shows the card, with every chain figure labelled"
   Escenario: La tarjeta "Comparar tu compra" etiqueta como estimado todo lo que no son datos de la cadena
     Dado que el usuario tiene en su lista de la compra leche y arroz con precio de Mercadona vigente
     Cuando abre /shopping-list
@@ -1409,6 +1453,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @biblioteca @edge-case @verificado-manual-2026-08-03 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/recipes/recipe-library.test.tsx
+# Tests: "shows the no-results message when a search returns nothing"
   Escenario: El buscador de la Biblioteca no encuentra resultados
     Dado que Laura busca algo que ninguna receta contiene
     Cuando mira los resultados
@@ -1418,6 +1464,8 @@ Característica: Flujo completo de usuario en Fresco
   # @solo-manual (FRESCO-399 / A4-L14): requeriría un perfil artificialmente
   # restrictivo; es la misma rama `length === 0` que el resto de estados
   # vacíos de esta familia de páginas, ya cubiertos.
+# Cubierto por: components/recipes/recipe-library.test.tsx
+# Tests: "shows the catalog-empty message when nothing narrows the list"
   Escenario: El catálogo de la Biblioteca está vacío para el perfil de Laura
     Dado que el perfil de Laura excluye todas las recetas del catálogo
     Cuando abre la Biblioteca
@@ -1597,6 +1645,8 @@ Característica: Flujo completo de usuario en Fresco
   # @solo-manual (FRESCO-1266): cubierto por `components/recipes/recipe-detail.test.tsx`: el botón añade la receta a favoritos (llama a `addFavorite` con
   # el id y pasa a "Quitar de favoritos"), quita un favorito existente y revierte el botón si guardar falla. El job test:e2e va cerca de su aviso de
   # presupuesto (ADR-0018).
+# Cubierto por: components/recipes/recipe-detail.test.tsx
+# Tests: "the favorite button adds the recipe to favorites"; "the favorite button removes an existing favorite"; "reverts the favorite button when saving fails"
   Escenario: Se puede marcar/desmarcar favorito desde el detalle de una receta del catálogo
     Dado que Laura abre el detalle de una receta de catálogo
     Cuando busca el control de favorito en esa pantalla
@@ -1614,6 +1664,8 @@ Característica: Flujo completo de usuario en Fresco
   # por el cajón "Filtrar y ordenar", con casillas de verificación y selección múltiple, así que ese radiogroup ya no existe allí. El control segmentado
   # sigue vivo en un único sitio, el selector "Plan de facturación" del resumen de Pro (`components/profile/pro-checkout-summary.tsx`), con el mismo
   # contrato de teclado.
+# Cubierto por: components/ui/segmented-control.test.tsx
+# Tests: "arrow keys move selection and wrap at the ends"; "keeps a single Tab stop via roving tabindex"; "marks the selected option with aria-checked"
   Escenario: El control segmentado se maneja con el teclado como un radiogroup
     Dado que una persona tabula hasta el selector "Plan de facturación" del resumen de la suscripción a Pro
     Cuando usa las flechas izquierda y derecha
@@ -1772,6 +1824,8 @@ Característica: Flujo completo de usuario en Fresco
   # FRESCO-397 (A4-L11): re-autenticación server-side. Candidato a @automatizado
   # cuando haya un flujo e2e no destructivo (mock del admin.deleteUser).
   # @solo-manual (FRESCO-1260): la re-autenticación server-side está cubierta por supabase/functions/delete-account/index.test.ts; un e2e exigiría borrar una cuenta o mockear admin.deleteUser.
+# Cubierto por: supabase/functions/delete-account/index.test.ts
+# Tests: "401 when a registered caller sends no reauthToken"; "401 when the reauthToken is stale"; "401 when the reauthToken belongs to a different user"
   Escenario: delete-account rechaza una petición sin re-autenticación reciente
     Dado que Laura tiene una sesión válida pero no ha vuelto a introducir su contraseña
     Cuando llama directamente a la Edge Function delete-account sin reauthToken
@@ -2014,6 +2068,8 @@ Característica: Flujo completo de usuario en Fresco
   # automatizar con un evento firmado. La rama past_due la cubren los tests de
   # ruta del webhook (app/api/stripe/webhook/route.test.ts). Reabrir si se monta
   # la infraestructura de test clocks.
+# Cubierto por: app/api/stripe/webhook/route.test.ts, components/profile/profile-plan-cards.test.tsx
+# Tests: "past_due sets payment_failed_at and leaves plan untouched"; "a Pro user whose payment failed also sees the notice"
   Escenario: Pago fallido me avisa
     Dado que la suscripción Pro de Laura intenta renovarse
     Cuando el cobro falla (customer.subscription.updated con status past_due)
@@ -2041,6 +2097,8 @@ Característica: Flujo completo de usuario en Fresco
   # @solo-manual (FRESCO-1002): mismo motivo que "Pago fallido me avisa". Además
   # `unpaid` depende de cómo esté configurado el dunning de la cuenta de Stripe.
   # La rama unpaid la cubren los tests de ruta del webhook.
+# Cubierto por: app/api/stripe/webhook/route.test.ts
+# Tests: "unpaid downgrades to Free"
   Escenario: Pago sigue fallando revierte a Free
     Dado que el pago de Laura falló y no se resolvió
     Cuando Stripe agota los reintentos y emite customer.subscription.updated con status unpaid
@@ -2068,6 +2126,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @favoritos @edge-case @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/recipe/favorites-grid.test.tsx
+# Tests: "with no recipes it shows the empty state"; "removing the last favorite leaves the empty state"
   Escenario: La lista de favoritos vacía muestra un estado vacío claro
     Dado que Laura no tiene ninguna receta marcada como favorita
     Cuando abre /favorites
@@ -2100,6 +2160,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @favoritos @edge-case @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/recipes/recipe-detail.test.tsx
+# Tests: "links back to the library by default and to the menu when opened from it"
   Escenario: El enlace "Volver a la Biblioteca" del detalle de receta no vuelve a Favoritos aunque se haya llegado desde ahí
     Dado que Laura abre el detalle de una receta navegando desde /favorites
     Cuando pulsa "Volver a la Biblioteca"
