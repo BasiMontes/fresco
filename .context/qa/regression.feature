@@ -1640,6 +1640,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @biblioteca @edge-case @verificado-manual-2026-08-08 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: tests/db/client-write-quotas.test.ts (corre solo con RUN_DB_INTEGRATION contra la base local y en el job test:db-integration)
+# Tests: "a blank nombre (only spaces) is rejected"
   Escenario: Receta propia con nombre vacío — investigado, constraint server-side ya existía
     Dado que se intenta insertar una receta propia con nombre vacío o solo espacios
     Cuando la escritura llega a Postgres
