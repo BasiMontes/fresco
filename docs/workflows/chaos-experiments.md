@@ -177,6 +177,15 @@ Misma pila y misma forma de corte que el 2026-11-24, con el código de `staging`
 
 **Resultado:** la debilidad de E1 ya no se reproduce. El primer mensaje ("Intenta de nuevo") sigue saliendo, y es cierto: el cliente no sabe si el menú llegó. Lo que cambió es el reintento, que ya no pide eliminar el menú que la persona quería. Capturas en FRESCO-1283.
 
+**Las otras dos ramas del criterio de FRESCO-1283, vistas en vivo el mismo día** (misma pila; la cuenta de prueba se dejó sin plan o sin perfil con SQL local antes de cada una):
+
+| Rama | Qué pasó |
+|---|---|
+| Onboarding, respuesta perdida | En el resumen, "Empezar" con el corte puesto: la base pasó de 0 a 1 plan y la pantalla dijo "No pudimos conectar con el servidor. Revisa tu conexión a internet e inténtalo de nuevo." Con el corte quitado, el reintento recibió `409` y el asistente siguió a `/menu` con el menú ("¡Hola!"), sin mensaje de eliminarlo y con la base en 1 plan |
+| Calendario, `409` sin fallo previo | Con el botón visible y sin ninguna petición fallida antes, el navegador recibió un `409 Conflict` del servidor y la pantalla dijo "Ya existe un menú para esta semana. Elimínalo antes de generar uno nuevo." El mensaje se conserva |
+
+Para ver el `409` limpio sin una segunda pestaña (que se refresca sola al recuperar el foco y pierde el botón viejo), `page.route` llama dos veces a `route.fetch()` y entrega la segunda respuesta con `route.fulfill({ response })`: la primera crea el plan y la segunda es el `409` real.
+
 ---
 
 ## Stripe sin responder (FRESCO-1251, fase 3)
