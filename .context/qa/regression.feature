@@ -219,11 +219,14 @@ Característica: Flujo completo de usuario en Fresco
 
   @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
-  Escenario: Un mensaje de error obsoleto puede confundir sobre el problema real de la contraseña
+# Cubierto por: app/update-password/page.test.tsx
+# Tests: "correcting the confirmation clears the mismatch message, and a too-short password then shows the length message instead"
+  Escenario: Un mensaje de error obsoleto desaparece al corregir y deja ver el problema real de la contraseña
     Dado que un usuario en /update-password ya vio "Las contraseñas no coinciden." por un intento anterior
     Cuando corrige la confirmación para que ambas coincidan, pero deja una contraseña de menos de 10 caracteres, y reenvía
-    Entonces el envío se bloquea por la validación nativa de longitud mínima (minLength=10)
-    Y el mensaje "Las contraseñas no coinciden." sigue visible en pantalla, describiendo un problema que ya no es real
+    Entonces el mensaje "Las contraseñas no coinciden." desaparece en cuanto corrige el campo
+    Y el envío se bloquea con el mensaje de longitud mínima "La contraseña debe tener al menos 10 caracteres.", sin llamar al backend
+    # Reescrito 2026-11-25 (FRESCO-1289): FRESCO-448 quitó el minLength nativo del input; la longitud se comprueba en JS y cada campo limpia el error al cambiar, así que el bug descrito debajo ya no existe (el bloque de abajo es el historial del hallazgo original).
     # Bug real encontrado en vivo (barrido QA 2026-08-19), sin ticket todavía:
     # el segundo intento nunca llega al handler de JS que limpia/actualiza el
     # mensaje de error, porque el atributo minLength=10 del input bloquea el
@@ -817,10 +820,13 @@ Característica: Flujo completo de usuario en Fresco
 
   @panel-inicio @edge-case @verificado-manual-2026-08-07 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
-  Escenario: El sidebar muestra un placeholder de email para invitadas, no una línea en blanco
+# Cubierto por: components/layout/sidebar-account.test.tsx
+# Tests: "a guest without email gets no email line, only name and plan"
+  Escenario: El sidebar no deja una línea en blanco ni muestra "Invitada" para una invitada sin email
     Dado que una invitada con sesión anónima genera un menú
     Cuando mira el pie de la barra lateral (desktop)
-    Entonces ve algún indicador tipo "Invitada" en vez de un espacio vacío bajo el nombre
+    Entonces ve su nombre y su plan, sin línea de email vacía y sin el texto "Invitada" bajo el nombre
+    # Reescrito 2026-11-25 (FRESCO-1289): FRESCO-849 rehízo el pie del sidebar y la línea de email desaparece cuando no hay email (ya no hay placeholder "Invitada" de FRESCO-111).
     # FRESCO-111 (arreglado 2026-08-07): sidebar-account.tsx ahora usa
     # {email || 'Invitada'}, mismo fallback que profile/page.tsx.
     # Verificado en vivo: "Invitada" visible en el sidebar de una invitada.
@@ -849,10 +855,13 @@ Característica: Flujo completo de usuario en Fresco
 
   @panel-inicio @edge-case @verificado-manual-2026-08-03 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
-  Escenario: El banner de sugerencia de Calendario se muestra aunque no exista un menú generado todavía
+# Cubierto por: components/menu/menu-no-plan-view.test.tsx
+# Tests: "does not show the Calendar suggestion banner, because there is no plan to resume"
+  Escenario: El banner de sugerencia de Calendario no se muestra si no existe un menú generado todavía
     Dado que el usuario no tiene un menú generado para esta semana
     Cuando abre /menu (Inicio)
-    Entonces ve el banner de sugerencia de todas formas, junto al estado vacío
+    Entonces ve el estado vacío con su botón de generar, y no el banner "Retoma la organización de tu semana"
+    # Reescrito 2026-11-25 (FRESCO-1289): FRESCO-297 invirtió el comportamiento; sin menú el banner implica un plan que retomar, así que solo se muestra en Inicio con plan.
 
   @panel-inicio @verificado-manual-2026-08-03 @automatizado
   # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)
@@ -924,6 +933,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @calendario @edge-case @verificado-manual-2026-08-06 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: tests/steps/calendario.steps.ts (el paso del escenario e2e "El calendario no desborda horizontalmente" comprueba el botón a 360 y 768 px)
+# Tests: "el botón de eliminar semana queda dentro de la pantalla"
   Escenario: El botón de eliminar semana es alcanzable en mobile
     Dado que el usuario tiene un menú generado, viewport 375px
     Cuando busca el botón de eliminar semana en el header de /calendar
@@ -1059,6 +1070,7 @@ Característica: Flujo completo de usuario en Fresco
   Escenario: El calendario no desborda horizontalmente en móvil ni en tableta
     Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos
     Entonces la página no tiene scroll horizontal
+    Y el botón de eliminar semana queda dentro de la pantalla
     # FRESCO-786 — a 768 px la barra lateral deja ~442 px de contenido y el
     # grid pedía 2 columnas de 15rem (593 px): la página crecía a 884 px y la
     # flecha de día siguiente pisaba la cabecera. El número de días visibles
@@ -1410,6 +1422,8 @@ Característica: Flujo completo de usuario en Fresco
   # llamar al endpoint real dispara el bucle global de reconciliación contra
   # todas las filas de user_profiles y podría degradar el fixture Pro de otro
   # escenario e2e en paralelo.
+# Cubierto por: tests/db/stripe-reconcile-orphan-sweep.test.ts, app/api/cron/stripe-reconcile/route.test.ts (el test de base de datos corre solo con RUN_DB_INTEGRATION y en el job test:db-integration)
+# Tests: "downgrades the pro and family rows with no subscription and leaves everyone else alone"; "downgrades every pro/family row that has no stripe_subscription_id"
   Escenario: El cron de reconciliación degrada perfiles Pro huérfanos sin suscripción
     Dado que existe una fila de perfil con plan Pro y sin suscripción de Stripe
     Cuando se ejecuta el job de reconciliación de suscripciones
@@ -2067,6 +2081,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @suscripcion @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): ocurre dentro de la interfaz alojada de Stripe (Billing Portal), fuera de nuestra app; solo se observa con Stripe real y ya hay `@requiere-stripe-real` para la entrada al portal.
+# Cubierto por: scripts/qa/stripe-portal-config.ts (script de solo lectura que cada auditoría ejecuta con bun run qa:stripe-portal y comprueba el modo de la clave cargada: test o live)
+# Tests: "cancel-at-period-end"
   Escenario: Cancelar la suscripción
     Dado que Laura está en la gestión de su suscripción (Billing Portal)
     Cuando elige cancelarla
@@ -2076,6 +2092,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @suscripcion @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): ocurre dentro de la interfaz alojada de Stripe (Billing Portal), fuera de nuestra app; solo se observa con Stripe real.
+# Cubierto por: scripts/qa/stripe-portal-config.ts (script de solo lectura que cada auditoría ejecuta con bun run qa:stripe-portal y comprueba el modo de la clave cargada: test o live)
+# Tests: "invoice-history"
   Escenario: Ver mi próximo cobro
     Dado que Laura tiene una suscripción Pro activa
     Cuando abre la gestión de su suscripción
@@ -2200,10 +2218,14 @@ Característica: Flujo completo de usuario en Fresco
 
   @notificaciones @edge-case @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
-  Escenario: El "Centro de Avisos" no contiene avisos reales, solo recomendaciones de recetas
+# Cubierto por: app/(app)/notifications/page.test.tsx (cada aviso se prueba por separado y no hay un caso con todos a la vez)
+# Tests: "recommended recipes show and replace the empty state, asking for at most 3"; "the welcome card shows once and is marked as seen for this user"; "the routes notice shows when it is due"; "a Pro user with a failed payment sees the payment alert"; "a free user never sees the payment alert, even with a failed date on record"
+  Escenario: El "Centro de Avisos" muestra recomendaciones de recetas y los avisos reales que aplican a su estado
     Dado que Laura abre /notifications
     Entonces ve una sección "Recetas que te pueden gustar" con tarjetas de receta
-    Y no ve ningún aviso de sistema, recordatorio, ni notificación real (pago, semana sin menú, etc.)
+    Y ve además los avisos que le corresponden por su estado: bienvenida (una sola vez), rutas principales y pago fallido (solo con plan Pro)
+    Y si no le corresponde ninguno ni hay recomendaciones, ve "Sin notificaciones"
+    # Reescrito 2026-11-25 (FRESCO-1289): la pantalla ya no es solo recomendaciones; app/(app)/notifications/page.tsx pinta bienvenida (FRESCO-224) rutas (FRESCO-225) y el aviso de pago fallido (FRESCO-234) además de las recetas (FRESCO-226).
     # Causística real encontrada en el barrido QA 2026-08-19, sin ticket
     # todavía: la pantalla se titula "Centro de Avisos" / "Tus notificaciones"
     # pero el único contenido real es un carrusel de recomendaciones de
@@ -2220,10 +2242,14 @@ Característica: Flujo completo de usuario en Fresco
 
   @notificaciones @edge-case @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
-  Escenario: El icono de Notificaciones no muestra ningún contador de no leídos
+# Cubierto por: components/menu/menu-header.test.tsx (cuándo hay avisos sin ver se decide en la página de Inicio y no se prueba aquí)
+# Tests: "with unseen notifications it shows a red dot with no number"; "with nothing unseen the bell has no badge at all"
+  Escenario: El icono de Notificaciones muestra un punto rojo sin número cuando hay avisos sin ver
     Dado que Laura está en /menu
     Cuando mira el icono de Notificaciones en la cabecera
-    Entonces no ve ningún badge ni contador, incluso si hay recomendaciones nuevas sin ver
+    Entonces ve un punto rojo si hay avisos sin ver, y nada si no los hay
+    Y en ningún caso ve un contador numérico
+    # Reescrito 2026-11-25 (FRESCO-1289): FRESCO-234 añadió el punto rojo binario (notificaciones_badge); la ausencia de número es intencional.
     # Consistente con el hallazgo anterior -- no existe concepto de
     # "leído/no leído" en esta pantalla todavía.
     # ACTUALIZADO 2026-08-20 (FRESCO-234): ya existe un badge -- un punto rojo
@@ -2316,10 +2342,13 @@ Característica: Flujo completo de usuario en Fresco
 
   @landing @edge-case @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
-  Escenario: Un usuario con sesión activa que visita / sigue viendo la landing pública, no su panel
+# Cubierto por: app/page.test.tsx, proxy.test.ts (la página y la config no tienen ningún redirect y el proxy deja pasar / sin redirigir; no se prueba el recorrido completo con una sesión real)
+# Tests: "the page and the Next config hold no redirect, so a signed-in visitor is never sent to /menu"; "lets a signed-in request to / through, with no redirect and no rewrite"
+  Escenario: Un usuario con sesión activa que visita / sigue viendo la landing pública sin ser redirigido a /menu
     Dado que Laura tiene sesión iniciada y un menú ya generado
     Cuando visita / directamente
-    Entonces sigue viendo la landing de marketing (con "Ya tengo cuenta"/"Empezar gratis"), no es redirigida a /menu
+    Entonces ve la landing de marketing y no es redirigida a /menu
+    # Reescrito 2026-11-25 (FRESCO-1289): FRESCO-486 cambió los botones de la cabecera para una sesión activa ("Ir a mi menu" en vez de "Ya tengo cuenta"/"Empezar gratis"), ya cubierto en otro escenario; aquí solo queda lo que sigue siendo cierto, que no hay redirección.
     # Causística real, no necesariamente un bug -- puede ser intencional (la
     # landing sirve también de página de marketing pública para SEO/compartir),
     # pero es una decisión de producto no documentada hasta ahora. Los CTA de
@@ -2330,10 +2359,13 @@ Característica: Flujo completo de usuario en Fresco
 
   @landing @edge-case @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
-  Escenario: El copyright del footer muestra un año desactualizado
+# Cubierto por: components/landing/site-footer.test.tsx
+# Tests: "the copyright line shows the current year"
+  Escenario: El copyright del footer muestra el año actual
     Dado que cualquier visitante llega al final de /
     Cuando lee el texto del footer
-    Entonces ve "© 2025 Fresco..." aunque el año real ya avanzó a 2026
+    Entonces ve "© " seguido del año en curso y "Fresco...", calculado al pintar la página
+    # Reescrito 2026-11-25 (FRESCO-1289): el año ya no está escrito a mano en site-footer.tsx, se calcula con new Date().getFullYear(); el bug del año desactualizado descrito debajo está resuelto.
     # Bug cosmético real, menor severidad, sin ticket todavía -- el footer usa
     # un año hardcodeado en vez de calcularlo dinámicamente.
 

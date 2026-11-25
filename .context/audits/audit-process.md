@@ -217,7 +217,10 @@ Each pass runs `bun run qa:manual-stale` and reads its output as a **notice, nev
 current guarantee: a `@verificado-manual` date older than 6 weeks, no date, or a `# Cubierto por:` comment that names a
 file that does not exist. A scenario is guaranteed when a test named in `Cubierto por:` exists or when its date is under
 6 weeks old; `@automatizado` scenarios are exempt. The audit reports the counts the script printed instead of recounting
-the file by hand (audit 11 had to, and its first figures were wrong). The rule and the convention live in
+the file by hand (audit 11 had to, and its first figures were wrong). The two Stripe Billing Portal scenarios are guarded by
+`bun run qa:stripe-portal` (a read-only check of the portal configuration, FRESCO-1289, owner decision of 2026-11-25): each pass
+runs it too and reports which mode (test or live) the loaded key vouches for. A scenario that names a script as its guard is
+only as current as the last time that script was run. The rule and the convention live in
 [`.context/qa/README.md`](../qa/README.md), section "Staleness recipe".
 
 ---

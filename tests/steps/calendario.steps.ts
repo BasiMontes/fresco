@@ -106,6 +106,22 @@ Then(/^la página no tiene scroll horizontal$/, async ({ page }) => {
   }
 });
 
+// FRESCO-105 (FRESCO-1289): en móvil el botón de papelera de la semana quedó casi fuera de la pantalla (x: 374,6
+// sobre 375 px). Que la página no desborde no basta: el botón tiene que estar entero dentro de la ventana. El
+// viewport lo fija el proyecto Playwright (`mobile` 360 px, `tablet` 768 px), así que se compara con él.
+Then(/^el botón de eliminar semana queda dentro de la pantalla$/, async ({ page }) => {
+  const button = page.getByTestId('delete_week_button');
+  await expect(button).toBeVisible();
+  const viewportWidth = page.viewportSize()?.width;
+  expect(viewportWidth, 'the Playwright project sets a viewport').toBeDefined();
+  const { left, right } = await button.evaluate((element) => {
+    const { left: l, right: r } = element.getBoundingClientRect();
+    return { left: l, right: r };
+  });
+  expect(left, 'the delete-week button starts inside the screen').toBeGreaterThanOrEqual(0);
+  expect(right, 'the delete-week button ends inside the screen').toBeLessThanOrEqual(viewportWidth as number);
+});
+
 // ── Objetivos táctiles (FRESCO-787) ────────────────────────────────────────
 
 Then(/^cada pestaña de la barra de navegación inferior mide al menos 44 px$/, async ({ page }) => {

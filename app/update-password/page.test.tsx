@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
 import { renderWithProviders, screen, waitFor } from '@/tests/component-render';
 
 /**
@@ -126,5 +127,29 @@ describe('/update-password confirmation (regression.feature "no coincide con la 
     expect(await screen.findByText('Las contraseñas no coinciden.')).toBeInTheDocument();
     expect(updateUserMock).not.toHaveBeenCalled();
     expect(signOutMock).not.toHaveBeenCalled();
+  });
+});
+
+// FRESCO-448: no native minLength, so the length check runs in JS and the stale mismatch message cannot outlive the fix.
+describe('/update-password stale error (regression.feature "mensaje de error obsoleto")', () => {
+  test('correcting the confirmation clears the mismatch message, and a too-short password then shows the length message instead', async () => {
+    getClaimsMock.mockResolvedValueOnce(asMethods('recovery'));
+    const user = setupUser();
+    renderPage();
+
+    await user.type(await screen.findByTestId('update_password_new_input'), 'corta-1');
+    await user.type(screen.getByTestId('update_password_confirm_input'), 'otra-distinta');
+    await user.click(screen.getByTestId('update_password_submit_button'));
+    expect(await screen.findByText('Las contraseñas no coinciden.')).toBeInTheDocument();
+
+    await user.clear(screen.getByTestId('update_password_confirm_input'));
+    await user.type(screen.getByTestId('update_password_confirm_input'), 'corta-1');
+    expect(screen.queryByText('Las contraseñas no coinciden.')).toBeNull();
+
+    await user.click(screen.getByTestId('update_password_submit_button'));
+
+    expect(await screen.findByText(PASSWORD_TOO_SHORT_MESSAGE)).toBeInTheDocument();
+    expect(screen.queryByText('Las contraseñas no coinciden.')).toBeNull();
+    expect(updateUserMock).not.toHaveBeenCalled();
   });
 });

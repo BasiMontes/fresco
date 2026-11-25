@@ -18,3 +18,21 @@ describe('MenuHeader greeting', () => {
     expect(screen.getByTestId('menu_add_name_link')).toHaveAttribute('href', '/profile#nombre');
   });
 });
+
+/** FRESCO-234: the bell shows a binary red dot when something is unseen, never a number. */
+describe('MenuHeader notifications badge', () => {
+  test('with unseen notifications it shows a red dot with no number', () => {
+    renderWithProviders(<MenuHeader nombre="Laura" hasUnseenNotifications />);
+
+    const badge = screen.getByTestId('notificaciones_badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge.textContent).toBe('');
+    expect(screen.getByTestId('notificaciones_button').textContent).not.toMatch(/\d/);
+  });
+
+  test('with nothing unseen the bell has no badge at all', () => {
+    renderWithProviders(<MenuHeader nombre="Laura" hasUnseenNotifications={false} />);
+
+    expect(screen.queryByTestId('notificaciones_badge')).toBeNull();
+  });
+});

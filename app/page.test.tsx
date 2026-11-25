@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
 import * as proPrices from '@/lib/billing/pro-prices';
@@ -103,5 +104,16 @@ describe('GuestLandingPage', () => {
     await renderPage();
     expect(document.querySelector('main#main')).not.toBeNull();
     expect(document.body.textContent).not.toContain('7,99');
+  });
+
+  // A signed-in visitor keeps seeing this landing: nothing between her and the page redirects "/" to /menu.
+  // Structural (source text), so it does not prove the whole request path; proxy.test.ts covers the proxy.
+  test('the page and the Next config hold no redirect, so a signed-in visitor is never sent to /menu', () => {
+    const page = readFileSync('app/page.tsx', 'utf8');
+    const config = readFileSync('next.config.mjs', 'utf8');
+
+    expect(page).not.toMatch(/\b(?:permanentRedirect|redirect)\(/);
+    expect(page).not.toMatch(/from 'next\/navigation'/);
+    expect(config).not.toMatch(/\bredirects\s*[(:]/);
   });
 });

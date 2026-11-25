@@ -31,4 +31,12 @@ describe('MenuNoPlanView', () => {
     renderWithProviders(<MenuNoPlanView {...base} />);
     expect(screen.getAllByRole('link').some(l => l.getAttribute('href')?.startsWith('/recipes/'))).toBe(true);
   });
+
+  // FRESCO-297: the banner says "Retoma la organización de tu semana", which implies a plan already exists.
+  test('does not show the Calendar suggestion banner, because there is no plan to resume', () => {
+    renderWithProviders(<MenuNoPlanView {...base} />);
+    expect(screen.queryByTestId('calendar_suggestion_banner')).toBeNull();
+    expect(screen.queryByText(/Retoma la organización de tu semana/)).toBeNull();
+    expect(screen.queryByText('Ver mi plan semanal')).toBeNull();
+  });
 });

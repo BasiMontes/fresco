@@ -163,6 +163,7 @@ describe('SidebarAccount', () => {
       renderWithProviders(<SidebarAccount {...BASE_PROPS} email="" isAnonymous nombre="Invitado" />);
 
       expect(screen.queryByTestId('user_email')).toBeNull();
+      expect(screen.queryByText('Invitada')).toBeNull();
       expect(screen.getByTestId('user_name')).toHaveTextContent('Invitado');
       expect(screen.getByTestId('plan_label')).toBeInTheDocument();
     });
