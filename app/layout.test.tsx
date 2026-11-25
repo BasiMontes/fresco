@@ -75,6 +75,12 @@ describe('RootLayout metadata', () => {
     expect(metadata.metadataBase).toBeInstanceOf(URL);
   });
 
+  // regression.feature, "El title tag global no reclama un mecanismo de IA": the menu is deterministic.
+  test('the global title does not claim AI as the product mechanism', () => {
+    expect(String(metadata.title)).not.toMatch(/\bIA\b/);
+    expect(String(metadata.title)).not.toMatch(/inteligencia artificial/i);
+  });
+
   test('sets the browser bar colour for both colour schemes', () => {
     expect(viewport.themeColor).toEqual([
       { media: '(prefers-color-scheme: light)', color: '#faf3e3' },

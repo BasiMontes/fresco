@@ -210,6 +210,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: app/update-password/page.test.tsx
+# Tests: "a confirmation that differs from the new password shows the mismatch message and sends nothing"
   Escenario: Confirmar la nueva contraseña detecta que no coincide con la anterior
     Dado que un usuario está en /update-password
     Cuando escribe una contraseña y una confirmación distintas y confirma
@@ -1305,6 +1307,8 @@ Característica: Flujo completo de usuario en Fresco
   # semanas de historial de menú + lista para un usuario factory es
   # desproporcionado para un badge cosmético — la lógica de diff
   # (diffNombresNuevos) está cubierta por lib/api/shopping-list.test.ts.
+# Cubierto por: components/shopping-list/shopping-list-view.test.tsx
+# Tests: "the badge shows next to the items missing from last week and not next to the ones that were there"; "a new item that is already bought drops its badge"
   Escenario: El badge "Nuevo" marca solo los ingredientes que no estaban la semana pasada
     Dado que el usuario tuvo una lista de la compra la semana anterior con "tomate" y "arroz"
     Y su lista de esta semana tiene "tomate", "lentejas" y "pan"
@@ -1314,6 +1318,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @lista-compra @edge-case @solo-manual
   # @solo-manual (FRESCO-399 / A4-L14): pareja del anterior, misma razón.
+# Cubierto por: lib/api/shopping-list.test.ts, components/shopping-list/shopping-list-view.test.tsx
+# Tests: "returns an empty set when there is no prior list (never flags everything)"; "the badge shows next to the items missing from last week and not next to the ones that were there"
   Escenario: Sin lista la semana anterior, ningún ingrediente se marca como nuevo
     Dado que el usuario nunca generó una lista de la compra antes de esta semana
     Cuando abre /shopping-list con su primera lista generada
@@ -1487,6 +1493,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @biblioteca @edge-case @verificado-manual-2026-08-07 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/recipes/recipe-library.test.tsx
+# Tests: "shows the no-results message when a search returns nothing"; "lists the user own recipes in their own section, even with an empty catalog"; "a search with no catalog hits says it does not apply to own recipes, which stay visible above it"
   Escenario: El mensaje de "No encontramos nada" deja claro que solo aplica al catálogo
     Dado que Laura tiene una receta propia guardada y busca algo que ninguna receta del catálogo contiene
     Cuando mira la sección "Tus recetas" y el mensaje de "No encontramos nada"
@@ -1535,6 +1543,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @biblioteca @edge-case @verificado-manual-2026-08-07 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/recipes/personal-recipe-card.test.tsx, components/recipes/create-recipe-form.test.tsx (la alineación visual no se prueba en happy-dom y se comprueban los dos mecanismos maxLength y line-clamp)
+# Tests: "clamps a 1000-character name to two lines so the grid row stays aligned"; "caps the name at 100 characters so a pasted 1000-character name cannot reach the grid (maxLength)"
   Escenario: Un nombre de receta propia extremadamente largo no rompe el layout de la grilla
     Dado que Laura pega un nombre de ~1000 caracteres en el formulario "Crear propia"
     Cuando guarda la receta
@@ -1588,6 +1598,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @biblioteca @edge-case @verificado-manual-2026-08-07 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/recipes/recipe-detail.test.tsx, components/recipe/recipe-card.test.tsx
+# Tests: "shows the name, category, description, time, difficulty and cost"; "shows "muy fácil" and "muy bajo", never the raw muy_facil / muy_bajo enum values"; "shows the cost as "muy bajo", never the raw muy_bajo enum value"
   Escenario: El texto de dificultad y coste estimado se muestra humanizado, no en snake_case crudo
     Dado que Laura ve una receta cuya dificultad es "muy_facil" o cuyo coste es "muy_bajo"
     Cuando mira la tarjeta o el detalle de esa receta
@@ -1617,6 +1629,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @biblioteca @edge-case @verificado-manual-2026-08-08 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/recipes/personal-recipe-card.test.tsx
+# Tests: "a recipe with one ingredient reads "1 ingrediente", not "1 ingredientes""; "a recipe with two ingredients reads "2 ingredientes""
   Escenario: Receta propia con 1 solo ingrediente usa singular "1 ingrediente"
     Dado que Laura tiene una receta propia con exactamente 1 ingrediente
     Cuando ve su tarjeta en Recetas
@@ -1729,6 +1743,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @perfil @edge-case @verificado-manual-2026-08-07 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/profile/nombre-form.test.tsx
+# Tests: "the name input has no error border on first render, and gets one once emptied after typing"
   Escenario: El input "Tu nombre" no muestra borde de error en el primer render
     Dado que Laura entra a /profile con una cuenta que todavía no tiene nombre guardado
     Cuando la página carga por primera vez, sin que ella haya tocado el campo
@@ -1739,6 +1755,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @perfil @edge-case @verificado-manual-2026-08-08 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: components/profile/ayuda-section.test.tsx (el FAQ nombra IA solo en negaciones y el test lo comprueba)
+# Tests: "describes a deterministic process and never names Gemini or claims an AI picks the recipes"
   Escenario: El FAQ de Ayuda describe correctamente cómo se genera el menú, sin mencionar Gemini
     Dado que Laura abre /profile → Preferencias y ayuda → FAQ
     Cuando lee "¿Cómo genera Fresco mi menú semanal?"
@@ -1837,6 +1855,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @qa @edge-case @verificado-manual-2026-08-08 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: app/qa/page.test.ts
+# Tests: "the header and the Arquitectura paragraph both say the menu generation is 100% deterministic"; "neither the header nor the Arquitectura paragraph claims an AI-assisted generation"
   Escenario: La página /qa no se autocontradice sobre la arquitectura de generación
     Dado que un evaluador externo abre /qa
     Cuando lee la cabecera y la sección "Arquitectura"
@@ -1848,6 +1868,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @app-shell @edge-case @verificado-manual-2026-08-08 @solo-manual
   # @solo-manual (FRESCO-1260): verificación visual puntual de copia, maquetación o estado vacío, sin lógica propia; automatizarla no compensa el tiempo del job test:e2e (ADR-0018). Re-comprobar a mano cuando se toque esa pantalla.
+# Cubierto por: app/layout.test.tsx
+# Tests: "the global title does not claim AI as the product mechanism"
   Escenario: El title tag global no reclama un mecanismo de "IA" que ya no existe
     Dado que cualquier página de la app carga
     Cuando se inspecciona el <title> del documento
@@ -2254,6 +2276,8 @@ Característica: Flujo completo de usuario en Fresco
   # initialIsFavorite, así que la usuaria ve que ya la tiene guardada.
   # @solo-manual: aserción no determinista ("puede seguir apareciendo"),
   # comportamiento esperado y ratificado — no un gap de automatización.
+# Cubierto por: app/(app)/notifications/page.test.tsx
+# Tests: "a favorited recipe still shows among the recommendations, with its heart filled"
   Escenario: Las recomendaciones de Notificaciones no excluyen recetas ya marcadas como favoritas
     Dado que Laura ya tiene una receta marcada como favorita
     Cuando abre /notifications

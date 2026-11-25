@@ -142,6 +142,17 @@ describe('RecipeLibrary results', () => {
     expect(screen.queryByTestId('recipe_catalog_empty_state')).toBeNull();
   });
 
+  // regression.feature, "No encontramos nada ... solo aplica al catálogo": own recipes are not searched or filtered.
+  test('a search with no catalog hits says it does not apply to own recipes, which stay visible above it', () => {
+    renderLibrary({ recipes: [], total: 0, query: 'zzz', recetasPropias: [propia('p1', 'Mi crema')] });
+
+    const empty = screen.getByTestId('recipe_search_empty_state');
+    const section = screen.getByTestId('personal_recipes_section');
+    expect(empty).toHaveTextContent('La búsqueda y los filtros no aplican a tus recetas propias, que siguen visibles arriba');
+    expect(within(section).getByRole('link', { name: /Mi crema/ })).toBeInTheDocument();
+    expect(section.compareDocumentPosition(empty) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   test('shows the no-results message when filters return nothing', () => {
     renderLibrary({ recipes: [], total: 0, appliedFilters: { ...EMPTY_FILTER_STATE, cocinas: ['española'] } });
 

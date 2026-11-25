@@ -82,6 +82,15 @@ describe('RecipeDetailView — catalog recipe', () => {
     expect(screen.getByText(/30\s+min ·\s+fácil\s+·\s+bajo/)).toBeInTheDocument();
   });
 
+  // regression.feature, "dificultad y coste humanizados": the two-word enum values lose their underscore.
+  test('shows "muy fácil" and "muy bajo", never the raw muy_facil / muy_bajo enum values', () => {
+    const base = catalogRecipe();
+    renderDetail({ kind: 'catalogo', receta: catalogRecipe({ meta: { ...base.meta!, dificultad: 'muy_facil', coste_estimado: 'muy_bajo' } }) });
+
+    expect(screen.getByText(/30\s+min ·\s+muy fácil\s+·\s+muy bajo/)).toBeInTheDocument();
+    expect(screen.queryByText(/muy_facil|muy_bajo/)).toBeNull();
+  });
+
   test('lists the ingredients with their quantity and the preparation steps in order', () => {
     renderDetail({ kind: 'catalogo', receta: catalogRecipe() });
 
