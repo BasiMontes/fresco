@@ -140,6 +140,18 @@ describe('proxy — admin routes answer a real 404 to non-admins', () => {
   });
 });
 
+/** A signed-in visitor on `/` keeps the public landing: the proxy never sends her to /menu. */
+describe('proxy — the landing is not redirected for a signed-in visitor', () => {
+  it('lets a signed-in request to / through, with no redirect and no rewrite', async () => {
+    currentUser = { id: 'user-2' };
+    const res = await proxy(requestTo('/'));
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('location')).toBeNull();
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+});
+
 describe('proxy — matcher', () => {
   it('skips static assets but covers app routes', () => {
     const pattern = new RegExp(`^${config.matcher[0]}$`);
