@@ -1,7 +1,10 @@
-import { describe, expect, test } from 'bun:test';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 
 import { contextMapSkill } from '../cli/lib/context-maps.ts';
-import { checkMap, DESCRIBES, exitCodeFor, mapDateOf, migrationDate, migrationsNewerThan, undatedSections } from './check-map-staleness';
+import { checkMap, commitDaysSince, DESCRIBES, exitCodeFor, mapDateOf, migrationDate, migrationsNewerThan, undatedSections } from './check-map-staleness';
 
 /**
  * FRESCO-1292 (audit 11 F6): the three business maps drift behind what they describe, and nothing said so.
@@ -40,6 +43,54 @@ describe('migrations', () => {
 describe('undatedSections', () => {
   test('lists the sections that have no valid data-updated', () => {
     expect(undatedSections([{ id: 'a', updated: '2026-10-29' }, { id: 'b', updated: null }, { id: 'c', updated: 'x' }])).toEqual(['b', 'c']);
+  });
+});
+
+/**
+ * FRESCO-1294: the first weekly run counted test files as changes of what a map describes. This builds a real
+ * temporary git repository with dated commits and asks for the commit days after the map's day.
+ */
+describe('commitDaysSince', () => {
+  const root = mkdtempSync(join(tmpdir(), 'map-staleness-'));
+
+  function commit(file: string, day: string): void {
+    mkdirSync(dirname(join(root, file)), { recursive: true });
+    writeFileSync(join(root, file), `${file} ${day}\n`);
+    const date = `${day}T12:00:00Z`;
+    const env = { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date };
+    for (const args of [['add', '--all'], ['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', file]]) {
+      expect(Bun.spawnSync(['git', ...args], { cwd: root, env }).exitCode).toBe(0);
+    }
+  }
+
+  beforeAll(() => {
+    expect(Bun.spawnSync(['git', 'init', '-q'], { cwd: root }).exitCode).toBe(0);
+    commit('app/old.ts', '2026-11-20');
+    commit('app/page.test.tsx', '2026-11-25');
+    commit('app/qa/page.test.ts', '2026-11-26');
+    commit('app/real.ts', '2026-11-27');
+  });
+
+  afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+  test('a commit that only touches test files after the map does not count', () => {
+    expect(commitDaysSince(root, 'app', '2026-11-22')).toEqual(['2026-11-27']);
+  });
+
+  test('a commit of code counts, and so does one that touches code and a test together', () => {
+    mkdirSync(join(root, 'app'), { recursive: true });
+    writeFileSync(join(root, 'app/mixed.test.ts'), 'a test\n');
+    writeFileSync(join(root, 'app/mixed.ts'), 'code\n');
+    const date = '2026-11-28T12:00:00Z';
+    const env = { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date };
+    Bun.spawnSync(['git', 'add', '--all'], { cwd: root, env });
+    Bun.spawnSync(['git', '-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', 'mixed'], { cwd: root, env });
+    expect(commitDaysSince(root, 'app', '2026-11-22')).toEqual(['2026-11-28', '2026-11-27']);
+  });
+
+  test('is fine with nothing after the map and reports a repository it cannot read as null', () => {
+    expect(commitDaysSince(root, 'app', '2026-12-31')).toEqual([]);
+    expect(commitDaysSince(join(tmpdir(), 'map-staleness-no-such-repo'), 'app', '2026-11-22')).toBeNull();
   });
 });
 
