@@ -4,10 +4,12 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildConsumCatalogMatch,
   CACHE_DIR,
+  codigosAusentes,
   demasiadosFallos,
   describirDiffCatalogo,
   fechaDeCache,
   parsePackSize,
+  PRODUCTOS_FIJADOS,
   renderFile,
 } from '../../scripts/gen-consum-catalog';
 import { BASE_QUANTITIES } from '../../supabase/functions/generate-shopping-list/consolidator';
@@ -42,7 +44,14 @@ describe.skipIf(!CACHE_AVAILABLE)('consum-catalog.generated — in sync with the
         candidatesByTerm.set(term, JSON.parse(await Bun.file(cachePath).text()));
       }
     }
-    const fresh = renderFile(buildConsumCatalogMatch(candidatesByTerm, BASE_QUANTITIES), await fechaDeCache());
+    // The products the run asked for by code, because the search no longer listed them.
+    for (const { termino, codigo } of codigosAusentes(candidatesByTerm, BASE_QUANTITIES, { anterior: CONSUM_CATALOG_MATCH })) {
+      const cachePath = new URL(`code-${codigo}.json`, CACHE_DIR);
+      const producto = existsSync(cachePath) ? JSON.parse(await Bun.file(cachePath).text()) as ConsumProduct | null : null;
+      if (producto) { candidatesByTerm.set(termino, [...candidatesByTerm.get(termino) ?? [], producto]); }
+    }
+    const match = buildConsumCatalogMatch(candidatesByTerm, BASE_QUANTITIES, { anterior: CONSUM_CATALOG_MATCH });
+    const fresh = renderFile(match, await fechaDeCache());
     const committed = await Bun.file(new URL('./consum-catalog.generated.ts', import.meta.url)).text();
     expect(committed).toBe(fresh);
   });
@@ -188,6 +197,8 @@ describe('buildConsumCatalogMatch — the wrong matches of FRESCO-1193', () => {
     ['nueces', 'Turrón nata nueces', 'Turrón nata nueces 250 Gr', { cantidad: 100, unidad: 'g' }],
     ['pasta', 'Pasta de lenteja roja', 'Pasta de lenteja roja 250 Gr', { cantidad: 200, unidad: 'g' }],
     ['uvas', 'Uvas de la suerte 12 unidades', 'Uvas de la suerte 12 unidades 30 Gr', { cantidad: 150, unidad: 'g' }],
+    ['uvas', '12 Uvas Campanadas Peladas y sin Semillas', '12 Uvas Campanadas Peladas y sin Semillas 2 x 120 Gr', { cantidad: 200, unidad: 'g' }],
+    ['pollo', 'Pechuga de Pollo sin Grasa', 'Pechuga de Pollo sin Grasa 340 Gr', { cantidad: 500, unidad: 'g' }],
     ['ternera', 'Yatekomo Ternera Cup', 'Yatekomo Ternera Cup 65 Gr', { cantidad: 500, unidad: 'g' }],
   ] as const)('%s gets no entry when the only candidate is "%s"', (clave, name, description, porcion) => {
     const match = buildConsumCatalogMatch(new Map([[clave, [product(name, description)]]]), { [clave]: porcion });
@@ -201,6 +212,88 @@ describe('buildConsumCatalogMatch — the wrong matches of FRESCO-1193', () => {
     ];
     const match = buildConsumCatalogMatch(new Map([['tocino', candidatos]]), { tocino: { cantidad: 200, unidad: 'g' } });
     expect(match.tocino?.url).toBe('https://tienda.consum.es/es/p/Tocino fresco entreverado/1');
+  });
+});
+
+// FRESCO-1244: a product listed after the last refresh must not take over an ingredient that already has one.
+describe('buildConsumCatalogMatch — a refresh keeps the chosen product', () => {
+  function product(code: string, name: string, gramos: number, unidad: 'Gr' | 'ml' = 'Gr'): ConsumProduct {
+    return {
+      ean: '0000000000000',
+      code,
+      productData: { name, description: `${name} ${gramos} ${unidad}`, url: `https://tienda.consum.es/es/p/slug/${code}` },
+      priceData: { prices: [{ value: { centAmount: 2 } }] },
+    };
+  }
+  const publicado = (code: string) => ({
+    envaseVenta: { cantidad: 1000, unidad: 'g' as const },
+    precioConsum: { precio: 1 },
+    url: `https://tienda.consum.es/es/p/old-slug/${code}`,
+  });
+  const porcion = { espinacas: { cantidad: 200, unidad: 'g' } };
+  const codigo = (url: string | undefined) => url?.split('/').pop();
+
+  const bueno = product('1', 'Espinacas Hoja', 1000);
+  const nuevo = product('2', 'Espinacas Skyr', 500);
+  const fijado = product('3', 'Espinacas Bolsa', 300);
+  const candidatos = new Map([['espinacas', [bueno, nuevo, fijado]]]);
+
+  test('without a previous catalog the heuristic decides', () => {
+    const match = buildConsumCatalogMatch(new Map([['espinacas', [bueno, nuevo]]]), porcion, { fijados: {} });
+    expect(codigo(match.espinacas?.url)).toBe('2');
+  });
+
+  test('the published product stays while it is listed, with the price of today', () => {
+    const match = buildConsumCatalogMatch(candidatos, porcion, { anterior: { espinacas: publicado('1') }, fijados: {} });
+    expect(codigo(match.espinacas?.url)).toBe('1');
+    expect(match.espinacas?.precioConsum.precio).toBe(2);
+  });
+
+  test('a published product that is gone is replaced', () => {
+    const match = buildConsumCatalogMatch(candidatos, porcion, { anterior: { espinacas: publicado('99') }, fijados: {} });
+    expect(match.espinacas).toBeDefined();
+    expect(codigo(match.espinacas?.url)).not.toBe('99');
+  });
+
+  test('a published product the rules now reject is not kept', () => {
+    const campanadas = product('7', '12 Uvas Campanadas', 240);
+    const uvas = product('8', 'Uvas Blancas', 500);
+    const match = buildConsumCatalogMatch(new Map([['uvas', [campanadas, uvas]]]), { uvas: { cantidad: 200, unidad: 'g' } }, { anterior: { uvas: publicado('7') } });
+    expect(codigo(match.uvas?.url)).toBe('8');
+  });
+
+  test('a pinned product wins over the published one and over the heuristic', () => {
+    const match = buildConsumCatalogMatch(candidatos, porcion, { anterior: { espinacas: publicado('1') }, fijados: { espinacas: '3' } });
+    expect(codigo(match.espinacas?.url)).toBe('3');
+  });
+
+  test('a pinned product that is gone leaves the published one', () => {
+    const match = buildConsumCatalogMatch(candidatos, porcion, { anterior: { espinacas: publicado('1') }, fijados: { espinacas: '99' } });
+    expect(codigo(match.espinacas?.url)).toBe('1');
+  });
+
+  test('a ready meal is not the ingredient, whatever its name says', () => {
+    const plato = { ...product('5', 'Pollo Mediterráneo', 280), categories: [{ name: 'Platos para llevar' }] };
+    const match = buildConsumCatalogMatch(new Map([['pollo', [plato]]]), { pollo: { cantidad: 500, unidad: 'g' } });
+    expect(match.pollo).toBeUndefined();
+  });
+
+  test('asks by code for the published and pinned products the search did not return', () => {
+    const ausentes = codigosAusentes(
+      new Map([['espinacas', [nuevo]]]),
+      porcion,
+      { anterior: { espinacas: publicado('1') }, fijados: { espinacas: '3' } },
+    );
+    expect(ausentes).toEqual([{ termino: 'espinacas', codigo: '3' }, { termino: 'espinacas', codigo: '1' }]);
+  });
+
+  test('asks for nothing when the search already lists them, or for a count-based ingredient', () => {
+    expect(codigosAusentes(candidatos, porcion, { anterior: { espinacas: publicado('1') }, fijados: { espinacas: '3' } })).toEqual([]);
+    expect(codigosAusentes(new Map(), { huevos: { cantidad: 4, unidad: 'unidades' } }, { anterior: { huevos: publicado('1') } })).toEqual([]);
+  });
+
+  test.each(Object.entries(PRODUCTOS_FIJADOS))('the committed catalog points %s at its pinned product %s', (clave, code) => {
+    expect(codigo(CONSUM_CATALOG_MATCH[clave]?.url)).toBe(code);
   });
 });
 
