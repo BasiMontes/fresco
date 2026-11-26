@@ -16,6 +16,10 @@
 // through with the "Generar mi menú" button enabled.
 export const HOUSEHOLD_FIELD_MAX = 10;
 
+// FRESCO-1309/QAFRESCO-34: the cap on adultos + ninos. Mirrors the database constraint
+// `check_num_personas_max`; without it the save failed with an unrelated error.
+export const HOUSEHOLD_TOTAL_MAX = 10;
+
 export interface HouseholdInput {
   adultos: number
   ninos: number
@@ -49,6 +53,10 @@ export function validateHousehold({ adultos, ninos }: HouseholdInput): Household
     // Defensive: unreachable given adultos > 0 and ninos >= 0 above, kept in
     // case num_personas's derivation ever changes.
     return { valid: false, message: 'Los adultos no pueden superar el total de personas del hogar.' };
+  }
+
+  if (numPersonas > HOUSEHOLD_TOTAL_MAX) {
+    return { valid: false, message: `El total de personas del hogar no puede superar ${HOUSEHOLD_TOTAL_MAX}.` };
   }
 
   return { valid: true, message: null };

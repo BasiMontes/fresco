@@ -81,12 +81,26 @@ describe('validateHousehold', () => {
 
     test.each([
       ['adultos 1 / ninos 0 (both lower bounds)', { adultos: 1, ninos: 0 }],
-      ['adultos 10 / ninos 10 (both upper bounds)', { adultos: 10, ninos: 10 }],
-      ['adultos 1 / ninos 10', { adultos: 1, ninos: 10 }],
+      ['adultos 10 / ninos 0 (total 10)', { adultos: 10, ninos: 0 }],
+      ['adultos 5 / ninos 5 (total 10)', { adultos: 5, ninos: 5 }],
+      ['adultos 1 / ninos 9 (total 10)', { adultos: 1, ninos: 9 }],
     ] as const)('accepts %s', (_label, input) => {
       const result = validateHousehold(input);
       expect(result.valid).toBe(true);
       expect(result.message).toBeNull();
+    });
+
+    // FRESCO-1309/QAFRESCO-34: each field is within bounds, the household is not. The database
+    // rejects it (`check_num_personas_max`), so the wizard has to say so first.
+    test.each([
+      ['adultos 10 / ninos 1 (total 11)', { adultos: 10, ninos: 1 }],
+      ['adultos 1 / ninos 10 (total 11)', { adultos: 1, ninos: 10 }],
+      ['adultos 8 / ninos 5 (total 13)', { adultos: 8, ninos: 5 }],
+      ['adultos 10 / ninos 10 (total 20)', { adultos: 10, ninos: 10 }],
+    ] as const)('rejects %s', (_label, input) => {
+      const result = validateHousehold(input);
+      expect(result.valid).toBe(false);
+      expect(result.message).toBe('El total de personas del hogar no puede superar 10.');
     });
   });
 });
