@@ -18,7 +18,7 @@ export const HOUSEHOLD_FIELD_MAX = 10;
 
 // FRESCO-1309/QAFRESCO-34: the cap on adultos + ninos. Mirrors the database constraint
 // `check_num_personas_max`; without it the save failed with an unrelated error.
-export const HOUSEHOLD_TOTAL_MAX = 10;
+const HOUSEHOLD_TOTAL_MAX = 10;
 
 export interface HouseholdInput {
   adultos: number
