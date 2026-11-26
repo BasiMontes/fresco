@@ -78,15 +78,17 @@ function activeSubscription(overrides: Partial<{ status: Stripe.Subscription.Sta
   } as unknown as Stripe.Subscription;
 }
 
-interface OrphanRow { id: string, plan: 'pro' | 'family' }
+interface OrphanRow { id: string, plan: 'pro' | 'family', plan_expires_at?: string | null }
 
 function fakeClient(opts: { orphans?: OrphanRow[], loadError?: unknown, failIds?: string[], pageSizeCap?: number }) {
   const updated: string[] = [];
   const ranges: Array<[number, number]> = [];
+  const selected: string[] = [];
   const client = {
     from() {
       return {
-        select() {
+        select(columns: string) {
+          selected.push(columns);
           return {
             in() {
               return {
@@ -117,10 +119,41 @@ function fakeClient(opts: { orphans?: OrphanRow[], loadError?: unknown, failIds?
       };
     },
   };
-  return { client: client as unknown as ReturnType<typeof createServiceClient>, updated, ranges };
+  return { client: client as unknown as ReturnType<typeof createServiceClient>, updated, ranges, selected };
 }
 
 describe('sweepOrphanPaidPlans', () => {
+  // FRESCO-1313/QAFRESCO-7: `scripts/grant-pro.ts` gives Pro without a charge, with an end date and no
+  // subscription. The sweep used to take it away the same night.
+  const NOW = Date.parse('2026-11-26T04:17:00.000Z');
+  const inDays = (days: number) => new Date(NOW + days * 86_400_000).toISOString();
+
+  test('keeps a Pro grant until its end date', async () => {
+    const { client, updated, selected } = fakeClient({
+      orphans: [
+        { id: 'granted', plan: 'pro', plan_expires_at: inDays(10) },
+        { id: 'longest', plan: 'pro', plan_expires_at: inDays(60) },
+      ],
+    });
+
+    expect(await sweepOrphanPaidPlans(client, NOW)).toBe(0);
+    expect(updated).toEqual([]);
+    expect(selected.join()).toContain('plan_expires_at');
+  });
+
+  test.each([
+    ['the end date has passed', 'pro', inDays(-1)],
+    ['there is no end date', 'pro', null],
+    // A grant never lasts more than MAX_GRANT_DAYS, so a farther date was not written by the script (FRESCO-360).
+    ['the end date is beyond the longest grant', 'pro', '2099-01-01T00:00:00.000Z'],
+    ['it is a family plan, which is never granted', 'family', inDays(10)],
+  ] as const)('downgrades a row with no subscription when %s', async (_reason, plan, expiresAt) => {
+    const { client, updated } = fakeClient({ orphans: [{ id: 'a', plan, plan_expires_at: expiresAt }] });
+
+    expect(await sweepOrphanPaidPlans(client, NOW)).toBe(1);
+    expect(updated).toEqual(['a']);
+  });
+
   test('downgrades every pro/family row that has no stripe_subscription_id', async () => {
     const { client, updated } = fakeClient({
       orphans: [
