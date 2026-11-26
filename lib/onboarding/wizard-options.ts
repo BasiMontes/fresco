@@ -95,14 +95,43 @@ const DIA_SHORT_LABELS: Record<DiaSemana, string> = {
   domingo: 'Dom',
 };
 
+const DIA_LABELS: Record<DiaSemana, string> = {
+  lunes: 'Lunes',
+  martes: 'Martes',
+  miercoles: 'Miércoles',
+  jueves: 'Jueves',
+  viernes: 'Viernes',
+  sabado: 'Sábado',
+  domingo: 'Domingo',
+};
+
+export interface PlanningDescription {
+  days: string
+  meals: string
+  /** One "Día: comidas" line per selected day, present only when the days differ. */
+  split?: string[]
+}
+
 /**
  * FRESCO-755 — human-readable recap of the planning matrix for the summary
- * screen: which days ("Toda la semana" when all 7) and which meals.
+ * screen: which days ("Toda la semana" when all 7) and which meals. When the
+ * days do not share the same meals, those two lists would promise slots that
+ * were never chosen, so `split` carries the real selection (FRESCO-1311/QAFRESCO-4).
  */
-export function describePlanning(selection: PlanningSelection): { days: string, meals: string } {
+export function describePlanning(selection: PlanningSelection): PlanningDescription {
   const { days, meals } = fromPlanningSelection(selection);
-  return {
+  const description: PlanningDescription = {
     days: days.length === 7 ? 'Toda la semana' : days.map(day => DIA_SHORT_LABELS[day]).join(', '),
     meals: meals.map(meal => MEAL_LABELS[meal]).join(', '),
   };
+
+  const mealsByDay = days.map(day => ({
+    day,
+    meals: meals.filter(meal => selection[day].includes(meal)),
+  }));
+  if (mealsByDay.some(entry => entry.meals.length !== meals.length)) {
+    description.split = mealsByDay.map(entry => `${DIA_LABELS[entry.day]}: ${entry.meals.map(meal => MEAL_LABELS[meal]).join(', ')}`);
+  }
+
+  return description;
 }

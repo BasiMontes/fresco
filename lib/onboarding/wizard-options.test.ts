@@ -34,6 +34,40 @@ describe('describePlanning', () => {
     expect(describePlanning(selection)).toEqual({ days: 'Lun, Mié', meals: 'Comida' });
   });
 
+  // FRESCO-1311/QAFRESCO-4: a flat list of days plus a union of meals promised slots that
+  // were never chosen (Friday dinner, Sunday lunch).
+  test('adds the day by day split when the days do not share the same meals', () => {
+    const selection: PlanningSelection = {
+      lunes: ['cena', 'comida'],
+      martes: [],
+      miercoles: [],
+      jueves: [],
+      viernes: ['comida'],
+      sabado: [],
+      domingo: ['cena'],
+    };
+
+    expect(describePlanning(selection)).toEqual({
+      days: 'Lun, Vie, Dom',
+      meals: 'Comida, Cena',
+      split: ['Lunes: Comida, Cena', 'Viernes: Comida', 'Domingo: Cena'],
+    });
+  });
+
+  test('has no split when every selected day shares the meals, whatever their stored order', () => {
+    const selection: PlanningSelection = {
+      lunes: ['cena', 'comida'],
+      martes: ['comida', 'cena'],
+      miercoles: [],
+      jueves: [],
+      viernes: [],
+      sabado: [],
+      domingo: [],
+    };
+
+    expect(describePlanning(selection).split).toBeUndefined();
+  });
+
   test('returns empty strings when nothing is selected', () => {
     const selection: PlanningSelection = { lunes: [], martes: [], miercoles: [], jueves: [], viernes: [], sabado: [], domingo: [] };
 
