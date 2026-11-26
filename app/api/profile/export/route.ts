@@ -19,9 +19,9 @@ interface MealPlanRow extends Record<string, unknown> {
  * format changed to CSV per FRESCO-163 — a spreadsheet a user can actually
  * open beats a JSON blob). Server-side Supabase client: every query
  * below is subject to the caller's own RLS policies, so it can only ever read
- * her own rows. The one exception is `recipe_user_feedback`, closed to every
- * browser role, read with the service role filtered to the session's user id
- * (FRESCO-1109, A8-PRIV-02).
+ * her own rows. The exceptions are `recipe_user_feedback` (FRESCO-1109, A8-PRIV-02)
+ * and `recipe_mark_history` (FRESCO-1302), closed to every browser role and read
+ * with the service role filtered to the session's user id.
  *
  * One `.csv` file, not a ZIP of several — avoids pulling in a zip
  * dependency for what's still a small, single-user export. Multiple
@@ -89,6 +89,8 @@ export async function GET() {
     { name: 'push_subscriptions', rows: exported.pushSubscriptions },
     // FRESCO-1109 (A8-PRIV-02): the cooked / discarded marks the privacy policy says are recorded.
     { name: 'recipe_user_feedback', rows: exported.recipeFeedback },
+    // FRESCO-1302: the marks of weeks that were later deleted or overwritten.
+    { name: 'recipe_mark_history', rows: exported.recipeMarkHistory },
   ];
 
   const csvBlocks = sections

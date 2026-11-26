@@ -13,14 +13,19 @@
  *   3. only the two decisive marks are archived, never `pendiente`;
  *   4. the 2-week window counts from the week the mark was made in, while the all-time readers keep it;
  *   5. one user never reads another's marks, and no client role reaches the table or the trigger function;
- *   6. deleting an account with marks still works and leaves nothing behind.
+ *   6. deleting an account with marks still works and leaves nothing behind;
+ *   7. the data export returns the user's archived marks and nobody else's (FRESCO-1302).
  *
  * Runs only when `RUN_DB_INTEGRATION=1` AND the local Supabase stack answers: `bun run test:db`. See tests/db/README.md.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DbTestUser } from './harness';
+import type { Database } from '@/lib/supabase/types';
+import { createClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { createDbTestContext, nativeFetch, plannedWeek, resolveUrl, rest, rpc, seedMealPlan, seedSlots, serviceRoleKey, stackReachable } from './harness';
+import { readUserDataForExport } from '@/lib/api/profile-export';
+import { anonKey, createDbTestContext, nativeFetch, plannedWeek, resolveUrl, rest, rpc, seedMealPlan, seedSlots, serviceRoleKey, stackReachable } from './harness';
 
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
 const reachable = RUN ? await stackReachable() : false;
@@ -186,6 +191,26 @@ describe.skipIf(!(RUN && reachable))('recipe marks outlive their week (real DB)'
     expect([401, 403, 404]).toContain(call.status);
     const callService = await rpc('archive_recipe_marks_before_plan_delete', {}, { serviceRole: true });
     expect([401, 403, 404]).toContain(callService.status);
+  });
+
+  // FRESCO-1302: the real export reader with its two real clients.
+  test('the data export returns the archived marks of that user and nobody else\'s', async () => {
+    const [mine, theirs] = await Promise.all([ctx.createUser(), ctx.createUser()]);
+    await deletePlan(mine, await markedWeek(mine));
+    await deletePlan(theirs, await markedWeek(theirs));
+    const connect = (key: string, headers: Record<string, string> = {}) =>
+      createClient(resolveUrl(), key, { global: { fetch: nativeFetch, headers }, auth: { persistSession: false } }) as unknown as SupabaseClient<Database>;
+    const client = connect(await anonKey(), { Authorization: `Bearer ${mine.token}` });
+    const feedbackClient = connect(await serviceRoleKey());
+
+    const exported = await readUserDataForExport({ client, feedbackClient }, mine.id);
+
+    const { fechaInicio } = plannedWeek(0);
+    expect(exported.recipeMarkHistory).toHaveLength(2);
+    expect(exported.recipeMarkHistory).toEqual(expect.arrayContaining([
+      { recipe_id: cooked, estado: 'cocinada', fecha_inicio: fechaInicio, created_at: expect.any(String) },
+      { recipe_id: discarded, estado: 'descartada', fecha_inicio: fechaInicio, created_at: expect.any(String) },
+    ]));
   });
 
   test('deleting an account that has marks works and leaves no history behind', async () => {

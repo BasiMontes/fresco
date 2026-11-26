@@ -12,8 +12,9 @@ let supa = fakeSupabase({}, { getUser: async () => ({ data: { user: { id: 'user_
 void mock.module('@/lib/supabase/server', () => ({ createClient: async () => supa.client }));
 
 let feedbackRows: Record<string, unknown>[] = [];
+let historyRows: Record<string, unknown>[] = [];
 void mock.module('@/lib/supabase/service', () => ({
-  createServiceClient: () => fakeSupabase({ recipe_user_feedback: { rows: feedbackRows } }).client,
+  createServiceClient: () => fakeSupabase({ recipe_user_feedback: { rows: feedbackRows }, recipe_mark_history: { rows: historyRows } }).client,
 }));
 
 const { GET } = await import('./route');
@@ -24,6 +25,7 @@ function withUser(user: { id: string, email?: string } | null, tables = {}) {
 
 beforeEach(() => {
   feedbackRows = [];
+  historyRows = [];
   supa = withUser({ id: 'user_1' });
 });
 
@@ -89,6 +91,15 @@ describe('GET /api/profile/export', () => {
 
     expect(body).toContain('# recipe_user_feedback\n');
     expect(body).toContain('r_7');
+  });
+
+  test('FRESCO-1302: includes the marks archived from deleted weeks', async () => {
+    historyRows = [{ recipe_id: 'r_8', estado: 'descartada', fecha_inicio: '2026-10-05', created_at: '2026-10-12T09:00:00Z' }];
+
+    const body = await (await GET()).text();
+
+    expect(body).toContain('# recipe_mark_history\n');
+    expect(body).toContain('r_8');
   });
 
   test('FRESCO-910: a session without an address leaves out the account section', async () => {
