@@ -114,3 +114,8 @@ Historia archivada:
 - Qué: `bun run git:promote --yes` llevó staging a main y dev (04ee5c6d, fast-forward, 10 commits; las 180 migraciones ya aplicadas). Despliegue de producción en success y fresco-pro `/login` en 200. El push de `dev` pasó saltando la regla de PR, divergencia ya aceptada en project.yaml.
 - Por qué: el dueño pidió los arreglos de QA cuanto antes para probarlos.
 - Siguiente: tras la prueba del dueño, pasar FRESCO-1308 a 1312 a Finalizada. FRESCO-1300 y 1302 están en producción con la comprobación en pantalla pendiente. Esta entrada queda en un commit local sin subir.
+
+## 2026-11-26 - Segunda tanda de QA en producción (FRESCO-1313 a 1318) y tanda de iconos de arcilla
+- Qué: el Pro concedido sin cobro dura hasta su fecha (#1100); la FAQ y los precios ya no prometen regenerar un plato (#1101); sin sesión solo se leen recetas activas (#1102, migración 20261126210000); revisión de altramuces documentada (#1103); ningún nombre repetido entre recetas activas (#1104, migración 20261126213000: 4 desactivadas, 10 renombradas). Las dos migraciones aplicadas y comprobadas, main y dev en 096f47b2, producción en success y fresco-pro /login 200. Aparte, 51 iconos de arcilla aplicados (541 con icono, 116 con foto de stock), incluida la ensalada de kale que mostraba huevo.
+- Por qué: QAFRESCO-7, 33, 31, 32, 3 y 30.
+- Siguiente: retest de QA y pasar FRESCO-1308 a 1318 a Finalizada. Revisar las etiquetas de sulfitos de la fabada y el cocido sencillos. Borrar el worktree fresco-app-qa2 y las ramas fix/FRESCO-13xx locales. Mapas de negocio por regenerar. Esta entrada y la anterior de producción están en commits locales sin subir.
