@@ -61,6 +61,21 @@ describe('OnboardingSummary', () => {
 
     expect(screen.getByText('Toda la semana')).toBeInTheDocument();
     expect(screen.getByText('Desayuno, Comida, Cena')).toBeInTheDocument();
+    expect(screen.queryByTestId('summary_planning_split')).toBeNull();
+  });
+
+  // FRESCO-1311/QAFRESCO-4: a selection that differs between days is listed day by day.
+  test('shows the real split when the days do not share the same meals', () => {
+    useOnboardingStore.setState({
+      planningSelection: { lunes: [], martes: [], miercoles: [], jueves: [], viernes: ['comida'], sabado: [], domingo: ['cena'] },
+    });
+    render();
+
+    const split = screen.getByTestId('summary_planning_split');
+    expect(split).toHaveTextContent('Viernes: Comida');
+    expect(split).toHaveTextContent('Domingo: Cena');
+    expect(screen.queryByText('Comidas a planificar')).toBeNull();
+    expect(screen.queryByText('Días a planificar')).toBeNull();
   });
 
   test.each([

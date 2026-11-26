@@ -178,8 +178,20 @@ export function OnboardingSummary({ headingRef }: OnboardingSummaryProps) {
         <SummaryRow label="Presupuesto semanal">
           {presupuestoSemanaEuros === null ? <Empty /> : `${presupuestoSemanaEuros} €`}
         </SummaryRow>
-        <SummaryRow label="Días a planificar">{planning.days || <Empty />}</SummaryRow>
-        <SummaryRow label="Comidas a planificar">{planning.meals || <Empty />}</SummaryRow>
+        {planning.split
+          ? (
+              <SummaryRow label="Comidas por día" testId="summary_planning_split">
+                <ul>
+                  {planning.split.map(line => <li key={line}>{line}</li>)}
+                </ul>
+              </SummaryRow>
+            )
+          : (
+              <>
+                <SummaryRow label="Días a planificar">{planning.days || <Empty />}</SummaryRow>
+                <SummaryRow label="Comidas a planificar">{planning.meals || <Empty />}</SummaryRow>
+              </>
+            )}
       </SummarySection>
     </div>
   );
