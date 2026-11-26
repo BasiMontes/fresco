@@ -16,25 +16,6 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ];
 
-// FRESCO-366 / A4-B4: PostHog reverse proxy. `posthog-js` posts to the
-// same-origin `/ingest` path (see app/providers/posthog-provider.tsx) and
-// these rewrites forward it to PostHog's ingestion + static-asset hosts, so
-// an ad-blocker filtering `*.posthog.com` can't drop client events. Region
-// follows NEXT_PUBLIC_POSTHOG_HOST (`https://eu.i.posthog.com` →
-// `https://eu-assets.i.posthog.com`); the rewrites are skipped entirely when
-// the host is unset (local dev without a PostHog project).
-function toOrigin(url) {
-  try {
-    return new URL(url).origin;
-  }
-  catch {
-    return null;
-  }
-}
-
-const posthogIngestHost = toOrigin(process.env.NEXT_PUBLIC_POSTHOG_HOST);
-const posthogAssetsHost = posthogIngestHost?.replace('.i.posthog.com', '-assets.i.posthog.com') ?? null;
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -136,15 +117,6 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
-    ];
-  },
-  async rewrites() {
-    if (!posthogIngestHost || !posthogAssetsHost) {
-      return [];
-    }
-    return [
-      { source: '/ingest/static/:path*', destination: `${posthogAssetsHost}/static/:path*` },
-      { source: '/ingest/:path*', destination: `${posthogIngestHost}/:path*` },
     ];
   },
 };
