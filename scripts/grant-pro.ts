@@ -1,5 +1,6 @@
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { DAY_MS, MAX_GRANT_DAYS } from '../lib/billing/manual-grant';
 
 /**
  * FRESCO-1033: grant Pro without a charge to a pilot participant, or take it back.
@@ -9,14 +10,14 @@ import { createClient } from '@supabase/supabase-js';
  *
  * Dry run unless `--yes`. Entitlement is `plan = 'pro'` plus a `plan_expires_at` that has not passed
  * (supabase/functions/generate-meal-plan/entitlement.ts), so the grant stops counting by itself on the
- * end date. The Stripe reconcile cron only visits profiles with a `stripe_subscription_id`, so a grant
- * on a profile without one is left alone; a profile that has one is refused here, because the cron
- * would overwrite the grant on its next pass. The write uses the service role, which the
- * `protect_subscription_columns` trigger allows. The email is looked up and never printed.
+ * end date. The daily reconcile cron keeps a grant in force on a profile without a
+ * `stripe_subscription_id` and downgrades it once the end date passes (`isManualGrantInForce`); a
+ * profile that has a subscription is refused here, because the cron would overwrite the grant on its
+ * next pass. The write uses the service role, which the `protect_subscription_columns` trigger
+ * allows. The email is looked up and never printed.
  */
 
-export const MAX_GRANT_DAYS = 60;
-const DAY_MS = 24 * 60 * 60 * 1000;
+export { MAX_GRANT_DAYS };
 
 export interface GrantableProfile {
   plan: string

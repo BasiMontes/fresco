@@ -1,10 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
+import { isManualGrantInForce } from '@/lib/billing/manual-grant';
 import { downgradeToFree } from '@/lib/billing/subscription';
 import { readAllPages } from '@/lib/supabase/read-all-pages';
 
 type Client = SupabaseClient<Database>;
 type UserProfileRow = Database['public']['Tables']['user_profiles']['Row'];
+type OrphanProfile = Pick<UserProfileRow, 'id' | 'plan' | 'plan_expires_at'>;
 
 /** The columns the reconciliation job compares against Stripe. */
 export type ReconcilableProfile = Pick<UserProfileRow, 'id' | 'plan' | 'plan_expires_at' | 'payment_failed_at' | 'stripe_subscription_id' | 'stripe_customer_id' | 'stripe_livemode'>;
@@ -59,18 +61,21 @@ export async function applyReconciledState(client: Client, { profileId, desired 
  * webhook's `customer.subscription.deleted` handler: flip `plan`, clear the
  * payment-failed aviso, leave `plan_expires_at` as-is. Returns the row count.
  *
+ * The one exception is a Pro grant without a charge that is still in force
+ * (`isManualGrantInForce`, FRESCO-1313); it is swept once its end date passes.
+ *
  * The main reconcile loop filters on `stripe_subscription_id IS NOT NULL` and
  * never sees these rows. Fail-soft on purpose: a load error returns 0 and a
  * failed row is skipped, so one bad row never blocks the rest.
  */
-export async function sweepOrphanPaidPlans(client: Client): Promise<number> {
+export async function sweepOrphanPaidPlans(client: Client, now: number = Date.now()): Promise<number> {
   // FRESCO-1165: every orphan, not the first `max_rows`; the whole list is read before any row is downgraded.
-  let orphans: { id: string, plan: string }[];
+  let orphans: OrphanProfile[];
   try {
-    orphans = await readAllPages<{ id: string, plan: string }>(
+    orphans = await readAllPages<OrphanProfile>(
       (from, to) => client
         .from('user_profiles')
-        .select('id, plan')
+        .select('id, plan, plan_expires_at')
         .in('plan', ['pro', 'family'])
         .is('stripe_subscription_id', null)
         .order('id')
@@ -84,7 +89,7 @@ export async function sweepOrphanPaidPlans(client: Client): Promise<number> {
   }
 
   let swept = 0;
-  for (const orphan of orphans) {
+  for (const orphan of orphans.filter(row => !isManualGrantInForce(row, now))) {
     try {
       await downgradeToFree(client, orphan.id);
     }
