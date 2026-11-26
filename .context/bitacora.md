@@ -109,3 +109,8 @@ Historia archivada:
 - Qué: vegano y vegetariano ya no marcan `sulfitos` (#1095, 809a75b6); el hogar se limita a 10 personas en total (#1096, df823930); las recetas veganas muestran "Vegano" (#1097, 7d357f90); el resumen del onboarding lista las comidas por día cuando difieren (#1098, f8b42092); las casillas excluidas dicen "Sin planificar" (#1099, d1c23586). CI de staging en verde, `fresco-pre` sirve d1c23586, las cinco tarjetas en Merged. Prueba en navegador superada contra el stack local con los cinco juntos.
 - Por qué: QAFRESCO-29, 34, 6, 4 y 5. Para QAFRESCO-5 el dueño eligió una etiqueta neutra en vez de guardar el motivo (sin migración ni deploy de función).
 - Siguiente: promocionar a main y pasar a Finalizada. Decidir si se limpian los `sulfitos` ya guardados (2 perfiles veganos). Regenerar los mapas de negocio, que aún citan "Excluida por ti". Las tarjetas QAFRESCO no se han tocado. `knip:check` no corre en pre-push: pasar `bun run repo:check` antes de subir.
+
+## 2026-11-26 - FRESCO-1308 a 1312 en producción, con FRESCO-1300 y 1302
+- Qué: `bun run git:promote --yes` llevó staging a main y dev (04ee5c6d, fast-forward, 10 commits; las 180 migraciones ya aplicadas). Despliegue de producción en success y fresco-pro `/login` en 200. El push de `dev` pasó saltando la regla de PR, divergencia ya aceptada en project.yaml.
+- Por qué: el dueño pidió los arreglos de QA cuanto antes para probarlos.
+- Siguiente: tras la prueba del dueño, pasar FRESCO-1308 a 1312 a Finalizada. FRESCO-1300 y 1302 están en producción con la comprobación en pantalla pendiente. Esta entrada queda en un commit local sin subir.
