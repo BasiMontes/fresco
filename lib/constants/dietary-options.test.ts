@@ -38,12 +38,12 @@ describe('lib/constants/dietary-options — impliedAlergenos (FRESCO-275)', () =
     expect(impliedAlergenos({ vegano: false, vegetariano: false, sinGluten: false })).toEqual([]);
   });
 
-  test('vegano implies huevo, pescado, and sulfitos', () => {
-    expect(impliedAlergenos({ vegano: true, vegetariano: false, sinGluten: false }).sort()).toEqual(['huevo', 'pescado', 'sulfitos']);
+  test('vegano implies huevo and pescado', () => {
+    expect(impliedAlergenos({ vegano: true, vegetariano: false, sinGluten: false }).sort()).toEqual(['huevo', 'pescado']);
   });
 
-  test('vegetariano alone implies pescado and sulfitos, not huevo — real data confirms vegetarian recipes can contain egg', () => {
-    expect(impliedAlergenos({ vegano: false, vegetariano: true, sinGluten: false }).sort()).toEqual(['pescado', 'sulfitos']);
+  test('vegetariano alone implies pescado, not huevo — real data confirms vegetarian recipes can contain egg', () => {
+    expect(impliedAlergenos({ vegano: false, vegetariano: true, sinGluten: false })).toEqual(['pescado']);
   });
 
   test('sinGluten implies gluten', () => {
@@ -51,6 +51,12 @@ describe('lib/constants/dietary-options — impliedAlergenos (FRESCO-275)', () =
   });
 
   test('combining flags unions without duplicates', () => {
-    expect(impliedAlergenos({ vegano: true, vegetariano: true, sinGluten: true }).sort()).toEqual(['gluten', 'huevo', 'pescado', 'sulfitos']);
+    expect(impliedAlergenos({ vegano: true, vegetariano: true, sinGluten: true }).sort()).toEqual(['gluten', 'huevo', 'pescado']);
+  });
+
+  // FRESCO-275 regression (FRESCO-1308/QAFRESCO-29): sulphites contradict neither diet, so implying them
+  // stored health data the person never declared.
+  test('no diet implies sulfitos', () => {
+    expect(impliedAlergenos({ vegano: true, vegetariano: true, sinGluten: true })).not.toContain('sulfitos');
   });
 });

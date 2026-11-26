@@ -133,16 +133,27 @@ describe('useOnboardingStore — dieta implies alergeno locks (FRESCO-275)', () 
     useOnboardingStore.getState().reset();
   });
 
-  test('toggling dietaVegano adds huevo, pescado, and sulfitos to alergenos', () => {
+  test('toggling dietaVegano adds huevo and pescado to alergenos, never sulfitos', () => {
     useOnboardingStore.getState().toggleDieta('dietaVegano');
 
-    expect(useOnboardingStore.getState().alergenos.sort()).toEqual(['huevo', 'pescado', 'sulfitos']);
+    expect(useOnboardingStore.getState().alergenos.sort()).toEqual(['huevo', 'pescado']);
   });
 
-  test('toggling dietaVegetariano alone adds pescado and sulfitos, not huevo', () => {
+  test('toggling dietaVegetariano alone adds pescado, not huevo nor sulfitos', () => {
     useOnboardingStore.getState().toggleDieta('dietaVegetariano');
 
-    expect(useOnboardingStore.getState().alergenos.sort()).toEqual(['pescado', 'sulfitos']);
+    expect(useOnboardingStore.getState().alergenos).toEqual(['pescado']);
+  });
+
+  test('sulfitos stays a free choice while a diet is active', () => {
+    useOnboardingStore.getState().toggleDieta('dietaVegano');
+    useOnboardingStore.getState().toggleAlergeno('sulfitos');
+
+    expect(useOnboardingStore.getState().alergenos).toContain('sulfitos');
+
+    useOnboardingStore.getState().toggleAlergeno('sulfitos');
+
+    expect(useOnboardingStore.getState().alergenos).not.toContain('sulfitos');
   });
 
   test('toggling dietaSinGluten adds gluten', () => {
@@ -163,7 +174,7 @@ describe('useOnboardingStore — dieta implies alergeno locks (FRESCO-275)', () 
     useOnboardingStore.getState().toggleDieta('dietaVegetariano');
 
     expect(useOnboardingStore.getState().dietaVegetariano).toBe(false);
-    expect(useOnboardingStore.getState().alergenos).toEqual(['pescado', 'sulfitos']);
+    expect(useOnboardingStore.getState().alergenos).toEqual(['pescado']);
   });
 
   test('a manually-added alergeno unrelated to any dieta stays freely toggleable', () => {

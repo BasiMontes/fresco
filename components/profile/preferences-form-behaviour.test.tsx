@@ -73,29 +73,43 @@ describe('PreferencesForm — the diet and allergen rules', () => {
     expect(pressed(dieta('Vegetariano'))).toBe(true);
   });
 
-  test('Vegano adds, and locks, the allergens it implies: huevo, pescado and sulfitos', async () => {
+  test('Vegano adds, and locks, the allergens it implies: huevo and pescado', async () => {
     const user = setupUser();
     renderForm();
 
     await user.click(dieta('Vegano'));
 
-    for (const label of ['Huevo', 'Pescado', 'Sulfitos']) {
+    for (const label of ['Huevo', 'Pescado']) {
       expect(pressed(alergeno(label))).toBe(true);
       expect(locked(alergeno(label))).toBe(true);
     }
-    expect(pressed(alergeno('Soja'))).toBe(false);
-    expect(locked(alergeno('Soja'))).toBe(false);
+    for (const label of ['Sulfitos', 'Soja']) {
+      expect(pressed(alergeno(label))).toBe(false);
+      expect(locked(alergeno(label))).toBe(false);
+    }
   });
 
-  test('Vegetariano adds pescado and sulfitos but, on real catalogue data, not huevo', async () => {
+  test('Vegetariano adds pescado but, on real catalogue data, neither huevo nor sulfitos', async () => {
     const user = setupUser();
     renderForm();
 
     await user.click(dieta('Vegetariano'));
 
     expect(pressed(alergeno('Pescado'))).toBe(true);
-    expect(pressed(alergeno('Sulfitos'))).toBe(true);
+    expect(pressed(alergeno('Sulfitos'))).toBe(false);
+    expect(locked(alergeno('Sulfitos'))).toBe(false);
     expect(pressed(alergeno('Huevo'))).toBe(false);
+  });
+
+  // FRESCO-1308/QAFRESCO-29: a profile saved under the old rule keeps the value, and the person can now remove it.
+  test('a stored sulfitos on a vegan profile can be removed', async () => {
+    const user = setupUser();
+    renderForm({ ...PREFERENCES, dieta_vegano: true, dieta_vegetariano: true, alergenos: ['huevo', 'pescado', 'sulfitos'] });
+
+    expect(locked(alergeno('Sulfitos'))).toBe(false);
+    await user.click(alergeno('Sulfitos'));
+
+    expect(pressed(alergeno('Sulfitos'))).toBe(false);
   });
 
   test('Sin gluten adds and locks the gluten allergen', async () => {
@@ -126,7 +140,7 @@ describe('PreferencesForm — the diet and allergen rules', () => {
     await user.click(dieta('Vegano'));
 
     expect(pressed(dieta('Vegano'))).toBe(false);
-    // Vegetariano stays on, so pescado and sulfitos stay locked; huevo is no longer implied by anything.
+    // Vegetariano stays on, so pescado stays locked; huevo is no longer implied by anything.
     expect(pressed(alergeno('Huevo'))).toBe(true);
     expect(locked(alergeno('Huevo'))).toBe(false);
     expect(locked(alergeno('Pescado'))).toBe(true);

@@ -102,11 +102,16 @@ export interface DietaFlagsForLocks {
  * with zero co-occurrence. `vegetariano` deliberately excludes `huevo` —
  * 118/625 vegetarian-tagged recipes DO list egg as an allergen, so real data
  * contradicts the generic "vegetarians might not eat egg" assumption.
+ *
+ * FRESCO-1308/QAFRESCO-29 (owner decision, 2026-11-23): zero co-occurrence is not enough.
+ * An allergen is implied only when it contradicts the diet itself, because it
+ * is stored as health data the person did not declare. `sulfitos` contradicts
+ * neither diet, so it is never implied.
  */
 export const DIETA_IMPLIED_ALERGENOS: Record<keyof DietaFlagsForLocks, string[]> = {
   sinGluten: ['gluten'],
-  vegano: ['huevo', 'pescado', 'sulfitos'],
-  vegetariano: ['pescado', 'sulfitos'],
+  vegano: ['huevo', 'pescado'],
+  vegetariano: ['pescado'],
 };
 
 /** Union of every alergeno implied by the currently-active dieta flags — drives which chips render locked/pre-selected. */
