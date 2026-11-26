@@ -57,10 +57,12 @@ export function cocinaLabel(cocina: string): string {
 
 /**
  * First active diet flag on `dieta`, as a display label, or `null` if
- * none/unknown.
+ * none/unknown. `vegano` wins over the map order (FRESCO-1310/QAFRESCO-6): every vegan
+ * recipe is also `vegetariano`, and the one label shown is the specific one.
  */
 export function firstActiveDietaLabel(dieta: RecipeDieta | null): string | null {
   if (!dieta) { return null; }
-  const active = (Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[]).find(flag => dieta[flag]);
+  const flags = Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[];
+  const active = dieta.vegano ? 'vegano' : flags.find(flag => dieta[flag]);
   return active ? (DIETA_LABELS[active] ?? null) : null;
 }
