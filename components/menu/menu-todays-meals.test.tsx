@@ -5,9 +5,9 @@ import { makeFixtureWeekGrid } from '@/lib/fixtures/recipe';
 import { renderWithProviders, screen } from '@/tests/component-render';
 import { MenuTodaysMeals } from './menu-todays-meals';
 
-// FRESCO-1078 — today's row of /menu. A slot shows its recipe, "Excluida por ti" when
-// the user excluded it, or "Sin receta" when nothing safe fit; the meals shown follow
-// the planning selection. Only the data is built; the cards are real.
+// FRESCO-1078 — today's row of /menu. A slot shows its recipe, "Sin planificar" when
+// it is excluded, or "Sin receta" when nothing safe fit; the meals shown follow the
+// planning selection. Only the data is built; the cards are real.
 
 function makePlan(edit: (plan: MenuSemanalPersistido) => void = () => {}): MenuSemanalPersistido {
   const grid = makeFixtureWeekGrid();
@@ -38,12 +38,15 @@ describe('MenuTodaysMeals', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Menú de hoy por comida' })).toBeInTheDocument();
   });
 
-  test('a slot the user excluded says so, instead of looking empty by mistake', () => {
+  // FRESCO-1312/QAFRESCO-5: `excluida` covers both the cells the person left out and the days
+  // already past when the menu was generated, so the label cannot say who decided.
+  test('an excluded slot reads "Sin planificar", instead of looking empty by mistake', () => {
     render(makePlan((plan) => {
       plan.menu.lunes.cena = null;
       plan.estados.lunes.cena = 'excluida';
     }));
-    expect(screen.getByTestId('menu_slot_cena_excluida')).toHaveTextContent('Excluida por ti');
+    expect(screen.getByTestId('menu_slot_cena_excluida')).toHaveTextContent('Sin planificar');
+    expect(screen.getByTestId('menu_slot_cena_excluida')).not.toHaveTextContent('por ti');
     expect(screen.queryByTestId('menu_slot_cena_sin_receta')).toBeNull();
   });
 

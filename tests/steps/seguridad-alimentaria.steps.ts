@@ -317,7 +317,7 @@ Then(/^el plato con "gluten" queda quitado dejando un hueco abierto con aviso y 
   );
   const [gRow] = await gRes.json() as { estado: string, recipe_id: string | null }[];
   // FRESCO-1157: a dish taken out for the profile leaves an OPEN empty slot ("Sin receta", it can be filled),
-  // not an `excluida` one ("Excluida por ti", which nothing can be put into), and the plan says so.
+  // not an `excluida` one ("Sin planificar", which nothing can be put into), and the plan says so.
   expect(gRow.estado).toBe('pendiente');
   expect(gRow.recipe_id).toBeNull();
 

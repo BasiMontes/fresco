@@ -135,7 +135,7 @@ describe.skipIf(!(RUN && reachable))('reassign_guest_data applies the full food-
     expect(kept[0].estado).toBe('pendiente');
 
     // FRESCO-1157: a dish taken out for the profile leaves an OPEN empty slot ("Sin receta", it can be filled),
-    // not an `excluida` one, which the calendar paints "Excluida por ti" and which no recipe can be put into.
+    // not an `excluida` one, which the calendar paints "Sin planificar" and which no recipe can be put into.
     const neutralized = slots.filter(s => s.recipe_id === null);
     expect(neutralized).toHaveLength(4);
     for (const slot of neutralized) {
