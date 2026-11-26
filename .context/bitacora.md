@@ -119,3 +119,8 @@ Historia archivada:
 - Qué: el Pro concedido sin cobro dura hasta su fecha (#1100); la FAQ y los precios ya no prometen regenerar un plato (#1101); sin sesión solo se leen recetas activas (#1102, migración 20261126210000); revisión de altramuces documentada (#1103); ningún nombre repetido entre recetas activas (#1104, migración 20261126213000: 4 desactivadas, 10 renombradas). Las dos migraciones aplicadas y comprobadas, main y dev en 096f47b2, producción en success y fresco-pro /login 200. Aparte, 51 iconos de arcilla aplicados (541 con icono, 116 con foto de stock), incluida la ensalada de kale que mostraba huevo.
 - Por qué: QAFRESCO-7, 33, 31, 32, 3 y 30.
 - Siguiente: retest de QA y pasar FRESCO-1308 a 1318 a Finalizada. Revisar las etiquetas de sulfitos de la fabada y el cocido sencillos. Borrar el worktree fresco-app-qa2 y las ramas fix/FRESCO-13xx locales. Mapas de negocio por regenerar. Esta entrada y la anterior de producción están en commits locales sin subir.
+
+## 2026-11-26 - FRESCO-1319 en producción: sulfitos obligatorios en preparados cárnicos frescos
+- Qué: una receta que nombre salchicha, longaniza o butifarra frescas, breakfast sausages o burger meat exige la etiqueta `sulfitos` (#1105, 8575a2d9, migración 20261126230000 aplicada). Ninguna receta cambió. main y dev en 8575a2d9, producción en success y fresco-pro /login 200.
+- Por qué: en carne, la UE solo autoriza sulfitos como aditivo en preparados frescos; la primera redacción de la tarjeta daba por supuesto lo contrario y se corrigió antes de tocar datos.
+- Siguiente: FRESCO-1319 a Finalizada con el visto bueno. No cubre "salchicha" o "longaniza" sin "fresca" ni el arrastre por otro ingrediente (docs/workflows/sulphite-meat-review.md).
