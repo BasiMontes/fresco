@@ -62,6 +62,32 @@ describe('allergen keywords catch the audit cases', () => {
     expect(wine.some(m => m.includes('halal'))).toBe(true);
   });
 
+  // FRESCO-1319 (owner decision, 2026-11-26): in meat, the EU authorises sulphites as an additive only in
+  // fresh meat preparations (Regulation 1333/2008, category 08.2), so only those require the tag.
+  test.each([
+    'salchicha fresca',
+    'salchichas frescas de cerdo',
+    'longaniza fresca',
+    'butifarra fresca',
+    'burger meat',
+    'breakfast sausages',
+  ])('"%s" needs sulfitos', (ingredient) => {
+    expect(textHasAllergen(ingredient, 'sulfitos')).toBe(true);
+    expect(auditRecipe(recipe([ingredient], { alergenos: ['sulfitos'] })).some(m => m.includes('falta sulfitos'))).toBe(false);
+  });
+
+  test.each([
+    'jamón serrano',
+    'jamón cocido',
+    'chorizo',
+    'panceta',
+    'tocino',
+    'morcilla',
+    'carne picada',
+  ])('"%s" does not need sulfitos on its own', (ingredient) => {
+    expect(textHasAllergen(ingredient, 'sulfitos')).toBe(false);
+  });
+
   test('rabbit, shellfish and meat with dairy break kosher', () => {
     expect(auditRecipe(recipe(['conejo'])).some(m => m.includes('kosher'))).toBe(true);
     expect(auditRecipe(recipe(['gambas'])).some(m => m.includes('kosher'))).toBe(true);

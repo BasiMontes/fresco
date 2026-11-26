@@ -65,7 +65,10 @@ export const ALLERGEN_KEYWORDS: Record<string, RegExp> = {
   frutos_de_cascara: words('nueces|nuez|almendras?|avellanas?|pistachos?|anacardos|pinones?|frutos secos|bebida vegetal|pecanas?|macadamias?'),
   apio: words('apio|apionabo|caldo'),
   // FRESCO-997: mayonesa and barbecue sauce carry vinegar, beer carries sulfites, sushi rice is seasoned with it.
-  sulfitos: words('vino|vinagre|pasas|orejones|vermut|cava|sidra|mayonesa|barbacoa|cerveza|arroz de sushi|albaricoques? secos?|higos? secos?'),
+  // FRESCO-1319: the fresh meat preparations in which the EU authorises sulphites (Regulation 1333/2008, category
+  // 08.2). Cured and cooked meat products have no such authorisation, so they require nothing on their own.
+  sulfitos: words('vino|vinagre|pasas|orejones|vermut|cava|sidra|mayonesa|barbacoa|cerveza|arroz de sushi|albaricoques? secos?|higos? secos?'
+    + '|salchichas? frescas?|longanizas? frescas?|butifarras? frescas?|burger meat|breakfast sausages?'),
   // Curry powder blends carry mustard seed (A7-SAFEA-07, A7-SAFEB-09).
   mostaza: words('mostaza|dijon|curry|mayonesa|barbacoa'),
   // FRESCO-912: the last two of the EU-14. No active recipe mentions either today, so

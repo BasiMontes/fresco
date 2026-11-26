@@ -15,6 +15,7 @@
 | [environments.md](./environments.md)             | Ambientes de desarrollo (local, staging, producción)        |
 | [git-flow.md](./git-flow.md)                     | Flujo de trabajo Git para desarrollo AI-driven              |
 | [lupin-allergen-review.md](./lupin-allergen-review.md) | Revisión de altramuces en el catálogo y qué la vigila |
+| [sulphite-meat-review.md](./sulphite-meat-review.md) | Qué preparados cárnicos exigen `sulfitos` y por qué |
 | [hosted-auth-settings.md](./hosted-auth-settings.md) | El check semanal de los ajustes de Auth del proyecto alojado |
 | [stripe-go-live.md](./stripe-go-live.md)         | El guard del modo de Stripe y el orden del paso a live      |
 | [supabase-advisor-accepted.md](./supabase-advisor-accepted.md) | Los avisos del asesor de seguridad de Supabase que se aceptan y por qué |
