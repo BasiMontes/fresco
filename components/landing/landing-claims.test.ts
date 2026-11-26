@@ -52,7 +52,7 @@ const CLAIMS: Record<string, Source[]> = {
   'Menú semanal completo': [{ file: GENERATE, pattern: /selectMenu\(/ }],
   'Lista de la compra automática': [{ file: 'supabase/functions/generate-shopping-list/index.ts', pattern: /./ }],
   'Filtros de dieta y alergias': [{ file: GENERATE, pattern: /get_filtered_recipes/ }],
-  'Cambia cualquier receta y regenera el slot': [{ file: 'supabase/functions/update-recipe-status/index.ts', pattern: /sustituida/ }],
+  'Cambia cualquier receta de tu menú': [{ file: 'supabase/functions/update-recipe-status/index.ts', pattern: /sustituida/ }],
   // pricing.tsx — PRO_FEATURES
   'Aprende de lo que cocinas y lo que descartas': ENGAGEMENT,
   'No repite las recetas que cocinaste o descartaste hace poco': EXCLUDE_MARKED,
