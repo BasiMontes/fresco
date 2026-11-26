@@ -13,11 +13,12 @@ import { WeekNavigation } from '@/components/calendar/week-navigation';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
-import { getUserDietaryPreferences, getUserPlan } from '@/lib/api/user-profile';
+import { getUserDietaryPreferences, getUserPlan, getUserPresupuestoSemana } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { LEARNING_BRIDGE_DISMISSED_COOKIE, parseLearningBridgeDismissed } from '@/lib/calendar/learning-bridge-preference';
 import { getDateFromIsoWeek, getIsoWeek, isValidIsoWeek } from '@/lib/date/iso-week';
 import { hoyEnMadrid } from '@/lib/date/madrid-date';
+import { refreshBudgetWarning } from '@/lib/menu/refresh-budget-warning';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
 
@@ -72,7 +73,7 @@ export default async function CalendarPage({
   // turn, unlike /menu, /profile, and /recipes, already fixed this session).
   // Both are also passed the already-resolved `user.id`, cutting the
   // redundant internal auth.getUser() round trip each would otherwise make.
-  const [plan, userPlan, dietaryPreferences] = await Promise.all([
+  const [plan, userPlan, dietaryPreferences, presupuestoSemanaEuros] = await Promise.all([
     getMealPlanForWeek(supabase, { semanaIso, userId: user?.id }).catch((error) => {
       // Same judgment call as `/menu` (STORY-FRESCO-7 batch 2):
       // `getMealPlanForWeek` fails fast (throws) on a real read error,
@@ -97,6 +98,11 @@ export default async function CalendarPage({
     // same conservative-fallback pattern as the reads above.
     getUserDietaryPreferences(supabase, user?.id).catch((error) => {
       console.error('[/calendar] getUserDietaryPreferences failed, showing the full grid', error);
+      return null;
+    }),
+    // FRESCO-1320: same posture as `/menu`, a failed read shows no budget warning, never a wrong one.
+    (user?.id ? getUserPresupuestoSemana(supabase, user.id) : Promise.resolve(null)).catch((error) => {
+      console.error('[/calendar] getUserPresupuestoSemana failed, showing no budget warning', error);
       return null;
     }),
   ]);
@@ -136,6 +142,11 @@ export default async function CalendarPage({
     0,
   );
 
+  // FRESCO-1320/QAFRESCO-36: the budget warning of the week on screen, from the same estimate as `/menu`'s
+  // spend tile (FRESCO-1269), written back so the stored one is never stale. A past week keeps what it had:
+  // today's prices and budget say nothing about it.
+  const { advertencias } = refreshBudgetWarning(supabase, { semanaIso, plan, userId: user?.id, dietaryPreferences, presupuestoSemanaEuros });
+
   const hasMarks = Object.values(plan.estados).some(dia => Object.values(dia).some(estado => estado === 'cocinada' || estado === 'descartada'));
   // FRESCO-512: mirrors `LearningBridgeCard`'s own internal visibility gate —
   // needed here too, to know whether the reopen link (once dismissed) should
@@ -172,7 +183,7 @@ export default async function CalendarPage({
       </div>
 
       <AlertBanner
-        advertencias={plan.advertencias}
+        advertencias={advertencias}
         title="Sobre este menú"
         data-testid="calendar_advertencias_banner"
       />
