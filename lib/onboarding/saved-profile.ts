@@ -42,6 +42,8 @@ export function profileToWizardData(
     dietaKeto: saved.dieta_keto,
     dietaHalal: saved.dieta_halal,
     alergenos: saved.alergenos ?? [],
+    // A saved profile does not record who added an allergen, so none of them leaves with a diet (FRESCO-1321).
+    alergenosPorDieta: [],
     ingredientesOdiados: saved.ingredientes_odiados ?? [],
     cocinasFavoritas: saved.cocinas_favoritas ?? [],
     adultos: saved.adultos,
