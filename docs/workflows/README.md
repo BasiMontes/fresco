@@ -14,6 +14,7 @@
 | [e2e-flaky-triage.md](./e2e-flaky-triage.md)     | Cómo encontrar la causa de un escenario e2e flaky           |
 | [environments.md](./environments.md)             | Ambientes de desarrollo (local, staging, producción)        |
 | [git-flow.md](./git-flow.md)                     | Flujo de trabajo Git para desarrollo AI-driven              |
+| [lupin-allergen-review.md](./lupin-allergen-review.md) | Revisión de altramuces en el catálogo y qué la vigila |
 | [hosted-auth-settings.md](./hosted-auth-settings.md) | El check semanal de los ajustes de Auth del proyecto alojado |
 | [stripe-go-live.md](./stripe-go-live.md)         | El guard del modo de Stripe y el orden del paso a live      |
 | [supabase-advisor-accepted.md](./supabase-advisor-accepted.md) | Los avisos del asesor de seguridad de Supabase que se aceptan y por qué |
