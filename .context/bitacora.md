@@ -99,3 +99,8 @@ Historia archivada:
 - Qué: PR #1092 fusionada y promocionada a main (008de9cc), despliegue de producción en success, `/login` 200 y `/ingest` atendido por el código nuevo en fresco-pro. El reenvío a PostHog pasa de un rewrite de next.config.mjs a proxy.ts, que quita Cookie y Authorization. Hallado al portar piezas de Fresco a la plantilla personal.
 - Por qué: desde FRESCO-366 (2026-09-01) el rewrite reenviaba todas las cabeceras, así que quien tuviera sesión y hubiera aceptado la analítica enviaba a PostHog la cookie de sesión de Supabase. Reproducido en local; qué hizo PostHog con ella no se ha comprobado.
 - Siguiente: decidir si se cierran las sesiones abiertas (único criterio pendiente de FRESCO-1304). Sin tarjeta: Sentry 11 ignora beforeSendTransaction (visto en consola de fresco-pre) y proxy.ts puede pasar la cookie antigua al renovar la sesión.
+
+## 2026-11-26 - FRESCO-1300 y FRESCO-1302 fusionadas en staging
+- Qué: PR #1093 (58a567cd), Consum pone precio a pechuga de pollo, pechuga de pavo y pavo con bandejas frescas y ya no con fiambre cocido; CI y despliegue de staging en verde. PR #1094 (95a2987e), la descarga de datos del perfil incluye recipe_mark_history. Ambas en Merged. Además: tarjeta FRESCO-1307 (Search for Agents) y plantilla personal publicada en BasiMontes/project_template.
+- Por qué: el precio y el enlace de la lista eran de otro producto, y la exportación entregaba menos datos personales de los guardados.
+- Siguiente: promocionar staging a main y comprobar en pantalla las dos antes de Finalizada. Lote de imágenes sin generar (cuota de Cloudflare gastada), preparado en ~/fresco-clay-batches/2026-11-26/. Después FRESCO-1305, 1306 y 1297.
