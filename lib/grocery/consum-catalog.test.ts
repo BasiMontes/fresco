@@ -297,6 +297,54 @@ describe('buildConsumCatalogMatch — a refresh keeps the chosen product', () =>
   });
 });
 
+// FRESCO-1300: cooked cold cuts and marinated pieces are not fresh poultry, and the fresh trays carry their weight
+// in `format`, not in the description.
+describe('buildConsumCatalogMatch — fresh poultry', () => {
+  function product({ code, description, categories, format }: { code: string, description: string, categories: string[], format?: string }): ConsumProduct {
+    return {
+      ean: '0000000000000',
+      code,
+      productData: { name: description, description, format, url: `https://tienda.consum.es/es/p/slug/${code}` },
+      priceData: { prices: [{ value: { centAmount: 4.5 } }] },
+      categories: categories.map(name => ({ name })),
+    };
+  }
+  const fiambre = product({ code: '10', description: 'Pechuga de Pavo Family 2 x 200 Gr', categories: ['Cocidos de pavo'] });
+  const adobada = product({ code: '11', description: 'Pechuga de Pavo Adobada 310 Gr', categories: ['Aves', 'Otros elaborados'] });
+  const bandeja = product({ code: '20', description: 'Pechuga de Pavo Fileteada', categories: ['Aves'], format: 'Bandeja 500 g aprox.' });
+  const porcion = { 'pechuga de pavo': { cantidad: 500, unidad: 'g' } };
+  const fijados = { 'pechuga de pavo': '20' };
+  const publicadoFiambre = { 'pechuga de pavo': { envaseVenta: { cantidad: 400, unidad: 'g' as const }, precioConsum: { precio: 4.3 }, url: 'https://tienda.consum.es/es/p/slug/10' } };
+  const match = (candidatos: ConsumProduct[], opciones: Parameters<typeof buildConsumCatalogMatch>[2]) =>
+    buildConsumCatalogMatch(new Map([['pechuga de pavo', candidatos]]), porcion, opciones)['pechuga de pavo'];
+
+  test.each(['pavo', 'pechuga de pavo', 'pechuga de pollo'])('%s never takes a cooked or processed product, even a published one', (clave) => {
+    const result = buildConsumCatalogMatch(
+      new Map([[clave, [fiambre, adobada]]]),
+      { [clave]: { cantidad: 500, unidad: 'g' } },
+      { anterior: { [clave]: publicadoFiambre['pechuga de pavo'] }, fijados: {} },
+    );
+    expect(result[clave]).toBeUndefined();
+  });
+
+  test.each(['Bandeja 500 g aprox.', 'Bandeja 500 gr aprox.', 'Bandeja 500 g aprox'])('the tray chosen by hand takes its weight from "%s"', (format) => {
+    const result = match([fiambre, { ...bandeja, productData: { ...bandeja.productData, format } }], { fijados });
+    expect(result).toEqual({ envaseVenta: { cantidad: 500, unidad: 'g' }, precioConsum: { precio: 4.5 }, url: 'https://tienda.consum.es/es/p/slug/20' });
+  });
+
+  test('a chosen tray that is gone leaves the ingredient without price, never a cold cut', () => {
+    expect(match([fiambre, adobada], { anterior: publicadoFiambre, fijados })).toBeUndefined();
+  });
+
+  test('the weight in the format is read only for products chosen by hand', () => {
+    expect(match([bandeja], { fijados: {} })).toBeUndefined();
+  });
+
+  test.each(['pavo', 'pechuga de pavo', 'pechuga de pollo'])('%s has a fresh tray chosen by hand', (clave) => {
+    expect(PRODUCTOS_FIJADOS[clave]).toBeDefined();
+  });
+});
+
 // FRESCO-1192: a scheduled run must not turn a blocked or failing Consum into a catalog with no prices.
 describe('demasiadosFallos — when a run must not write the catalog', () => {
   test('a few failed search terms are tolerated', () => {
