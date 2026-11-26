@@ -68,6 +68,8 @@ export interface ConsumProduct {
     name: string
     description: string
     url: string
+    /** Consum's pack wording ("Bandeja 600 g aprox."), the only weight a fresh tray carries. Empty on most products. */
+    format?: string
   }
   priceData: {
     prices: { value: { centAmount: number } }[]
@@ -140,7 +142,28 @@ export const PRODUCTOS_FIJADOS: Readonly<Record<string, string>> = {
   'espinacas': '7054273', // Espinacas bolsa 300 g
   'fideos': '7060606', // Fideos medianos paquete 500 g
   'vino blanco': '7331812', // Vino blanco D.O. Rioja 750 ml
+  'pavo': '5848916', // Pechuga de pavo fileteada, bandeja 500 g
+  'pechuga de pavo': '5848916', // Pechuga de pavo fileteada, bandeja 500 g
+  'pechuga de pollo': '601609', // Filetes de pechuga de pollo, bandeja 600 g
 };
+
+/**
+ * FRESCO-1300 — ingredients that only a product of Consum's fresh poultry shelf may stand for. Their cooked cold
+ * cuts carry a weight in the description and ordinary names ("Pechuga de Pollo sin Grasa"), so the name rules let
+ * them through, while the fresh trays do not. Marinated and breaded pieces sit on the same shelf, also under
+ * "Otros elaborados". Without a fresh product the ingredient has no Consum price.
+ */
+const SOLO_AVES_FRESCAS: ReadonlySet<string> = new Set(['pavo', 'pechuga de pavo', 'pechuga de pollo']);
+
+function esAveFresca(p: ConsumProduct): boolean {
+  const secciones = new Set(p.categories?.map(c => c.name));
+  return secciones.has('Aves') && !secciones.has('Otros elaborados');
+}
+
+/** The weight of a tray chosen by hand ("Bandeja 600 g aprox."). Approximate, so the heuristic never reads it. */
+function pesoDeBandeja(format: string | undefined): ParsedSize | null {
+  return parsePackSize((format ?? '').replace(/\s*aprox\.?\s*$/i, ''));
+}
 
 /** The matcher ignores the observation instant; a fixed one keeps the build deterministic. */
 const OBSERVADO_EN = new Date(0).toISOString();
@@ -153,8 +176,8 @@ const CATEGORIA_PLATOS_PREPARADOS = 'Platos para llevar';
  * faithfully (no pack size in the description, or no price) or is a ready meal.
  * Consum prices the whole pack, so the price passes through.
  */
-function productoDeConsum(p: ConsumProduct): ProductoSupermercado | null {
-  const envase = parsePackSize(p.productData.description);
+function productoDeConsum(p: ConsumProduct, { elegidoAMano }: { elegidoAMano: boolean }): ProductoSupermercado | null {
+  const envase = parsePackSize(p.productData.description) ?? (elegidoAMano ? pesoDeBandeja(p.productData.format) : null);
   const precioEnvase = p.priceData.prices[0]?.value.centAmount;
   if (!envase || !(precioEnvase > 0)) { return null; }
   if (p.categories?.some(c => c.name === CATEGORIA_PLATOS_PREPARADOS)) { return null; }
@@ -234,7 +257,8 @@ export function buildConsumCatalogMatch(
       for (const p of candidatesByTerm.get(termino) ?? []) { crudos.set(p.code, p); }
     }
     const candidatos = [...crudos.values()]
-      .map(productoDeConsum)
+      .filter(p => !SOLO_AVES_FRESCAS.has(clave) || esAveFresca(p))
+      .map(p => productoDeConsum(p, { elegidoAMano: p.code === fijados[clave] }))
       .filter((p): p is ProductoSupermercado => p !== null);
 
     const ingrediente: IngredienteParaMatching = { terminos, porcion: { cantidad, unidad } };
