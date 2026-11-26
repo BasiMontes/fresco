@@ -51,7 +51,7 @@ function TodaySlot({ slot, recipe, excluida, isFavorite }: TodaySlotProps) {
     return (
       <Card data-testid={`menu_slot_${slot}_excluida`} className="flex-1">
         <CardContent className="text-body-sm italic text-tertiary">
-          Excluida por ti
+          Sin planificar
         </CardContent>
       </Card>
     );

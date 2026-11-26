@@ -43,7 +43,7 @@ function SlotEmptyState({ dia, tipo, estado }: Omit<SlotContentProps, 'recipe'>)
     <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
       <Icon className="size-5 text-tertiary" aria-hidden="true" />
       <p data-testid={`calendar_slot_${dia}_${tipo}_${excluida ? 'excluida' : 'sin_receta'}`} className="text-body-sm italic text-tertiary">
-        {excluida ? 'Excluida por ti' : 'Sin receta'}
+        {excluida ? 'Sin planificar' : 'Sin receta'}
       </p>
     </div>
   );

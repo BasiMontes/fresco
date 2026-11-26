@@ -26,4 +26,21 @@ describe('SlotContent', () => {
     expect(title).not.toHaveClass('line-clamp-3');
     expect(title).toHaveClass('line-through');
   });
+
+  // FRESCO-1312/QAFRESCO-5: `excluida` also covers the days already past, so the label
+  // does not attribute the empty cell to the person.
+  test('an excluded empty slot reads "Sin planificar"', () => {
+    renderWithProviders(<SlotContent dia="lunes" tipo="comida" recipe={null} estado="excluida" />);
+
+    const label = screen.getByTestId('calendar_slot_lunes_comida_excluida');
+
+    expect(label).toHaveTextContent('Sin planificar');
+    expect(label).not.toHaveTextContent('por ti');
+  });
+
+  test('an open empty slot keeps reading "Sin receta"', () => {
+    renderWithProviders(<SlotContent dia="lunes" tipo="comida" recipe={null} estado="pendiente" />);
+
+    expect(screen.getByTestId('calendar_slot_lunes_comida_sin_receta')).toHaveTextContent('Sin receta');
+  });
 });
