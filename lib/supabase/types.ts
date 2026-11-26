@@ -447,6 +447,48 @@ export type Database = {
           },
         ]
       }
+      recipe_mark_history: {
+        Row: {
+          created_at: string
+          estado: Database["public"]["Enums"]["estado_receta_menu"]
+          fecha_inicio: string
+          id: string
+          recipe_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          estado: Database["public"]["Enums"]["estado_receta_menu"]
+          fecha_inicio: string
+          id?: string
+          recipe_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          estado?: Database["public"]["Enums"]["estado_receta_menu"]
+          fecha_inicio?: string
+          id?: string
+          recipe_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_mark_history_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_mark_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipe_user_feedback: {
         Row: {
           cocinada_at: string | null

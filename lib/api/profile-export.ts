@@ -11,6 +11,7 @@ export interface UserDataExport {
   consents: Record<string, unknown>[]
   pushSubscriptions: Record<string, unknown>[]
   recipeFeedback: Record<string, unknown>[]
+  recipeMarkHistory: Record<string, unknown>[]
 }
 
 /**
@@ -30,17 +31,20 @@ export interface UserDataExport {
  * `feedbackClient` (service role), filtered to this one user id taken from the session, and only
  * those rows are returned.
  *
+ * FRESCO-1302: `recipe_mark_history`, the marks of weeks that were later deleted or overwritten, is
+ * closed the same way and read the same way.
+ *
  * FRESCO-810: moved out of `app/api/profile/export/route.ts` (ADR-0041); the
  * route keeps the CSV shaping and the response.
  */
-/** `client` is the caller's RLS-bound client; `feedbackClient` is the service-role one, used only for `recipe_user_feedback`. */
+/** `client` is the caller's RLS-bound client; `feedbackClient` is the service-role one, used only for `recipe_user_feedback` and `recipe_mark_history`. */
 export interface ExportClients {
   client: SupabaseClient<Database>
   feedbackClient: SupabaseClient<Database>
 }
 
 export async function readUserDataForExport({ client, feedbackClient }: ExportClients, userId: string): Promise<UserDataExport> {
-  const [profileResult, mealPlansResult, shoppingListsResult, recetasResult, favoritesResult, consentsResult, pushResult, feedbackResult] = await Promise.all([
+  const [profileResult, mealPlansResult, shoppingListsResult, recetasResult, favoritesResult, consentsResult, pushResult, feedbackResult, historyResult] = await Promise.all([
     client.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('meal_plans').select('*, meal_plan_recipes(*)').eq('user_id', userId),
     client.from('shopping_lists').select('*').eq('user_id', userId),
@@ -49,6 +53,7 @@ export async function readUserDataForExport({ client, feedbackClient }: ExportCl
     client.from('user_consents').select('*').eq('user_id', userId),
     client.from('push_subscriptions').select('id, created_at, last_used_at, endpoint').eq('user_id', userId),
     feedbackClient.from('recipe_user_feedback').select('recipe_id, cocinada_at, descartada_at').eq('user_id', userId),
+    feedbackClient.from('recipe_mark_history').select('recipe_id, estado, fecha_inicio, created_at').eq('user_id', userId),
   ]);
 
   const firstError = profileResult.error
@@ -58,7 +63,8 @@ export async function readUserDataForExport({ client, feedbackClient }: ExportCl
     ?? favoritesResult.error
     ?? consentsResult.error
     ?? pushResult.error
-    ?? feedbackResult.error;
+    ?? feedbackResult.error
+    ?? historyResult.error;
   if (firstError) {
     throw firstError;
   }
@@ -72,5 +78,6 @@ export async function readUserDataForExport({ client, feedbackClient }: ExportCl
     consents: consentsResult.data ?? [],
     pushSubscriptions: pushResult.data ?? [],
     recipeFeedback: feedbackResult.data ?? [],
+    recipeMarkHistory: historyResult.data ?? [],
   };
 }

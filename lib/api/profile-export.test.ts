@@ -3,7 +3,7 @@ import { readUserDataForExport } from '@/lib/api/profile-export';
 import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
 
 describe('readUserDataForExport', () => {
-  test('reads the eight tables of that user, each filtered to that user only', async () => {
+  test('reads the nine tables of that user, each filtered to that user only', async () => {
     const { client, callsOf } = createMockClient({ data: null });
 
     const { client: feedbackClient, callsOf: feedbackCallsOf } = createMockClient({ data: null });
@@ -13,10 +13,12 @@ describe('readUserDataForExport', () => {
     expect(callsOf('from')).toEqual([['user_profiles'], ['meal_plans'], ['shopping_lists'], ['recetas_propias'], ['favorites'], ['user_consents'], ['push_subscriptions']]);
     expect(callsOf('select')).toEqual([['*'], ['*, meal_plan_recipes(*)'], ['*'], ['*'], ['*'], ['*'], ['id, created_at, last_used_at, endpoint']]);
     expect(callsOf('eq')).toEqual([['id', 'user-1'], ['user_id', 'user-1'], ['user_id', 'user-1'], ['user_id', 'user-1'], ['user_id', 'user-1'], ['user_id', 'user-1'], ['user_id', 'user-1']]);
-    expect(exported).toEqual({ profile: null, mealPlans: [], shoppingLists: [], recetasPropias: [], favorites: [], consents: [], pushSubscriptions: [], recipeFeedback: [] });
+    expect(exported).toEqual({ profile: null, mealPlans: [], shoppingLists: [], recetasPropias: [], favorites: [], consents: [], pushSubscriptions: [], recipeFeedback: [], recipeMarkHistory: [] });
     // FRESCO-1109 (A8-PRIV-02): the cooked / discarded marks, through the privileged client, one user only.
-    expect(feedbackCallsOf('from')).toEqual([['recipe_user_feedback']]);
-    expect(feedbackCallsOf('eq')).toEqual([['user_id', 'user-1']]);
+    // FRESCO-1302: the archive of deleted weeks is closed to browser roles too.
+    expect(feedbackCallsOf('from')).toEqual([['recipe_user_feedback'], ['recipe_mark_history']]);
+    expect(feedbackCallsOf('select')).toEqual([['recipe_id, cocinada_at, descartada_at'], ['recipe_id, estado, fecha_inicio, created_at']]);
+    expect(feedbackCallsOf('eq')).toEqual([['user_id', 'user-1'], ['user_id', 'user-1']]);
   });
 
   test('returns the cooked / discarded marks of the user (FRESCO-1109)', async () => {
