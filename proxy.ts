@@ -3,10 +3,12 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import { isAdminUser } from '@/lib/auth/is-admin';
 import { clientEnv } from '@/lib/env';
+import { ingestRewrite } from '@/lib/posthog/ingest-proxy';
 import { buildContentSecurityPolicy, sentryCspReportUri } from '@/lib/security/csp';
 
 /**
- * Runs on every non-static request. Two jobs:
+ * Runs on every non-static request. An analytics request (`/ingest`) is rewritten to PostHog first, without its
+ * credentials (FRESCO-1304), and nothing else happens to it. Every other request gets two jobs:
  *
  * 1. **Session refresh.** This is the only place the Supabase session cookie
  *    actually gets rewritten — `lib/supabase/server.ts`'s `setAll` no-ops in
@@ -31,6 +33,11 @@ function isAdminPath(pathname: string): boolean {
 }
 
 export async function proxy(request: NextRequest) {
+  const analytics = ingestRewrite(request, process.env.NEXT_PUBLIC_POSTHOG_HOST);
+  if (analytics) {
+    return analytics;
+  }
+
   const nonce = btoa(crypto.randomUUID());
   const reportUri = sentryCspReportUri(process.env.NEXT_PUBLIC_SENTRY_DSN);
   const csp = buildContentSecurityPolicy({

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { NextRequest } from 'next/server';
 
 /**
@@ -161,5 +161,79 @@ describe('proxy — matcher', () => {
     expect(pattern.test('/_next/static/chunk.js')).toBe(false);
     expect(pattern.test('/_next/image')).toBe(false);
     expect(pattern.test('/favicon.ico')).toBe(false);
+  });
+});
+
+/**
+ * FRESCO-1304: `/ingest` goes to PostHog, a third party. A `next.config` rewrite to another host forwards every
+ * request header, the Supabase session cookie included, so the proxy does the rewrite and strips the credentials.
+ */
+describe('proxy — analytics never receives the session (FRESCO-1304)', () => {
+  const originalHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_POSTHOG_HOST = 'https://eu.i.posthog.com';
+  });
+
+  afterEach(() => {
+    if (originalHost === undefined) {
+      delete process.env.NEXT_PUBLIC_POSTHOG_HOST;
+    }
+    else {
+      process.env.NEXT_PUBLIC_POSTHOG_HOST = originalHost;
+    }
+  });
+
+  function signedInRequest(path: string): NextRequest {
+    const request = requestTo(path);
+    request.headers.set('cookie', 'sb-ref-auth-token=secret; theme=dark');
+    request.headers.set('authorization', 'Bearer secret');
+    request.headers.set('content-type', 'text/plain');
+    // Guards the test itself: a DOM `Headers` refuses `cookie`, and the assertions below would pass for nothing.
+    expect(request.headers.get('cookie')).toContain('sb-ref-auth-token');
+    return request;
+  }
+
+  it.each([
+    ['/ingest/e/?compression=gzip-js', 'https://eu.i.posthog.com/e/?compression=gzip-js'],
+    ['/ingest/flags/', 'https://eu.i.posthog.com/flags/'],
+    ['/ingest/array/phc_x/config.js', 'https://eu.i.posthog.com/array/phc_x/config.js'],
+    ['/ingest/static/array.js', 'https://eu-assets.i.posthog.com/static/array.js'],
+  ])('forwards %s without cookie or authorization', async (path, target) => {
+    const res = await proxy(signedInRequest(path));
+    const forwarded = (res.headers.get('x-middleware-override-headers') ?? '').split(',');
+
+    expect(res.headers.get('x-middleware-rewrite')).toBe(target);
+    expect(forwarded).toContain('content-type');
+    expect(forwarded).not.toContain('cookie');
+    expect(forwarded).not.toContain('authorization');
+    expect(res.headers.get('x-middleware-request-cookie')).toBeNull();
+    expect(res.headers.get('x-middleware-request-authorization')).toBeNull();
+    expect(res.headers.get('x-middleware-request-host')).toBe(new URL(target).host);
+  });
+
+  it('does not touch the Supabase session for an analytics request', async () => {
+    await proxy(signedInRequest('/ingest/e/'));
+
+    expect(getSessionCalls).toBe(0);
+  });
+
+  it('cannot be pointed at another host through the path', async () => {
+    const res = await proxy(signedInRequest('/ingest//evil.test/e'));
+
+    expect(new URL(res.headers.get('x-middleware-rewrite') ?? '').host).toBe('eu.i.posthog.com');
+  });
+
+  it('rewrites nothing when no PostHog host is configured', async () => {
+    delete process.env.NEXT_PUBLIC_POSTHOG_HOST;
+    const res = await proxy(signedInRequest('/ingest/e/'));
+
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it('leaves no next.config rewrite that would forward the headers on its own', async () => {
+    const { default: nextConfig } = await import('./next.config.mjs');
+
+    expect((nextConfig as { rewrites?: unknown }).rewrites).toBeUndefined();
   });
 });

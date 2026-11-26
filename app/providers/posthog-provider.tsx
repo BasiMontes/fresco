@@ -68,7 +68,7 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
       if (!initialized) {
         posthog.init(key, {
           // FRESCO-366 / A4-B4: route ingestion through the same-origin
-          // `/ingest` reverse proxy (Next rewrites in `next.config.mjs`) so
+          // `/ingest` reverse proxy (`proxy.ts`, FRESCO-1304) so
           // ad-blockers that filter `*.posthog.com` don't silently drop
           // 15-30% of client events. `ui_host` keeps "open in PostHog" links
           // and the toolbar pointing at the real app host.
