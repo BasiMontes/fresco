@@ -20,7 +20,7 @@ export const FAQS = [
   },
   {
     question: '¿Puedo cambiar recetas del menú?',
-    answer: 'Sí. Puedes cambiar cualquier receta con un toque y regenerar solo ese slot sin tocar el resto.',
+    answer: 'Sí. Puedes sustituir un plato eligiendo otra receta de la biblioteca con «Añadir al menú», intercambiar dos platos arrastrándolos en el calendario o cambiar un ingrediente de una receta.',
   },
   {
     question: '¿Funciona si somos veganos o celíacos?',

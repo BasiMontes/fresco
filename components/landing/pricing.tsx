@@ -13,7 +13,7 @@ export const FREE_FEATURES = [
   'Menú semanal completo',
   'Lista de la compra automática',
   'Filtros de dieta y alergias',
-  'Cambia cualquier receta y regenera el slot',
+  'Cambia cualquier receta de tu menú',
 ];
 
 // FRESCO-737 (A5-H7, honest pricing follow-up of FRESCO-368): removed

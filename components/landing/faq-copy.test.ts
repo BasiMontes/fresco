@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { ALERGENOS_RECORDATORIO, TEXTO_LIBRE_SIN_FILTRO } from '@/lib/constants/dietary-options';
 import { FAQS } from './faq-data';
+import { FREE_FEATURES, PRO_FEATURES } from './pricing';
 
 /**
  * FRESCO-1000 (audit 7b A7-LAUNCH-03) — copy lint for what the app promises about allergens.
@@ -41,6 +42,22 @@ describe('landing FAQ photo disclosure (FRESCO-1132)', () => {
     expect(photos).toBeDefined();
     expect(photos!.answer).toMatch(/ilustraciones generadas con inteligencia artificial/i);
     expect(photos!.answer).toMatch(/no fotograf[ií]as reales/i);
+  });
+});
+
+// FRESCO-1314/QAFRESCO-33: the product swaps dishes the person picks; it never regenerates one.
+describe('landing copy about changing dishes', () => {
+  test('the FAQ names only the three flows that exist', () => {
+    const change = FAQS.find(item => item.question.includes('cambiar recetas'));
+
+    expect(change?.answer).toBe('Sí. Puedes sustituir un plato eligiendo otra receta de la biblioteca con «Añadir al menú», intercambiar dos platos arrastrándolos en el calendario o cambiar un ingrediente de una receta.');
+  });
+
+  test('neither the FAQ nor the plan features promise to regenerate a dish', () => {
+    const copy = [...FAQS.map(item => item.answer), ...FREE_FEATURES, ...PRO_FEATURES];
+
+    expect(copy.filter(text => /regenera/i.test(text))).toEqual([]);
+    expect(FREE_FEATURES).toContain('Cambia cualquier receta de tu menú');
   });
 });
 

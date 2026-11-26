@@ -12,7 +12,7 @@ Fresco genera tu menú semanal y tu lista de la compra en menos de 30 segundos. 
 
 Fresco es un planificador de menús semanales. Le cuentas tu dieta, tus alergias, cuántos sois en casa y cuánto quieres gastar, y en menos de 30 segundos tienes el menú de lunes a domingo y la lista de la compra ordenada por pasillos, con las cantidades ajustadas a tu hogar.
 
-Los filtros de alergias y de dieta se aplican antes de generar nada: un alérgeno declarado no entra en tu menú. Puedes cambiar cualquier receta con un toque y regenerar solo ese hueco, sin tocar el resto de la semana.
+Los filtros de alergias y de dieta se aplican antes de generar nada: un alérgeno declarado no entra en tu menú. Puedes sustituir un plato por otra receta de la biblioteca, intercambiar dos platos en el calendario o cambiar un ingrediente de una receta.
 
 El plan Free es gratis para siempre y no pide tarjeta. El plan Pro tiene 7 días de prueba y añade el aprendizaje: Fresco aprende de lo que cocinas y descartas, no repite lo que cocinaste hace poco y te explica por qué eligió cada receta. Se cancela cuando quieras desde el perfil.
 
