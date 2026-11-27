@@ -18,8 +18,8 @@ interface DishType {
   /** English opening of the subject; ingredients are appended after it. */
   lead: string
   vessel: 'plate' | 'bowl' | 'glass'
-  /** Replaces `lead` when the recipe does not list this ingredient (egg-less "revuelto"). */
-  leadWithout?: { ingredient: string, lead: string }
+  /** Replaces `lead` (and `alone`) when the recipe does not list this ingredient (egg-less "revuelto", savoury fritter). */
+  leadWithout?: { ingredient: string, lead: string, alone?: string }
   /** Ingredients the lead already implies (egg in "scrambled eggs"); left out of the list. */
   omit?: string[]
   /** Baked or set dishes: a cooking-technique cue would only misdescribe them. */
@@ -344,7 +344,7 @@ const DISH_TYPES: DishType[] = [
   { prefixes: ['huevos poche', 'huevo poche'], lead: 'a smooth round poached egg with a soft white and a runny yolk, resting on', vessel: 'plate', plain: true, omit: ['huevo'] },
   { prefixes: ['merluza a la romana'], lead: 'golden crispy battered fried hake pieces served with', alone: 'golden crispy battered fried hake pieces with a lemon wedge', vessel: 'plate', plain: true, omit: ['merluza', 'huevo', 'harina', 'pan rallado', 'limón'] },
   { prefixes: ['albondigas'], lead: 'a shallow dish of six round browned meatballs in a thick red tomato sauce, with', alone: 'a shallow dish of six round browned meatballs in a thick red tomato sauce', vessel: 'plate', plain: true, omit: ['carne picada', 'carne picada de ternera', 'ternera picada', 'tomate', 'tomate triturado', 'pan rallado', 'huevo'] },
-  { prefixes: ['bunuelos'], lead: 'a plate of three round puffy golden fried fritters dusted with cinnamon sugar and filled with', alone: 'a plate of three round puffy golden fried fritters dusted with cinnamon sugar', vessel: 'plate', plain: true, omit: [...BATTER, 'canela', 'harina'] },
+  { prefixes: ['bunuelos'], lead: 'a plate of three round puffy golden fried fritters dusted with cinnamon sugar and filled with', alone: 'a plate of three round puffy golden fried fritters dusted with cinnamon sugar', leadWithout: { ingredient: 'azúcar', lead: 'a plate of three round puffy golden fried fritters filled with', alone: 'a plate of three round puffy golden fried fritters' }, vessel: 'plate', plain: true, omit: [...BATTER, 'canela', 'harina'] },
   { prefixes: ['galletas'], lead: 'a plate of four round golden baked oat cookies with a cracked surface, topped with', alone: 'a plate of four round golden baked oat cookies with a cracked surface', vessel: 'plate', plain: true, omit: [...BATTER, 'avena', 'harina', 'harina integral'] },
   { prefixes: ['bacalao a la vizcaina'], lead: 'a thick piece of cod fillet in a glossy deep red-orange pepper sauce, with', alone: 'a thick piece of cod fillet in a glossy deep red-orange pepper sauce', vessel: 'plate', plain: true, omit: ['bacalao', 'bacalao desalado', 'pimiento choricero'] },
   { prefixes: ['escalivada'], lead: 'a plate of tender roasted vegetable strips of eggplant, red pepper and onion, with', alone: 'a plate of tender roasted vegetable strips of eggplant, red pepper and onion', vessel: 'plate', plain: true, omit: ['berenjena', 'pimiento', 'pimiento rojo', 'cebolla'] },
@@ -571,9 +571,13 @@ export function buildEnglishPrompt(recipe: PhotoRecipe, style: PromptStyle = 'ph
     .map(i => INGREDIENTS_EN[i.toLowerCase().trim()])
     .filter((phrase): phrase is string => Boolean(phrase))
     .slice(0, MAX_VISIBLE_INGREDIENTS);
+  const without = dish.leadWithout && !ingredients.some(i => i.toLowerCase().trim() === dish.leadWithout!.ingredient)
+    ? dish.leadWithout
+    : null;
   if (visible.length === 0) {
-    if (!dish.alone) { return { ok: false, missing: ['(no visible ingredient)'] }; }
-    return { ok: true, prompt: frame(dish.alone, dish.vessel, recipe.nombre, style) };
+    const alone = without?.alone ?? dish.alone;
+    if (!alone) { return { ok: false, missing: ['(no visible ingredient)'] }; }
+    return { ok: true, prompt: frame(alone, dish.vessel, recipe.nombre, style) };
   }
 
   const steps = normalize((recipe.pasos_resumen ?? []).join(' '));
@@ -589,8 +593,7 @@ export function buildEnglishPrompt(recipe: PhotoRecipe, style: PromptStyle = 'ph
   const cues = [technique, shape]
     .filter((c): c is string => c !== null);
 
-  const hasLeadIngredient = !dish.leadWithout || ingredients.some(i => i.toLowerCase().trim() === dish.leadWithout!.ingredient);
-  const lead = hasLeadIngredient ? dish.lead : dish.leadWithout!.lead;
+  const lead = without?.lead ?? dish.lead;
   const subject = `${lead} ${joinList(visible)}${cues.length ? `, ${cues.join(', ')}` : ''}`;
   return { ok: true, prompt: frame(subject, dish.vessel, recipe.nombre, style) };
 }

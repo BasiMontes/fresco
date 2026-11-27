@@ -214,6 +214,31 @@ describe('buildEnglishPrompt', () => {
   });
 });
 
+/** FRESCO-1297: only a fritter that lists sugar gets the sweet coating. */
+describe('buildEnglishPrompt: fritters', () => {
+  test('a savoury fritter is not described with sugar or cinnamon', () => {
+    const cod = buildEnglishPrompt({ nombre: 'Buñuelos de bacalao', ingredientes_principales: ['bacalao', 'harina', 'huevo'], pasos_resumen: ['Mezclar el bacalao desmigado con la masa', 'Freír cucharadas de masa hasta dorar'] }, 'clay');
+
+    expect(cod.ok).toBe(true);
+    expect(cod.ok && cod.prompt).toContain('fried fritters filled with');
+    expect(cod.ok && cod.prompt).not.toMatch(/sugar|cinnamon/i);
+  });
+
+  test('a sweet fritter keeps the cinnamon sugar coating', () => {
+    const apple = buildEnglishPrompt({ nombre: 'Buñuelos de manzana', ingredientes_principales: ['manzana', 'harina de trigo', 'huevo', 'leche', 'azúcar', 'canela', 'levadura química'], pasos_resumen: [] }, 'clay');
+
+    expect(apple.ok).toBe(true);
+    expect(apple.ok && apple.prompt).toContain('dusted with cinnamon sugar and filled with');
+  });
+
+  test('a fritter with nothing visible to list stays savoury without sugar', () => {
+    const plain = buildEnglishPrompt({ nombre: 'Buñuelos', ingredientes_principales: ['harina', 'huevo'], pasos_resumen: [] }, 'clay');
+
+    expect(plain.ok).toBe(true);
+    expect(plain.ok && plain.prompt).not.toMatch(/sugar|cinnamon/i);
+  });
+});
+
 describe('buildEnglishPrompt in the clay style', () => {
   const sopa = { nombre: 'Sopa de calabaza', ingredientes_principales: ['calabaza'], pasos_resumen: [] };
   const batido = { nombre: 'Batido de fresas', ingredientes_principales: ['fresas'], pasos_resumen: [] };
