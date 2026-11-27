@@ -17,7 +17,7 @@ let supa = fakeSupabase();
 void mock.module('@/lib/supabase/server', () => ({ createClient: async () => supa.client }));
 void mock.module('@/lib/stripe', () => ({ ...realStripe, stripe: { billingPortal: { sessions: { create: portalCreate } } } }));
 
-const { POST } = await import('./route');
+const { POST, maxDuration } = await import('./route');
 
 function req() {
   return new NextRequest('https://test.fresco.local/api/stripe/portal', { method: 'POST' });
@@ -58,6 +58,17 @@ describe('POST /api/stripe/portal', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ url: 'https://billing.stripe/x' });
     expect((portalCreate.mock.calls[0][0] as { customer: string }).customer).toBe('cus_1');
+  });
+
+  test('FRESCO-1285: the function is cut at 30 s, above the client limit and the Stripe client attempts', () => {
+    expect(maxDuration).toBe(30);
+  });
+
+  test('FRESCO-1285: a Stripe that does not answer ends in an error the button can show', async () => {
+    portalCreate.mockRejectedValue(Object.assign(new Error('Request aborted due to timeout being reached (8000ms)'), { type: 'StripeConnectionError' }));
+    const res = await POST(req());
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'No se pudo abrir la gestión de tu suscripción.' });
   });
 
   test('500 when the profile read errors', async () => {

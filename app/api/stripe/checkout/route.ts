@@ -24,6 +24,9 @@ const CHECKOUT_SUBMIT_MESSAGE = 'Cancelas cuando quieras desde tu perfil, en «G
 const RATE_LIMIT_PER_HOUR = 10;
 const RATE_LIMIT_WINDOW_SECONDS = 3600;
 
+/** FRESCO-1285: above the screen's 20 s limit and the Stripe client's two 8 s attempts (`lib/billing/stripe-limits.ts`). */
+export const maxDuration = 30;
+
 /**
  * POST /api/stripe/checkout — `/profile`'s "Pásate a Fresco Pro" CTA
  * (STORY-FRESCO-228). Creates a Stripe Checkout Session in `subscription`

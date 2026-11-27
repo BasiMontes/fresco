@@ -1,5 +1,6 @@
 import type { ProInterval } from '@/components/profile/pro-checkout-summary';
 import { useState } from 'react';
+import { STRIPE_SCREEN_TIMEOUT_MS, STRIPE_TIMEOUT_MESSAGE } from '@/lib/billing/stripe-limits';
 import { postConsents } from '@/lib/legal/consent-client';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 
@@ -43,7 +44,7 @@ export function useProCheckout() {
     // lands even though the Stripe-hosted page is a full navigation away.
     captureEvent(POSTHOG_EVENTS.CHECKOUT_STARTED);
     try {
-      const response = await fetch('/api/stripe/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interval }) });
+      const response = await fetch('/api/stripe/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interval }), signal: AbortSignal.timeout(STRIPE_SCREEN_TIMEOUT_MS) });
       const data = await response.json() as CheckoutResponse;
 
       if (!response.ok || !data.url) {
@@ -54,7 +55,7 @@ export function useProCheckout() {
     }
     catch (error_) {
       console.error('[useProCheckout] checkout failed', error_);
-      setError('No se pudo iniciar el pago. Inténtalo de nuevo.');
+      setError(error_ instanceof Error && error_.name === 'TimeoutError' ? STRIPE_TIMEOUT_MESSAGE : 'No se pudo iniciar el pago. Inténtalo de nuevo.');
       setIsRedirecting(false);
     }
   }

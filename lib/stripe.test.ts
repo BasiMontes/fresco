@@ -407,6 +407,9 @@ describe('stripe client (lazy, fail-fast)', () => {
     expect(typeof stripe.customers.create).toBe('function');
     expect(stripe.checkout.sessions).toBe(stripe.checkout.sessions);
     expect((stripe as unknown as { getApiField: (k: string) => string }).getApiField('version')).toBe(STRIPE_API_VERSION);
+    // FRESCO-1285: without these the SDK waits 80 s per attempt and retries twice, four minutes for one call.
+    expect((stripe as unknown as { getApiField: (k: string) => number }).getApiField('timeout')).toBe(8_000);
+    expect((stripe as unknown as { getMaxNetworkRetries: () => number }).getMaxNetworkRetries()).toBe(1);
   });
 });
 

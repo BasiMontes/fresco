@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { STRIPE_SCREEN_TIMEOUT_MS, STRIPE_TIMEOUT_MESSAGE } from '@/lib/billing/stripe-limits';
 
 interface PortalResponse {
   url?: string
@@ -27,7 +28,7 @@ export function ManageSubscriptionButton() {
     setIsRedirecting(true);
     setError(null);
     try {
-      const response = await fetch('/api/stripe/portal', { method: 'POST' });
+      const response = await fetch('/api/stripe/portal', { method: 'POST', signal: AbortSignal.timeout(STRIPE_SCREEN_TIMEOUT_MS) });
       const data = await response.json() as PortalResponse;
 
       if (!response.ok || !data.url) {
@@ -38,7 +39,7 @@ export function ManageSubscriptionButton() {
     }
     catch (error_) {
       console.error('[ManageSubscriptionButton] portal session failed', error_);
-      setError('No se pudo abrir la gestión de tu suscripción. Inténtalo de nuevo.');
+      setError(error_ instanceof Error && error_.name === 'TimeoutError' ? STRIPE_TIMEOUT_MESSAGE : 'No se pudo abrir la gestión de tu suscripción. Inténtalo de nuevo.');
       setIsRedirecting(false);
     }
   }

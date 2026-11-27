@@ -4,11 +4,11 @@
  * `bun run chaos:stripe-stall [--timeout-ms N] [--cap-seconds N]`
  *
  * FRESCO-1251, phase 3 (S1). The checkout route calls Stripe several times in a row (`app/api/stripe/checkout/route.ts`),
- * and the client is built with only `apiVersion` (`lib/stripe.ts`), so it runs on the SDK defaults. This script builds a
- * client with the SAME options, points it at a local socket that accepts the connection and never writes a byte, makes one
+ * and the client (`lib/stripe.ts`) carries the limits of `lib/billing/stripe-limits.ts` (FRESCO-1285; before them it ran
+ * on the SDK defaults and took 241 s). This script builds a client with the SAME options, points it at a local socket that accepts the connection and never writes a byte, makes one
  * call and measures: how long until the SDK gives up, with what error, and how many connections it opened (1 plus its retries).
  *
- * With no arguments it measures the real configuration, which takes minutes. `--timeout-ms` overrides the SDK timeout so the
+ * With no arguments it measures the real configuration, which takes seconds. `--timeout-ms` overrides the SDK timeout so the
  * attempts and the error can be seen in seconds; the retry count it reveals is the same one the real configuration uses.
  * `--cap-seconds` (default 600) is how long to wait before reporting "still pending".
  *
@@ -22,6 +22,7 @@ import process from 'node:process';
 
 import Stripe from 'stripe';
 
+import { STRIPE_CLIENT_LIMITS } from '../../lib/billing/stripe-limits';
 import { STRIPE_API_VERSION } from '../../lib/stripe-api-version';
 
 function numberArg(name: string): number | undefined {
@@ -53,6 +54,7 @@ const port = (server.address() as AddressInfo).port;
 
 const stripe = new Stripe('sk_test_chaos_stall_dummy', {
   apiVersion: STRIPE_API_VERSION,
+  ...STRIPE_CLIENT_LIMITS,
   host: '127.0.0.1',
   port,
   protocol: 'http',
