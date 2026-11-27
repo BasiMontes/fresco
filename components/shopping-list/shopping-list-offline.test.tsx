@@ -14,18 +14,6 @@ interface RpcCall { fn: string, args: Record<string, unknown> }
 let rpcCalls: RpcCall[] = [];
 let rpcFails = true;
 
-void mock.module('@/lib/supabase/client', () => ({
-  createClient: () => ({
-    rpc: async (fn: string, args: Record<string, unknown>) => {
-      rpcCalls.push({ fn, args });
-      return rpcFails ? { data: null, error: { message: 'Failed to fetch' } } : { data: null, error: null };
-    },
-    auth: { getSession: async () => ({ data: { session: { access_token: 't' } } }) },
-  }),
-}));
-
-const { ShoppingListView } = await import('./shopping-list-view');
-
 const LIST: ShoppingListPersistido = {
   id: 'list1',
   mealPlanId: 'plan-list1',
@@ -42,6 +30,20 @@ const LIST: ShoppingListPersistido = {
   ],
   resumen: { total_items: 2, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
 };
+
+void mock.module('@/lib/supabase/client', () => ({
+  createClient: () => ({
+    rpc: async (fn: string, args: Record<string, unknown>) => {
+      rpcCalls.push({ fn, args });
+      return rpcFails ? { data: null, error: { message: 'Failed to fetch' } } : { data: null, error: null };
+    },
+    // FRESCO-1284: after a failed tick the list asks what was saved; the server kept nothing.
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { items: LIST.pasillos }, error: null }) }) }) }),
+    auth: { getSession: async () => ({ data: { session: { access_token: 't' } } }) },
+  }),
+}));
+
+const { ShoppingListView } = await import('./shopping-list-view');
 
 function setOnline(online: boolean) {
   Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => online });

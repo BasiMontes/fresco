@@ -4,10 +4,13 @@ import * as React from 'react';
 import { addSuggestionToPasillos, countPendientes, removeAddedItem, suggestionFromAddedItem } from '@/components/shopping-list/added-suggestions';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { getAccessToken } from '@/lib/client-api/auth';
-import { addShoppingListItem, clearComprados, removeShoppingListItem, toggleShoppingListItem } from '@/lib/client-api/shopping-list';
+import { addShoppingListItem, clearComprados, getShoppingListItemComprado, removeShoppingListItem, toggleShoppingListItem } from '@/lib/client-api/shopping-list';
 
 /** FRESCO-1014: shown while ticks are waiting for the connection. */
 const OFFLINE_MESSAGE = 'Sin conexión. Hemos dejado marcado el producto y lo guardaremos cuando vuelva la señal. Mantén esta pantalla abierta.';
+
+/** FRESCO-1284: the tick failed and the database could not be asked either. */
+const UNCONFIRMED_MESSAGE = 'No hemos podido comprobar si se guardó. Lo dejamos marcado y lo guardaremos cuando vuelva la conexión. Mantén esta pantalla abierta.';
 
 /** FRESCO-1219: pause before the one retry of the suggestions request. */
 const SUGGESTIONS_RETRY_DELAY_MS = 800;
@@ -19,6 +22,12 @@ const SUGGESTIONS_RETRY_DELAY_MS = 800;
 function isTransientError(error: unknown): boolean {
   const status = (error as { status?: unknown } | null)?.status;
   return typeof status !== 'number' || status >= 500;
+}
+
+/** An item addressed by name: its position moves when the list changes under the screen. */
+interface ItemTarget {
+  pasilloNombre: string
+  itemNombre: string
 }
 
 interface UseShoppingListArgs {
@@ -132,7 +141,7 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
       }
     }
     if (pendingToggles.current.size === 0) {
-      setErrorMessage(current => (current === OFFLINE_MESSAGE ? null : current));
+      setErrorMessage(current => (current === OFFLINE_MESSAGE || current === UNCONFIRMED_MESSAGE ? null : current));
     }
   }, [list.id]);
 
@@ -153,23 +162,47 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
     }
     catch (error) {
       // FRESCO-1014 (A7-UI-10): in a shop with no signal the tick must not silently undo itself. Offline, keep it
-      // ticked, queue it for when the connection returns and say so in an alert the person can see; any other
-      // failure (the server refused it) reverts the tick, with the same visible alert.
+      // ticked, queue it for when the connection returns and say so in an alert the person can see.
+      const pasillo = pasillosRef.current[pasilloIdx];
+      const item = pasillo?.items[itemIdx];
+      const target = pasillo && item ? { pasilloNombre: pasillo.nombre, itemNombre: item.nombre } : null;
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         console.error('[ShoppingListView] toggleShoppingListItem failed offline, queued', error);
-        const pasillo = pasillosRef.current[pasilloIdx];
-        const item = pasillo?.items[itemIdx];
-        if (pasillo && item) {
-          pendingToggles.current.set(`${pasillo.nombre}::${item.nombre}`, { pasilloNombre: pasillo.nombre, itemNombre: item.nombre, comprado: nextComprado });
-        }
-        setErrorMessage(OFFLINE_MESSAGE);
+        queueToggle({ target, comprado: nextComprado, message: OFFLINE_MESSAGE });
         return;
       }
-      console.error('[ShoppingListView] toggleShoppingListItem failed, reverting', error);
-      setComprado({ pasilloIdx, itemIdx, comprado: !nextComprado });
-      setErrorMessage('No se pudo guardar el cambio. Vuelve a intentarlo.');
-      onToggleFailure({ pasilloIdx, itemIdx });
+      console.error('[ShoppingListView] toggleShoppingListItem failed, checking what was saved', error);
+      await settleFailedToggle({ pasilloIdx, itemIdx, nextComprado, target });
     }
+  }
+
+  function queueToggle({ target, comprado, message }: { target: ItemTarget | null, comprado: boolean, message: string }) {
+    if (target) {
+      pendingToggles.current.set(`${target.pasilloNombre}::${target.itemNombre}`, { ...target, comprado });
+    }
+    setErrorMessage(message);
+  }
+
+  /**
+   * FRESCO-1284: the response of a tick can get lost after the write arrived, so a failure is settled with what the
+   * database holds: saved, keep it and say nothing; not saved, revert and say so; unreadable, keep it and queue it.
+   */
+  async function settleFailedToggle({ pasilloIdx, itemIdx, nextComprado, target }: { pasilloIdx: number, itemIdx: number, nextComprado: boolean, target: ItemTarget | null }) {
+    let saved: boolean | null = null;
+    try {
+      saved = target ? await getShoppingListItemComprado({ listId: list.id, ...target }) : null;
+    }
+    catch (error) {
+      console.error('[ShoppingListView] could not read the item after a failed toggle, queued', error);
+      queueToggle({ target, comprado: nextComprado, message: UNCONFIRMED_MESSAGE });
+      return;
+    }
+    if (saved === nextComprado) {
+      return;
+    }
+    setComprado({ pasilloIdx, itemIdx, comprado: !nextComprado });
+    setErrorMessage('No se pudo guardar el cambio. Vuelve a intentarlo.');
+    onToggleFailure({ pasilloIdx, itemIdx });
   }
 
   /**

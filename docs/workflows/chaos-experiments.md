@@ -186,6 +186,17 @@ Misma pila y misma forma de corte que el 2026-11-24, con el código de `staging`
 
 Para ver el `409` limpio sin una segunda pestaña (que se refresca sola al recuperar el foco y pierde el botón viejo), `page.route` llama dos veces a `route.fetch()` y entrega la segunda respuesta con `route.fulfill({ response })`: la primera crea el plan y la segunda es el `409` real.
 
+### 2026-11-27: E2 y E4 repetidos tras FRESCO-1284
+
+Pila local recién sembrada, cuenta Free, misma forma de corte (la petición llega y el navegador pierde la respuesta), `next dev` en el puerto 3100 porque otro proyecto ocupaba el 3000, y sin Turnstile.
+
+| # | Respuesta del servidor | Qué se vio | Base de datos |
+|---|---|---|---|
+| E2 | `200`, descartada | La franja se quedó en "Cocinado", sin ningún aviso | `cocinada` |
+| E4 | `204`, descartada | El producto se quedó marcado, sin ningún aviso | `comprado = true` |
+
+**Resultado:** las debilidades de E2 y E4 ya no se reproducen. El caso en que tampoco se puede leer la base solo está cubierto por pruebas. Capturas en FRESCO-1284.
+
 ---
 
 ## Stripe sin responder (FRESCO-1251, fase 3)
