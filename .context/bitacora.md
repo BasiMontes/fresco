@@ -124,3 +124,8 @@ Historia archivada:
 - Qué: una receta que nombre salchicha, longaniza o butifarra frescas, breakfast sausages o burger meat exige la etiqueta `sulfitos` (#1105, 8575a2d9, migración 20261126230000 aplicada). Ninguna receta cambió. main y dev en 8575a2d9, producción en success y fresco-pro /login 200.
 - Por qué: en carne, la UE solo autoriza sulfitos como aditivo en preparados frescos; la primera redacción de la tarjeta daba por supuesto lo contrario y se corrigió antes de tocar datos.
 - Siguiente: FRESCO-1319 a Finalizada con el visto bueno. No cubre "salchicha" o "longaniza" sin "fresca" ni el arrastre por otro ingrediente (docs/workflows/sulphite-meat-review.md).
+
+## 2026-11-27 - Tercera tanda de QA en producción (FRESCO-1317, 1318, 1320 y 1321)
+- Qué: ningún nombre activo difiere solo por una tilde (#1106, migración 20261126233000 aplicada y comprobada); el aviso de presupuesto sale en la semana en pantalla, en menú y calendario (#1107); la semilla usa las fotos revisadas de dos recetas (#1108); quitar una dieta desmarca el alérgeno que añadió en esa edición (#1109). main y dev en 08dda5d6, despliegue de producción en success y fresco-pro /login 200. Las cuatro tarjetas en Merged.
+- Por qué: QAFRESCO-3, 30, 36 y 37.
+- Siguiente: retest de QA y, con el visto bueno, pasar las tarjetas a Finalizada. El primer intento de test:db-integration de #1107 falló al arrancar la base en el runner (red de Docker) y pasó al relanzarlo. Los commits de bitácora siguen en local.
