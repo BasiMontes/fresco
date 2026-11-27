@@ -33,7 +33,8 @@ const LEARNS = {
 
 // FRESCO-1140: a real capture of `/menu` (a throwaway test account with a seeded week, no personal
 // data: only the lunch and dinner cards, cropped before the sidebar, the email and the spend figure).
-// It goes stale when the menu cards change; retake it then.
+// It goes stale when the menu cards or the catalogue pictures change; retake it then, under a new file name so no
+// cache serves the old one (FRESCO-1322 retook it with the clay illustrations, from a local stack).
 // FRESCO-1145: `sizes` states the real rendered width so the browser does not ask for a larger candidate
 // than it needs. `40vw` overstated it on wide screens. The spacing scale is x1.1 (`app/globals.css`:
 // `--spacing-4` is 17.6px, `--spacing-8` is 35.2px, `--spacing-16` is 70.4px), so the section padding is
@@ -41,10 +42,10 @@ const LEARNS = {
 // padding) minus the 70.4px gap, so at most 368px. This states the layout accurately; it was not measured
 // to save bytes (`next/image` never upscales and the capture is 1040px wide).
 const MENU_CAPTURE = {
-  src: '/brand/menu-example.webp',
+  src: '/brand/menu-example-clay.webp',
   width: 1040,
   height: 780,
-  alt: 'Captura de la pantalla de menú de Fresco con una comida y una cena: frijoles rancheros con carne y rabo de toro estofado, cada una con su tiempo y etiqueta',
+  alt: 'Captura de la pantalla de menú de Fresco con una comida y una cena: merluza al horno con patatas y ensalada César con pollo, cada una con su tiempo y etiqueta',
 } as const;
 
 export function HowItWorks() {
