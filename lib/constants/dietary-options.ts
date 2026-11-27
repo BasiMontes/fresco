@@ -122,3 +122,26 @@ export function impliedAlergenos(flags: DietaFlagsForLocks): string[] {
   if (flags.vegano) { DIETA_IMPLIED_ALERGENOS.vegano.forEach(value => implied.add(value)); }
   return [...implied];
 }
+
+interface AlergenoSelection {
+  alergenos: string[]
+  alergenosPorDieta: string[]
+}
+
+/**
+ * The allergens after a diet change (FRESCO-1321/QAFRESCO-37). `alergenosPorDieta` lists the ones a diet put
+ * there during this edit: each leaves with the last active diet that implies it. A value the person chose, or
+ * one that came with a saved profile, is never in that list, so it stays.
+ */
+export function syncImpliedAlergenos(
+  { alergenos, alergenosPorDieta }: AlergenoSelection,
+  flags: DietaFlagsForLocks,
+): AlergenoSelection {
+  const implied = impliedAlergenos(flags);
+  const kept = alergenos.filter(value => implied.includes(value) || !alergenosPorDieta.includes(value));
+  const added = implied.filter(value => !kept.includes(value));
+  return {
+    alergenos: [...kept, ...added],
+    alergenosPorDieta: [...alergenosPorDieta.filter(value => implied.includes(value)), ...added],
+  };
+}

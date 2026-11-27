@@ -169,12 +169,52 @@ describe('useOnboardingStore — dieta implies alergeno locks (FRESCO-275)', () 
     expect(useOnboardingStore.getState().alergenos).toContain('pescado');
   });
 
-  test('untoggling the dieta does not remove the previously-implied alergeno', () => {
-    useOnboardingStore.getState().toggleDieta('dietaVegetariano');
-    useOnboardingStore.getState().toggleDieta('dietaVegetariano');
+  // FRESCO-1321/QAFRESCO-37: a diet takes with it only what it put there.
+  const toggle = (...fields: Parameters<ReturnType<typeof useOnboardingStore.getState>['toggleDieta']>[0][]) =>
+    fields.forEach(field => useOnboardingStore.getState().toggleDieta(field));
+  const selected = () => useOnboardingStore.getState().alergenos;
 
-    expect(useOnboardingStore.getState().dietaVegetariano).toBe(false);
-    expect(useOnboardingStore.getState().alergenos).toEqual(['pescado']);
+  test('switching a diet off removes the alergeno it added', () => {
+    toggle('dietaVegetariano', 'dietaVegetariano');
+    toggle('dietaSinGluten', 'dietaSinGluten');
+
+    expect(selected()).toEqual([]);
+  });
+
+  test('a hand-chosen alergeno survives the diet that also implies it', () => {
+    useOnboardingStore.getState().toggleAlergeno('pescado');
+    toggle('dietaVegetariano', 'dietaVegetariano');
+
+    expect(selected()).toEqual(['pescado']);
+  });
+
+  test('an alergeno that was already there with its diet stays when the diet goes off', () => {
+    useOnboardingStore.setState({ dietaVegetariano: true, alergenos: ['pescado'] });
+    toggle('dietaVegetariano');
+
+    expect(selected()).toEqual(['pescado']);
+  });
+
+  test('Vegano off keeps what Vegetariano still implies, which goes when Vegetariano goes off', () => {
+    toggle('dietaVegano', 'dietaVegano');
+    expect(selected()).toEqual(['pescado']);
+
+    toggle('dietaVegetariano');
+    expect(selected()).toEqual([]);
+  });
+
+  test('a hand-chosen sulfitos survives a diet going off and on (QAFRESCO-29)', () => {
+    useOnboardingStore.getState().toggleAlergeno('sulfitos');
+    toggle('dietaVegano', 'dietaVegano', 'dietaVegetariano', 'dietaVegano', 'dietaVegano', 'dietaVegetariano');
+
+    expect(selected()).toEqual(['sulfitos']);
+  });
+
+  test('a reload remembers what the diet added', () => {
+    toggle('dietaVegetariano');
+    const persisted = useOnboardingStore.persist.getOptions().partialize!(useOnboardingStore.getState());
+
+    expect(persisted).toMatchObject({ alergenosPorDieta: ['pescado'] });
   });
 
   test('a manually-added alergeno unrelated to any dieta stays freely toggleable', () => {

@@ -13,7 +13,7 @@ import { isSoftPreferencesDirty, SoftPreferencesBlock } from '@/components/profi
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { upsertUserProfile } from '@/lib/client-api/user-profile';
-import { ALERGENO_OPTIONS, ALERGENOS_AVISO, DIETA_FIELDS, impliedAlergenos } from '@/lib/constants/dietary-options';
+import { ALERGENO_OPTIONS, ALERGENOS_AVISO, DIETA_FIELDS, impliedAlergenos, syncImpliedAlergenos } from '@/lib/constants/dietary-options';
 import { collectsHealthData } from '@/lib/onboarding/health-data-consent';
 import { toPlanningSelection } from '@/lib/planning-selection';
 import { ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT } from '@/lib/store/onboarding-store';
@@ -132,6 +132,8 @@ function isPreferencesDirty(current: OnboardingProfilePayload, initial: Onboardi
 export function PreferencesForm({ initialPreferences, hasHealthDataConsent, isPro }: PreferencesFormProps) {
   const [preferences, setPreferences] = useState(initialPreferences);
   const [healthConsent, setHealthConsent] = useState(hasHealthDataConsent);
+  // FRESCO-1321: the allergens a diet added since the last save, which leave with it.
+  const [alergenosPorDieta, setAlergenosPorDieta] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -217,23 +219,19 @@ export function PreferencesForm({ initialPreferences, hasHealthDataConsent, isPr
   function toggleDieta(key: DietaKey) {
     setSaved(false);
     clearError();
-    setPreferences((prev) => {
-      // AC-2 (onboarding Step 1): "vegana" always implies "vegetariana" —
-      // the vegetariano chip stays locked selected while vegano is active.
-      if (key === 'dieta_vegetariano' && prev.dieta_vegano) {
-        return prev;
-      }
-      const next = { ...prev, [key]: !prev[key] };
-      if (key === 'dieta_vegano' && next.dieta_vegano) {
-        next.dieta_vegetariano = true;
-      }
-      // FRESCO-275: same add-only merge as the onboarding store — never
-      // removes an alergeno the user (or a previous dieta toggle) already added.
-      const implied = new Set(next.alergenos);
-      impliedAlergenos({ vegano: next.dieta_vegano, vegetariano: next.dieta_vegetariano, sinGluten: next.dieta_sin_gluten }).forEach(value => implied.add(value));
-      next.alergenos = [...implied];
-      return next;
-    });
+    // AC-2 (onboarding Step 1): "vegana" always implies "vegetariana" —
+    // the vegetariano chip stays locked selected while vegano is active.
+    if (key === 'dieta_vegetariano' && preferences.dieta_vegano) {
+      return;
+    }
+    const next = { ...preferences, [key]: !preferences[key] };
+    if (key === 'dieta_vegano' && next.dieta_vegano) {
+      next.dieta_vegetariano = true;
+    }
+    // FRESCO-275 / FRESCO-1321: same rule as the onboarding store.
+    const synced = syncImpliedAlergenos({ alergenos: next.alergenos, alergenosPorDieta }, { vegano: next.dieta_vegano, vegetariano: next.dieta_vegetariano, sinGluten: next.dieta_sin_gluten });
+    setPreferences({ ...next, alergenos: synced.alergenos });
+    setAlergenosPorDieta(synced.alergenosPorDieta);
   }
 
   function toggleAlergeno(value: string) {
@@ -299,6 +297,7 @@ export function PreferencesForm({ initialPreferences, hasHealthDataConsent, isPr
       await upsertUserProfile(isPro && isSoftPreferencesDirty(preferences, initialPreferences)
         ? { ...rest, objetivo, nivel_experiencia: nivelExperiencia }
         : rest);
+      setAlergenosPorDieta([]);
       setSaved(true);
     }
     catch (error) {

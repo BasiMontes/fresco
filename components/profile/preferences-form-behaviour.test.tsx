@@ -132,18 +132,54 @@ describe('PreferencesForm — the diet and allergen rules', () => {
     expect(pressed(alergeno('Gluten'))).toBe(true);
   });
 
-  test('switching Vegano off never removes an allergen it had added (add-only), and releases the ones no diet still implies', async () => {
+  // FRESCO-1321/QAFRESCO-37: a diet takes with it only what it put there in this edit.
+  test('switching Vegano off removes what it added and keeps what Vegetariano still implies', async () => {
     const user = setupUser();
     renderForm();
     await user.click(dieta('Vegano'));
 
     await user.click(dieta('Vegano'));
 
-    expect(pressed(dieta('Vegano'))).toBe(false);
-    // Vegetariano stays on, so pescado stays locked; huevo is no longer implied by anything.
-    expect(pressed(alergeno('Huevo'))).toBe(true);
-    expect(locked(alergeno('Huevo'))).toBe(false);
+    expect(pressed(alergeno('Huevo'))).toBe(false);
+    expect(pressed(alergeno('Pescado'))).toBe(true);
     expect(locked(alergeno('Pescado'))).toBe(true);
+
+    await user.click(dieta('Vegetariano'));
+
+    expect(pressed(alergeno('Pescado'))).toBe(false);
+  });
+
+  test('a saved allergen stays when its saved diet is switched off', async () => {
+    const user = setupUser();
+    renderForm({ ...PREFERENCES, dieta_vegetariano: true, alergenos: ['pescado'] });
+
+    await user.click(dieta('Vegetariano'));
+
+    expect(pressed(alergeno('Pescado'))).toBe(true);
+    expect(locked(alergeno('Pescado'))).toBe(false);
+  });
+
+  test('a hand-chosen allergen stays after a diet goes on and off', async () => {
+    const user = setupUser();
+    renderForm();
+    await user.click(alergeno('Pescado'));
+
+    await user.click(dieta('Vegetariano'));
+    await user.click(dieta('Vegetariano'));
+
+    expect(pressed(alergeno('Pescado'))).toBe(true);
+  });
+
+  test('once saved, what the diet added stays when the diet goes off', async () => {
+    const user = setupUser();
+    renderForm();
+    await user.click(dieta('Vegetariano'));
+    await user.click(saveButton());
+    await screen.findByTestId('preferencias_saved_message');
+
+    await user.click(dieta('Vegetariano'));
+
+    expect(pressed(alergeno('Pescado'))).toBe(true);
   });
 
   test('a free allergen toggles on and off', async () => {

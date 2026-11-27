@@ -2,7 +2,7 @@ import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, TipoCocina,
 import type { PlanningSelection } from '@/lib/planning-selection';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { impliedAlergenos } from '@/lib/constants/dietary-options';
+import { impliedAlergenos, syncImpliedAlergenos } from '@/lib/constants/dietary-options';
 import { toPlanningSelection } from '@/lib/planning-selection';
 
 /**
@@ -48,6 +48,8 @@ export interface OnboardingState {
   dietaKeto: boolean
   dietaHalal: boolean
   alergenos: string[]
+  /** FRESCO-1321: the allergens a diet added in this run of the wizard, which leave with it. */
+  alergenosPorDieta: string[]
   ingredientesOdiados: string[]
   cocinasFavoritas: TipoCocina[]
   adultos: number
@@ -94,6 +96,7 @@ const initialState = {
   dietaKeto: false,
   dietaHalal: false,
   alergenos: [] as string[],
+  alergenosPorDieta: [] as string[],
   ingredientesOdiados: [] as string[],
   cocinasFavoritas: [] as TipoCocina[],
   adultos: 2,
@@ -112,13 +115,6 @@ export const ONBOARDING_INITIAL_STATE = initialState;
 
 function toggleInArray<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter(item => item !== value) : [...list, value];
-}
-
-/** Adds every implied alergeno to `alergenos` (union, never removes) — mirrors the `dietaVegetariano` lock's add-only behavior below. */
-function mergeImpliedAlergenos(alergenos: string[], flags: { vegano: boolean, vegetariano: boolean, sinGluten: boolean }): string[] {
-  const merged = new Set(alergenos);
-  impliedAlergenos(flags).forEach(value => merged.add(value));
-  return [...merged];
 }
 
 // SSR-safe: `sessionStorage` doesn't exist during Next.js server rendering.
@@ -166,7 +162,7 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
         return {
           dietaVegano: nextVegano,
           dietaVegetariano: nextVegetariano,
-          alergenos: mergeImpliedAlergenos(state.alergenos, { vegano: nextVegano, vegetariano: nextVegetariano, sinGluten: state.dietaSinGluten }),
+          ...syncImpliedAlergenos(state, { vegano: nextVegano, vegetariano: nextVegetariano, sinGluten: state.dietaSinGluten }),
         };
       }
       switch (field) {
@@ -174,14 +170,14 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
           const next = !state.dietaVegetariano;
           return {
             dietaVegetariano: next,
-            alergenos: mergeImpliedAlergenos(state.alergenos, { vegano: state.dietaVegano, vegetariano: next, sinGluten: state.dietaSinGluten }),
+            ...syncImpliedAlergenos(state, { vegano: state.dietaVegano, vegetariano: next, sinGluten: state.dietaSinGluten }),
           };
         }
         case 'dietaSinGluten': {
           const next = !state.dietaSinGluten;
           return {
             dietaSinGluten: next,
-            alergenos: mergeImpliedAlergenos(state.alergenos, { vegano: state.dietaVegano, vegetariano: state.dietaVegetariano, sinGluten: next }),
+            ...syncImpliedAlergenos(state, { vegano: state.dietaVegano, vegetariano: state.dietaVegetariano, sinGluten: next }),
           };
         }
         case 'dietaSinLactosa':
@@ -241,6 +237,7 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     dietaKeto: state.dietaKeto,
     dietaHalal: state.dietaHalal,
     alergenos: state.alergenos,
+    alergenosPorDieta: state.alergenosPorDieta,
     ingredientesOdiados: state.ingredientesOdiados,
     cocinasFavoritas: state.cocinasFavoritas,
     adultos: state.adultos,
