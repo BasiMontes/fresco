@@ -67,6 +67,19 @@ describe('sentryScrubbing', () => {
     expect(asPairs.request?.query_string).toEqual([['token', 'redacted'], ['accion', 'baja']]);
   });
 
+  test('the token_hash of an auth email link is redacted in spans, errors and parsed queries', async () => {
+    const link = `https://fresco-pro.vercel.app/auth/confirm?token_hash=${TOKEN}&type=recovery`;
+    const sent = await sendThroughSdk(() => {
+      Sentry.startSpan({ name: `GET ${link}`, attributes: { 'url.full': link, 'url.query': `token_hash=${TOKEN}` } }, () => {});
+      Sentry.captureEvent({ message: 'boom', request: { url: link } });
+    });
+    const parsed = sentryScrubbing.beforeSend({ type: undefined, request: { query_string: { token_hash: TOKEN, type: 'recovery' } } });
+
+    expect(sent).toContain('token_hash=redacted&type=recovery');
+    expect(sent).not.toContain(TOKEN);
+    expect(parsed.request?.query_string).toEqual({ token_hash: 'redacted', type: 'recovery' });
+  });
+
   test('values without a token come back unchanged', () => {
     const event = { type: undefined, message: 'token expired', request: { url: 'https://fresco-pro.vercel.app/recetas?q=token' }, extra: { attempts: 2 } };
 

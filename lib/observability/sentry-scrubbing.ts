@@ -1,5 +1,5 @@
 import type { ErrorEvent, init } from '@sentry/nextjs';
-import { scrubUrlToken } from '@/lib/observability/scrub-url-token';
+import { isSecretQueryParam, scrubUrlToken } from '@/lib/observability/scrub-url-token';
 
 // Derived from what `@sentry/nextjs` exports: `@sentry/core` is not a dependency of this app.
 type InitOptions = NonNullable<Parameters<typeof init>[0]>;
@@ -7,7 +7,7 @@ type Integration = Extract<NonNullable<InitOptions['integrations']>, unknown[]>[
 type Client = Parameters<NonNullable<Integration['setup']>>[0];
 type StreamedSpanJSON = Parameters<NonNullable<InitOptions['beforeSendSpan']>>[0];
 
-/** A copy of `value` with the URL `token` blanked in every string, at any depth. */
+/** A copy of `value` with the URL tokens blanked in every string, at any depth. */
 function scrubDeep(value: unknown, seen = new Map<object, unknown>()): unknown {
   if (typeof value === 'string') {
     return scrubUrlToken(value);
@@ -29,13 +29,15 @@ function scrubDeep(value: unknown, seen = new Map<object, unknown>()): unknown {
   return copy;
 }
 
+const redactParam = (name: string, value: string) => isSecretQueryParam(name) ? 'redacted' : value;
+
 /** `query_string` may also arrive already parsed, where no string carries the `token=` prefix. */
 function scrubParsedQuery(query: NonNullable<ErrorEvent['request']>['query_string']) {
   if (Array.isArray(query)) {
-    return query.map(([key, value]): [string, string] => [key, key.toLowerCase() === 'token' ? 'redacted' : value]);
+    return query.map(([key, value]): [string, string] => [key, redactParam(key, value)]);
   }
   if (typeof query === 'object' && query !== null) {
-    return Object.fromEntries(Object.entries(query).map(([key, value]) => [key, key.toLowerCase() === 'token' ? 'redacted' : value]));
+    return Object.fromEntries(Object.entries(query).map(([key, value]) => [key, redactParam(key, value)]));
   }
   return query;
 }
@@ -56,8 +58,8 @@ const scrubTraceHeader = {
 };
 
 /**
- * A8-API-01 / FRESCO-1305: the waitlist link's token travels in the page URL; keep it out of Sentry. Shared by the
- * browser, server and edge clients. Spans need `beforeSendSpan`: with the default `traceLifecycle: 'stream'` the SDK
+ * A8-API-01 / FRESCO-1305: the waitlist and auth email links carry a token in the URL; keep it out of Sentry. Shared
+ * by the browser, server and edge clients. Spans need `beforeSendSpan`: with the default `traceLifecycle: 'stream'` the SDK
  * ignores `beforeSendTransaction`.
  */
 export const sentryScrubbing = {
