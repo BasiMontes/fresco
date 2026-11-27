@@ -4,7 +4,8 @@
  * the analytics and error stores that record the page URL. This blanks the value of any `token`
  * query parameter in a URL-shaped string; every other value comes back unchanged.
  */
-const TOKEN_PARAM = /([?&]token=)[^&#\s]*/gi;
+/** `^` covers a bare query string (`token=...`), as Sentry reports it. */
+const TOKEN_PARAM = /((?:^|[?&])token=)[^&#\s]*/gi;
 
 export function scrubUrlToken<T>(value: T): T {
   if (typeof value !== 'string') {
