@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { sentryRelease } from '@/lib/observability/release';
+import { sentryScrubbing } from '@/lib/observability/sentry-scrubbing';
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -11,5 +12,6 @@ if (dsn) {
     environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
     // Low sample rate to stay within the free tier's performance-monitoring quota.
     tracesSampleRate: 0.1,
+    ...sentryScrubbing,
   });
 }

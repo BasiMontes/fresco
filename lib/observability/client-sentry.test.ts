@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import { createClientSentry } from './client-sentry';
+import { sentryScrubbing } from './sentry-scrubbing';
 
 function fakeSdk() {
   return {
@@ -29,6 +30,15 @@ describe('createClientSentry', () => {
 
     expect(loadSdk).toHaveBeenCalledTimes(1);
     expect(sdk.init).toHaveBeenCalledTimes(1);
+  });
+
+  test('start() wires the token scrubbing for errors, spans and the trace header', async () => {
+    const sdk = fakeSdk();
+    const client = createClientSentry(async () => sdk as never, 'https://key@o1.ingest.de.sentry.io/1');
+
+    await client.start();
+
+    expect(sdk.init).toHaveBeenCalledWith(expect.objectContaining(sentryScrubbing));
   });
 
   test('without a DSN it never loads the SDK', () => {
