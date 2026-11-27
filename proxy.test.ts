@@ -13,12 +13,21 @@ import { NextRequest } from 'next/server';
 let getSessionCalls = 0;
 let getUserCalls = 0;
 let currentUser: { id: string } | null = null;
+/** When set, `getSession()` behaves like a token renewal and writes this value to the session cookie. */
+let renewedSessionCookie: string | null = null;
+
+interface CookieAdapter {
+  setAll: (cookies: { name: string, value: string, options: Record<string, unknown> }[]) => void
+}
 
 await mock.module('@supabase/ssr', () => ({
-  createServerClient: () => ({
+  createServerClient: (_url: string, _key: string, { cookies }: { cookies: CookieAdapter }) => ({
     auth: {
       getSession: async () => {
         getSessionCalls += 1;
+        if (renewedSessionCookie) {
+          cookies.setAll([{ name: 'sb-token', value: renewedSessionCookie, options: { path: '/' } }]);
+        }
         return { data: { session: null }, error: null };
       },
       getUser: async () => {
@@ -35,6 +44,16 @@ function requestTo(path = '/menu'): NextRequest {
   return new NextRequest(`https://fresco.test${path}`);
 }
 
+/**
+ * A request that arrives with a session cookie. Set through `cookies` because the happy-dom preload drops a
+ * `cookie` header passed to the constructor.
+ */
+function signedRequestTo(path: string): NextRequest {
+  const request = requestTo(path);
+  request.cookies.set('sb-token', 'old');
+  return request;
+}
+
 function nonceOf(csp: string): string | null {
   return /'nonce-([^']+)'/.exec(csp)?.[1] ?? null;
 }
@@ -43,6 +62,7 @@ beforeEach(() => {
   getSessionCalls = 0;
   getUserCalls = 0;
   currentUser = null;
+  renewedSessionCookie = null;
   process.env.ADMIN_USER_ID = 'admin-1';
 });
 
@@ -85,6 +105,31 @@ describe('proxy — session refresh', () => {
     await proxy(requestTo('/calendar'));
 
     expect(getSessionCalls).toBe(2);
+  });
+
+  // FRESCO-1306: the page of the very request that renews the session must read the new cookie, not the one
+  // the browser sent.
+  it('forwards the renewed session cookie to the page, keeping the proxy headers', async () => {
+    renewedSessionCookie = 'new';
+
+    const res = await proxy(signedRequestTo('/menu?semana=1'));
+    const csp = res.headers.get('Content-Security-Policy')!;
+
+    expect(res.headers.get('x-middleware-request-cookie')).toBe('sb-token=new');
+    expect(res.headers.get('x-middleware-request-x-nonce')).toBe(nonceOf(csp));
+    expect(res.headers.get('x-middleware-request-x-pathname')).toBe('/menu?semana=1');
+    expect(res.headers.get('x-middleware-request-content-security-policy')).toBe(csp);
+    expect(res.cookies.get('sb-token')?.value).toBe('new');
+  });
+
+  it('forwards the renewed cookie on the admin 404 rewrite too', async () => {
+    renewedSessionCookie = 'new';
+    currentUser = { id: 'user-2' };
+
+    const res = await proxy(signedRequestTo('/admin/recipes'));
+
+    expect(res.status).toBe(404);
+    expect(res.headers.get('x-middleware-request-cookie')).toBe('sb-token=new');
   });
 });
 
