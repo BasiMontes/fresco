@@ -20,10 +20,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      f_unaccent: {
-        Args: { p_text: string }
-        Returns: string
-      }
       graphql: {
         Args: {
           extensions?: Json
@@ -43,6 +39,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_erasures: {
+        Row: {
+          erased_at: string
+          id: string
+          pending_posthog_distinct_id: string | null
+          posthog: string
+          posthog_attempts: number
+          posthog_last_attempt_at: string | null
+          stripe: string
+          user_hash: string
+        }
+        Insert: {
+          erased_at?: string
+          id?: string
+          pending_posthog_distinct_id?: string | null
+          posthog: string
+          posthog_attempts?: number
+          posthog_last_attempt_at?: string | null
+          stripe: string
+          user_hash: string
+        }
+        Update: {
+          erased_at?: string
+          id?: string
+          pending_posthog_distinct_id?: string | null
+          posthog?: string
+          posthog_attempts?: number
+          posthog_last_attempt_at?: string | null
+          stripe?: string
+          user_hash?: string
+        }
+        Relationships: []
+      }
       billing_mode: {
         Row: {
           singleton: boolean
@@ -94,6 +123,21 @@ export type Database = {
           },
         ]
       }
+      guest_email_change_grants: {
+        Row: {
+          expires_at: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ingredient_product_match: {
         Row: {
           confianza: string
@@ -126,6 +170,21 @@ export type Database = {
           },
         ]
       }
+      ingredient_seasons: {
+        Row: {
+          nombre: string
+          temporadas: string[]
+        }
+        Insert: {
+          nombre: string
+          temporadas: string[]
+        }
+        Update: {
+          nombre?: string
+          temporadas?: string[]
+        }
+        Relationships: []
+      }
       ingredient_substitutions: {
         Row: {
           alergenos: string[]
@@ -150,6 +209,27 @@ export type Database = {
           id?: string
           ingrediente_original?: string
           ingrediente_sustituto?: string
+        }
+        Relationships: []
+      }
+      ip_rate_limits: {
+        Row: {
+          count: number
+          endpoint: string
+          key_hash: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          endpoint: string
+          key_hash: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          endpoint?: string
+          key_hash?: string
+          window_start?: string
         }
         Relationships: []
       }
@@ -364,27 +444,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ip_rate_limits: {
-        Row: {
-          count: number
-          endpoint: string
-          key_hash: string
-          window_start: string
-        }
-        Insert: {
-          count?: number
-          endpoint: string
-          key_hash: string
-          window_start: string
-        }
-        Update: {
-          count?: number
-          endpoint?: string
-          key_hash?: string
-          window_start?: string
-        }
-        Relationships: []
-      }
       rate_limits: {
         Row: {
           count: number
@@ -489,6 +548,24 @@ export type Database = {
           },
         ]
       }
+      recipe_season_exceptions: {
+        Row: {
+          motivo: string
+          slug: string
+          temporadas: string[]
+        }
+        Insert: {
+          motivo: string
+          slug: string
+          temporadas: string[]
+        }
+        Update: {
+          motivo?: string
+          slug?: string
+          temporadas?: string[]
+        }
+        Relationships: []
+      }
       recipe_user_feedback: {
         Row: {
           cocinada_at: string | null
@@ -508,7 +585,15 @@ export type Database = {
           recipe_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "recipe_user_feedback_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recipes: {
         Row: {
@@ -868,36 +953,6 @@ export type Database = {
         }
         Relationships: []
       }
-      waitlist_signups: {
-        Row: {
-          confirm_token_hash: string | null
-          confirmation_sent_at: string | null
-          confirmed_at: string | null
-          consent_version: string
-          created_at: string
-          email: string
-          id: string
-        }
-        Insert: {
-          confirm_token_hash?: string | null
-          confirmation_sent_at?: string | null
-          confirmed_at?: string | null
-          consent_version: string
-          created_at?: string
-          email: string
-          id?: string
-        }
-        Update: {
-          confirm_token_hash?: string | null
-          confirmation_sent_at?: string | null
-          confirmed_at?: string | null
-          consent_version?: string
-          created_at?: string
-          email?: string
-          id?: string
-        }
-        Relationships: []
-      }
       user_profiles: {
         Row: {
           adultos: number
@@ -1039,6 +1094,36 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist_signups: {
+        Row: {
+          confirm_token_hash: string | null
+          confirmation_sent_at: string | null
+          confirmed_at: string | null
+          consent_version: string
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          confirm_token_hash?: string | null
+          confirmation_sent_at?: string | null
+          confirmed_at?: string | null
+          consent_version: string
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          confirm_token_hash?: string | null
+          confirmation_sent_at?: string | null
+          confirmed_at?: string | null
+          consent_version?: string
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1058,28 +1143,24 @@ export type Database = {
         Returns: boolean
       }
       check_ip_rate_limit: {
-        Args: { p_endpoint: string, p_key_hash: string, p_limit: number }
+        Args: { p_endpoint: string; p_key_hash: string; p_limit: number }
         Returns: boolean
       }
       cleanup_abandoned_guests: {
         Args: { p_max_age?: string }
         Returns: number
       }
-      confirm_waitlist_signup: {
-        Args: { p_token_hash: string }
-        Returns: boolean
+      clear_conflicting_substitutions: {
+        Args: { p_plan_ids?: string[]; p_user_id: string }
+        Returns: number
       }
-      grant_guest_email_change: {
-        Args: { p_user_id: string }
-        Returns: undefined
+      compute_recipe_season: {
+        Args: { p_clasificacion: Json; p_ingredientes: Json; p_slug: string }
+        Returns: string[]
       }
-      remove_waitlist_signup: {
-        Args: { p_token_hash: string }
-        Returns: boolean
-      }
-      request_waitlist_signup: {
-        Args: { p_email: string, p_token_hash: string, p_version: string }
-        Returns: string
+      compute_recipe_temporada: {
+        Args: { p_ingredientes: Json }
+        Returns: string[]
       }
       confirm_ingredient_substitution: {
         Args: {
@@ -1089,6 +1170,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      confirm_waitlist_signup: {
+        Args: { p_token_hash: string }
+        Returns: boolean
+      }
       copy_meal_plan_to_week: {
         Args: {
           p_fecha_inicio: string
@@ -1097,6 +1182,18 @@ export type Database = {
         }
         Returns: string
       }
+      create_meal_plan: {
+        Args: {
+          p_advertencias: string[]
+          p_explicacion_aprendizaje: string
+          p_fecha_inicio: string
+          p_semana_iso: string
+          p_slots: Json
+          p_user_id: string
+        }
+        Returns: string
+      }
+      f_unaccent: { Args: { p_text: string }; Returns: string }
       filter_allowed_recipe_ids: {
         Args: { p_recipe_ids: string[] }
         Returns: string[]
@@ -1216,13 +1313,21 @@ export type Database = {
           veces_descartada_usuario: number
         }[]
       }
+      grant_guest_email_change: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       jsonb_add_item: {
         Args: { p_item: Json; p_list_id: string; p_pasillo_nombre: string }
         Returns: undefined
       }
       jsonb_clear_comprados: { Args: { p_list_id: string }; Returns: undefined }
       jsonb_remove_item: {
-        Args: { p_item_nombre: string; p_list_id: string; p_pasillo_nombre: string }
+        Args: {
+          p_item_nombre: string
+          p_list_id: string
+          p_pasillo_nombre: string
+        }
         Returns: undefined
       }
       jsonb_set_comprado: {
@@ -1238,10 +1343,92 @@ export type Database = {
         Args: { p_from_user_id: string; p_to_user_id: string }
         Returns: number
       }
+      recipe_ingredient_names_distinct: {
+        Args: { p_nombres: Json }
+        Returns: boolean
+      }
+      recipe_ingredient_quantities_valid: {
+        Args: { p_cantidades: Json; p_nombres: Json }
+        Returns: boolean
+      }
+      recipe_tag_any_source_has: {
+        Args: {
+          p_allergens: string[]
+          p_ingredientes: string[]
+          p_kind: string[]
+          p_txt: string[]
+        }
+        Returns: string
+      }
+      recipe_tag_cleaned: {
+        Args: { p_allergen: string; p_text: string }
+        Returns: string
+      }
+      recipe_tag_cleared: {
+        Args: { p_allergen: string; p_ingredientes: string[] }
+        Returns: string[]
+      }
+      recipe_tag_findings: {
+        Args: {
+          p_alergenos: Json
+          p_dieta: Json
+          p_ingredientes: Json
+          p_pasos: Json
+        }
+        Returns: {
+          detail: string
+          rule: string
+        }[]
+      }
+      recipe_tag_first_break: {
+        Args: { p_match: string; p_not?: string[]; p_txt: string[] }
+        Returns: string
+      }
+      recipe_tag_keywords: { Args: { p_allergen: string }; Returns: string }
+      recipe_tag_matched_words: {
+        Args: { p_allergen: string; p_text: string }
+        Returns: string[]
+      }
+      recipe_tag_norm: { Args: { p_text: string }; Returns: string }
+      recipe_tag_step_has: {
+        Args: { p_allergen: string; p_cleared: string[]; p_step: string }
+        Returns: boolean
+      }
+      recipe_tag_text_has: {
+        Args: { p_allergen: string; p_text: string }
+        Returns: boolean
+      }
+      recipe_temporada_problem: {
+        Args: {
+          p_clasificacion?: Json
+          p_ingredientes: Json
+          p_slug?: string
+          p_temporada: Json
+        }
+        Returns: string
+      }
+      recipe_temporada_shape_problem: {
+        Args: { p_temporada: Json }
+        Returns: string
+      }
       record_consents: {
-        Args: { p_kinds: string[]; p_user_id: string; p_version: string; p_waiver_window?: string }
+        Args: {
+          p_kinds: string[]
+          p_user_id: string
+          p_version: string
+          p_waiver_window?: string
+        }
         Returns: undefined
       }
+      remove_waitlist_signup: {
+        Args: { p_token_hash: string }
+        Returns: boolean
+      }
+      request_waitlist_signup: {
+        Args: { p_email: string; p_token_hash: string; p_version: string }
+        Returns: string
+      }
+      retire_conflicting_slots: { Args: { p_user_id: string }; Returns: number }
       swap_meal_plan_slots: {
         Args: { p_slot_a_id: string; p_slot_b_id: string }
         Returns: undefined
