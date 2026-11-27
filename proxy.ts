@@ -46,13 +46,19 @@ export async function proxy(request: NextRequest) {
     reportUri,
   });
 
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-nonce', nonce);
-  // FRESCO-1014 (A7-UI-16): the protected layout cannot see the URL, and an expired session has to come back to
-  // it after the login. Always overwritten here, so a client-sent value never reaches a Server Component.
-  requestHeaders.set('x-pathname', `${request.nextUrl.pathname}${request.nextUrl.search}`);
-  requestHeaders.set('Content-Security-Policy', csp);
+  // FRESCO-1306: a copy, so it has to be taken again after a session renewal rewrites `request.cookies`;
+  // otherwise the page of that same request still reads the old cookie.
+  const buildRequestHeaders = () => {
+    const headers = new Headers(request.headers);
+    headers.set('x-nonce', nonce);
+    // FRESCO-1014 (A7-UI-16): the protected layout cannot see the URL, and an expired session has to come back to
+    // it after the login. Always overwritten here, so a client-sent value never reaches a Server Component.
+    headers.set('x-pathname', `${request.nextUrl.pathname}${request.nextUrl.search}`);
+    headers.set('Content-Security-Policy', csp);
+    return headers;
+  };
 
+  let requestHeaders = buildRequestHeaders();
   let response = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabase = createServerClient(
@@ -65,6 +71,7 @@ export async function proxy(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          requestHeaders = buildRequestHeaders();
           response = NextResponse.next({ request: { headers: requestHeaders } });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
