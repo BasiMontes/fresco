@@ -27,8 +27,9 @@ describe('HowItWorks — vertical walkthrough', () => {
 
     expect(container.querySelectorAll('.rounded-full')).toHaveLength(0);
     const photo = container.querySelector('figure img');
-    expect(photo?.getAttribute('src')).toContain('menu-example');
-    expect(photo?.getAttribute('alt')).toMatch(/Captura de la pantalla de menú de Fresco/);
+    // FRESCO-1322: the capture with the clay illustrations, and an alt text naming the dishes it shows.
+    expect(photo?.getAttribute('src')).toContain('menu-example-clay');
+    expect(photo?.getAttribute('alt')).toMatch(/Captura de la pantalla de menú de Fresco.*merluza al horno con patatas y ensalada César con pollo/);
     expect(container.querySelector('figure figcaption')?.textContent).toMatch(/Menú de ejemplo/);
   });
 
