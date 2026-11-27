@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import * as mealPlanApi from '@/lib/api/meal-plan';
 import * as userProfileApi from '@/lib/api/user-profile';
-import { getIsoWeek } from '@/lib/date/iso-week';
+import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
 import { makeFixtureWeekGrid } from '@/lib/fixtures/recipe';
+import * as weeklyCost from '@/lib/grocery/weekly-cost';
+import * as budgetSnapshot from '@/lib/menu/snapshot-budget-warning';
 import { renderWithProviders, screen } from '@/tests/component-render';
 import { headersState } from '@/tests/mocks/next-headers';
 import '@/tests/mocks/next-navigation';
@@ -27,17 +29,24 @@ let planSpy: ReturnType<typeof spyOn<typeof mealPlanApi, 'getMealPlanForWeek'>>;
 let userPlanSpy: ReturnType<typeof spyOn<typeof userProfileApi, 'getUserPlan'>>;
 let prefsSpy: ReturnType<typeof spyOn<typeof userProfileApi, 'getUserDietaryPreferences'>>;
 let errorSpy: ReturnType<typeof spyOn<typeof console, 'error'>>;
+let budgetSpy: ReturnType<typeof spyOn<typeof userProfileApi, 'getUserPresupuestoSemana'>>;
+let costSpy: ReturnType<typeof spyOn<typeof weeklyCost, 'costeSemanalEstimado'>>;
+let snapshotSpy: ReturnType<typeof spyOn<typeof budgetSnapshot, 'snapshotBudgetWarning'>>;
 
 beforeEach(() => {
   headersState.cookies = {};
   planSpy = spyOn(mealPlanApi, 'getMealPlanForWeek').mockResolvedValue(makePlan());
   userPlanSpy = spyOn(userProfileApi, 'getUserPlan').mockResolvedValue('free');
   prefsSpy = spyOn(userProfileApi, 'getUserDietaryPreferences').mockResolvedValue(null as never);
+  budgetSpy = spyOn(userProfileApi, 'getUserPresupuestoSemana').mockResolvedValue(null);
+  costSpy = spyOn(weeklyCost, 'costeSemanalEstimado').mockReturnValue(97.32);
+  // The real one writes through `after()`, which only exists inside a request.
+  snapshotSpy = spyOn(budgetSnapshot, 'snapshotBudgetWarning').mockImplementation(() => {});
   errorSpy = spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(() => {
-  for (const spy of [planSpy, userPlanSpy, prefsSpy, errorSpy]) { spy.mockRestore(); }
+  for (const spy of [planSpy, userPlanSpy, prefsSpy, budgetSpy, costSpy, snapshotSpy, errorSpy]) { spy.mockRestore(); }
 });
 
 async function renderPage(semana?: string) {
@@ -132,5 +141,64 @@ describe('CalendarPage with a plan', () => {
     prefsSpy.mockResolvedValue({ planning_selection: { lunes: ['comida'] } } as unknown as Awaited<ReturnType<typeof userProfileApi.getUserDietaryPreferences>>);
     await renderPage();
     expect(screen.getByTestId('delete_week_button')).toBeInTheDocument();
+  });
+});
+
+// FRESCO-1320/QAFRESCO-36: the budget warning was only computed by `/menu`, for the current week, so next
+// week's menu never warned and the calendar kept showing whatever amount was stored.
+describe('CalendarPage budget warning', () => {
+  const weekFrom = (days: number) => getIsoWeek(new Date(getDateFromIsoWeek(getIsoWeek()).getTime() + days * 86_400_000));
+  const nextWeek = weekFrom(7);
+  const lastWeek = weekFrom(-7);
+  const warning = (amount: string) => `El menú supera tu presupuesto semanal en aproximadamente ${amount}€`;
+  const stored = (advertencias: string[]) => planSpy.mockResolvedValue(makePlan((plan) => { plan.advertencias = advertencias; }));
+  // Text, not the node: a failed matcher on a DOM node dumps the whole window and hangs the run.
+  const banner = () => screen.queryByTestId('calendar_advertencias_banner')?.textContent ?? '';
+
+  test.each([['the current week', undefined], ['next week', nextWeek]])('warns when the menu of %s is over the budget', async (_name, semana) => {
+    budgetSpy.mockResolvedValue(90);
+
+    await renderPage(semana);
+
+    expect(banner()).toContain(warning('7.32'));
+    expect(snapshotSpy.mock.calls[0]?.[1]).toMatchObject({ mealPlanId: 'plan1', userId: 'user-1', shown: [warning('7.32')] });
+  });
+
+  test('estimates with the household and the shopper profile, as the spend tile does', async () => {
+    prefsSpy.mockResolvedValue({ num_personas: 10 } as unknown as Awaited<ReturnType<typeof userProfileApi.getUserDietaryPreferences>>);
+
+    await renderPage(nextWeek);
+
+    expect(costSpy.mock.calls[0]?.[1]).toMatchObject({ numPersonas: 10 });
+  });
+
+  test('replaces a stored amount that no longer holds, and keeps the other warnings', async () => {
+    budgetSpy.mockResolvedValue(90);
+    stored(['Sin receta segura para la cena del lunes', warning('50.00')]);
+
+    await renderPage(nextWeek);
+
+    expect(banner()).toContain(warning('7.32'));
+    expect(banner()).not.toContain('50.00');
+    expect(banner()).toContain('Sin receta segura');
+  });
+
+  test('drops the stored warning once the menu fits the budget', async () => {
+    budgetSpy.mockResolvedValue(120);
+    stored([warning('50.00')]);
+
+    await renderPage();
+
+    expect(banner()).toBe('');
+  });
+
+  test('leaves a past week as it was stored', async () => {
+    budgetSpy.mockResolvedValue(90);
+    stored([warning('50.00')]);
+
+    await renderPage(lastWeek);
+
+    expect(banner()).toContain(warning('50.00'));
+    expect(snapshotSpy).not.toHaveBeenCalled();
   });
 });

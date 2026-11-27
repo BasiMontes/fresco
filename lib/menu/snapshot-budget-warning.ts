@@ -37,7 +37,7 @@ export function snapshotBudgetWarning(supabase: SupabaseClient<Database>, { meal
       .eq('user_id', userId);
 
     if (error) {
-      console.error('[/menu] failed to persist the budget warning in advertencias', error);
+      console.error('[budget-warning] failed to persist the budget warning in advertencias', error);
     }
   });
 }
