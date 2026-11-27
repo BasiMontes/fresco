@@ -2,6 +2,7 @@ import type { UserProfile } from '@schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { cache } from 'react';
+import { isProEntitlementActive } from '@/lib/billing/pro-entitlement';
 import { isTrialAvailable } from '@/lib/legal/pro-terms';
 import { UserProfileError } from './errors';
 
@@ -53,6 +54,39 @@ export const getUserPlan = cache(async (
   }
 
   return data?.plan ?? 'free';
+});
+
+/**
+ * Whether the CURRENTLY authenticated user is entitled to Pro right now (FRESCO-1301). Unlike `getUserPlan` it also
+ * reads the expiry and the failed payment, the criterion the menu generator applies. A missing profile is not Pro.
+ */
+export const getUserProEntitlement = cache(async (
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<boolean> => {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new UserProfileError('No hay una sesión autenticada para leer el perfil.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('plan, plan_expires_at, payment_failed_at')
+    .eq('id', resolvedUserId)
+    .maybeSingle();
+
+  if (error) {
+    throw new UserProfileError(`No se pudo leer el perfil: ${error.message}`);
+  }
+
+  return data ? isProEntitlementActive(data) : false;
 });
 
 /**

@@ -5,7 +5,7 @@ export { getHasHealthDataConsent } from './consent';
 export { UserProfileError } from './errors';
 export { getUserNombre, updateNombre } from './nombre';
 export { getHasUnseenNotifications, getShouldShowRoutesNotice, getShouldShowWelcomeNotice, markRoutesNoticeDismissed, markWelcomeNoticeSeen } from './notices';
-export { getPaymentFailedAt, getPlanTierForAnalytics, getUserPlan, getUserTrialAvailable, isPaymentFailedAlertActive } from './plan';
+export { getPaymentFailedAt, getPlanTierForAnalytics, getUserPlan, getUserProEntitlement, getUserTrialAvailable, isPaymentFailedAlertActive } from './plan';
 export type { OnboardingProfilePayload, SavedOnboardingProfile } from './profile';
 export { getUserDietaryPreferences, getUserOnboardingProfile, hasUserProfile, upsertUserProfile } from './profile';
 export { getHasSeenTour, markTourSeen } from './tour';

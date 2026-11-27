@@ -23,7 +23,7 @@ export default async function ProfilePreferencesPage() {
   // FRESCO-483: shared verified session read (React.cache) — no extra GoTrue round trip.
   const { data: { user } } = await getAuthUser();
 
-  const { dietaryPreferences, hasHealthDataConsent, plan } = await loadPreferencesPageData(supabase, user?.id);
+  const { dietaryPreferences, hasHealthDataConsent, isPro } = await loadPreferencesPageData(supabase, user?.id);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -42,7 +42,7 @@ export default async function ProfilePreferencesPage() {
 
       <Card className="mt-4">
         <CardContent>
-          <PreferencesForm initialPreferences={dietaryPreferences} hasHealthDataConsent={hasHealthDataConsent} isPro={plan !== 'free'} />
+          <PreferencesForm initialPreferences={dietaryPreferences} hasHealthDataConsent={hasHealthDataConsent} isPro={isPro} />
         </CardContent>
       </Card>
     </div>

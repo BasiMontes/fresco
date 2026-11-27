@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { listPastMealPlanWeeks } from '@/lib/api/meal-plan';
-import { getHasHealthDataConsent, getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan, getUserTrialAvailable } from '@/lib/api/user-profile';
+import { getHasHealthDataConsent, getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan, getUserProEntitlement, getUserTrialAvailable } from '@/lib/api/user-profile';
 
 type Client = SupabaseClient<Database>;
 
@@ -101,19 +101,19 @@ export async function loadProfilePageData(supabase: Client, userId: string | und
 
 /**
  * The reads the `/profile/preferences` form needs (FRESCO-1070), each with the same fallback as on `/profile`.
- * FRESCO-1282: the plan decides whether the goal, level and cuisine block is editable. Unlike the reads above,
- * a failed plan read falls back to `'free'`: the safe default hides the edit controls instead of offering Pro
- * ones to someone who may not have Pro.
+ * FRESCO-1282: Pro decides whether the goal, level and cuisine block is editable (FRESCO-1301: the entitlement the
+ * menu generator applies, so an expired plan is locked). Unlike the reads above, a failed read falls back to not
+ * Pro: the safe default hides the edit controls instead of offering Pro ones to someone who may not have Pro.
  */
 export async function loadPreferencesPageData(supabase: Client, userId: string | undefined) {
-  const [dietaryPreferences, hasHealthDataConsent, plan] = await Promise.all([
+  const [dietaryPreferences, hasHealthDataConsent, isPro] = await Promise.all([
     readDietaryPreferences({ supabase, userId, route: '/profile/preferences' }),
     readHasHealthDataConsent({ supabase, userId, route: '/profile/preferences' }),
-    getUserPlan(supabase, userId).catch((error) => {
-      console.error('[/profile/preferences] getUserPlan failed, defaulting to free', error);
-      return 'free' as const;
+    getUserProEntitlement(supabase, userId).catch((error) => {
+      console.error('[/profile/preferences] getUserProEntitlement failed, defaulting to not Pro', error);
+      return false;
     }),
   ]);
 
-  return { dietaryPreferences, hasHealthDataConsent, plan };
+  return { dietaryPreferences, hasHealthDataConsent, isPro };
 }

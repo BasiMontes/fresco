@@ -104,39 +104,39 @@ describe('loadProfilePageData', () => {
 describe('loadPreferencesPageData (FRESCO-1070)', () => {
   let preferences: ReturnType<typeof spyOn>;
   let consent: ReturnType<typeof spyOn>;
-  let plan: ReturnType<typeof spyOn>;
+  let entitlement: ReturnType<typeof spyOn>;
   let consoleError: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
     consoleError = spyOn(console, 'error').mockImplementation(() => {});
     preferences = spyOn(userProfile, 'getUserDietaryPreferences').mockResolvedValue(PREFERENCES);
     consent = spyOn(userProfile, 'getHasHealthDataConsent').mockResolvedValue(true);
-    plan = spyOn(userProfile, 'getUserPlan').mockResolvedValue('pro');
+    entitlement = spyOn(userProfile, 'getUserProEntitlement').mockResolvedValue(true);
   });
 
   afterEach(() => {
     preferences.mockRestore();
     consent.mockRestore();
-    plan.mockRestore();
+    entitlement.mockRestore();
     consoleError.mockRestore();
   });
 
-  test('returns the saved preferences, the consent and the plan', async () => {
+  test('returns the saved preferences, the consent and the entitlement', async () => {
     const data = await loadPreferencesPageData(supabase, 'user-1');
 
-    expect(data).toEqual({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true, plan: 'pro' });
+    expect(data).toEqual({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true, isPro: true });
     expect(preferences).toHaveBeenCalledWith(supabase, 'user-1');
     expect(consent).toHaveBeenCalledWith(supabase, 'user-1');
-    expect(plan).toHaveBeenCalledWith(supabase, 'user-1');
+    expect(entitlement).toHaveBeenCalledWith(supabase, 'user-1');
   });
 
   // FRESCO-1282: an unreadable plan must hide the Pro edit controls, never offer them.
-  test('an unreadable plan falls back to free', async () => {
-    plan.mockRejectedValue(new Error('db down'));
+  test('an unreadable entitlement falls back to not Pro', async () => {
+    entitlement.mockRejectedValue(new Error('db down'));
 
     const data = await loadPreferencesPageData(supabase, 'user-1');
 
-    expect(data.plan).toBe('free');
+    expect(data.isPro).toBe(false);
     expect(data.dietaryPreferences).toBe(PREFERENCES);
     expect(consoleError).toHaveBeenCalledTimes(1);
   });
@@ -159,5 +159,41 @@ describe('loadPreferencesPageData (FRESCO-1070)', () => {
 
     expect(data.dietaryPreferences).toBe(PREFERENCES);
     expect(data.hasHealthDataConsent).toBe(false);
+  });
+});
+
+// FRESCO-1301: the form's Pro block follows the entitlement the menu generator applies, not the plan name.
+describe('loadPreferencesPageData — Pro entitlement', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
+  const clientWith = (row: Record<string, unknown> | null, error: { message: string } | null = null) => ({
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: row, error }) }) }) }),
+  }) as unknown as SupabaseClient<Database>;
+  let spied: ReturnType<typeof spyOn>[];
+
+  beforeEach(() => {
+    spied = [
+      spyOn(userProfile, 'getUserDietaryPreferences').mockResolvedValue(PREFERENCES),
+      spyOn(userProfile, 'getHasHealthDataConsent').mockResolvedValue(true),
+      spyOn(console, 'error').mockImplementation(() => {}),
+    ];
+  });
+
+  afterEach(() => { for (const spy of spied) { spy.mockRestore(); } });
+
+  const isProFor = async (client: SupabaseClient<Database>) => (await loadPreferencesPageData(client, 'user-1')).isPro;
+
+  test('an expired Pro plan with no failed payment is not Pro', async () => {
+    expect(await isProFor(clientWith({ plan: 'pro', plan_expires_at: ago(1), payment_failed_at: null }))).toBe(false);
+  });
+
+  test('an expired Pro plan inside the payment grace period is still Pro', async () => {
+    expect(await isProFor(clientWith({ plan: 'pro', plan_expires_at: ago(1), payment_failed_at: ago(5) }))).toBe(true);
+  });
+
+  test('a Free plan, a missing profile and a failed read are not Pro', async () => {
+    expect(await isProFor(clientWith({ plan: 'free', plan_expires_at: null, payment_failed_at: null }))).toBe(false);
+    expect(await isProFor(clientWith(null))).toBe(false);
+    expect(await isProFor(clientWith(null, { message: 'db down' }))).toBe(false);
   });
 });
