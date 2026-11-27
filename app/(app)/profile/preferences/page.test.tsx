@@ -32,7 +32,7 @@ const PREFERENCES = {
 let loaderSpy: ReturnType<typeof spyOn<typeof profileLoader, 'loadPreferencesPageData'>>;
 
 beforeEach(() => {
-  loaderSpy = spyOn(profileLoader, 'loadPreferencesPageData').mockResolvedValue({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true, plan: 'free' });
+  loaderSpy = spyOn(profileLoader, 'loadPreferencesPageData').mockResolvedValue({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true, isPro: false });
 });
 
 afterEach(() => { loaderSpy.mockRestore(); });
@@ -56,20 +56,17 @@ describe('ProfilePreferencesPage', () => {
     expect(screen.getByTestId('preferencesForm')).toBeInTheDocument();
   });
 
-  // FRESCO-1282: the plan the loader read decides whether the goal, level and cuisine block is editable.
-  test('a Free plan gets the locked block', async () => {
+  // FRESCO-1282 / FRESCO-1301: the entitlement the loader read decides whether the goal, level and cuisine block is editable.
+  test('without Pro the block is locked', async () => {
     await renderPage();
     expect(screen.getByTestId('preferencias_pro_bloqueado')).toBeInTheDocument();
     expect(screen.queryByTestId('preferencias_pro_bloque')).toBeNull();
   });
 
-  test('a Pro and a Family plan get the editable block', async () => {
-    for (const plan of ['pro', 'family'] as const) {
-      loaderSpy.mockResolvedValue({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true, plan });
-      const { unmount } = renderWithProviders(await PreferencesPage());
-      expect(screen.getByTestId('preferencias_pro_bloque')).toBeInTheDocument();
-      expect(screen.queryByTestId('preferencias_pro_bloqueado')).toBeNull();
-      unmount();
-    }
+  test('with Pro the block is editable', async () => {
+    loaderSpy.mockResolvedValue({ dietaryPreferences: PREFERENCES, hasHealthDataConsent: true, isPro: true });
+    await renderPage();
+    expect(screen.getByTestId('preferencias_pro_bloque')).toBeInTheDocument();
+    expect(screen.queryByTestId('preferencias_pro_bloqueado')).toBeNull();
   });
 });
