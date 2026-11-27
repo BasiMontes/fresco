@@ -1,6 +1,6 @@
 /**
- * FRESCO-1317/QAFRESCO-3 — no two active recipes share a name, ignoring case and
- * outer spaces: two identical cards in the library cannot be told apart.
+ * FRESCO-1317/QAFRESCO-3 — no two active recipes share a name, ignoring case,
+ * accents and outer spaces: two identical cards in the library cannot be told apart.
  *
  * Runs only when `RUN_DB_INTEGRATION=1` AND the local Supabase stack answers —
  * `bun run test:db`. See `tests/db/README.md`.
@@ -18,7 +18,8 @@ describe.skipIf(!(RUN && reachable))('active recipe names (real DB)', () => {
     const active = rows.filter(row => row.activo);
     const byName = new Map<string, string[]>();
     for (const row of active) {
-      const key = row.nombre.trim().toLocaleLowerCase('es');
+      // FRESCO-1317: "calabacin" and "calabacín" read as the same name, so accents do not tell two recipes apart.
+      const key = row.nombre.trim().toLocaleLowerCase('es').normalize('NFD').replace(/\p{M}/gu, '');
       byName.set(key, [...(byName.get(key) ?? []), row.slug]);
     }
 
