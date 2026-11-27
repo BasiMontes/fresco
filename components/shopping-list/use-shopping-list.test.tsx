@@ -32,6 +32,7 @@ let removeSpy: ReturnType<typeof spyOn<typeof shoppingApi, 'removeShoppingListIt
 let toggleSpy: ReturnType<typeof spyOn<typeof shoppingApi, 'toggleShoppingListItem'>>;
 let clearSpy: ReturnType<typeof spyOn<typeof shoppingApi, 'clearComprados'>>;
 let errorSpy: ReturnType<typeof spyOn<typeof console, 'error'>>;
+let readSpy: ReturnType<typeof spyOn<typeof shoppingApi, 'getShoppingListItemComprado'>>;
 
 beforeEach(() => {
   onToggleFailure.mockClear();
@@ -42,10 +43,11 @@ beforeEach(() => {
   toggleSpy = spyOn(shoppingApi, 'toggleShoppingListItem').mockResolvedValue(undefined);
   clearSpy = spyOn(shoppingApi, 'clearComprados').mockResolvedValue(undefined);
   errorSpy = spyOn(console, 'error').mockImplementation(() => {});
+  readSpy = spyOn(shoppingApi, 'getShoppingListItemComprado').mockResolvedValue(false);
 });
 
 afterEach(() => {
-  for (const spy of [tokenSpy, suggestionsSpy, addSpy, removeSpy, toggleSpy, clearSpy, errorSpy]) { spy.mockRestore(); }
+  for (const spy of [tokenSpy, suggestionsSpy, addSpy, removeSpy, toggleSpy, clearSpy, errorSpy, readSpy]) { spy.mockRestore(); }
   Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true });
 });
 
@@ -167,6 +169,48 @@ describe('useShoppingList clearing and the offline queue', () => {
     await act(async () => view.result.current.handleToggle({ pasilloIdx: 0, itemIdx: 0, nextComprado: true }));
 
     Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true });
+    await act(async () => { window.dispatchEvent(new Event('online')); });
+    await waitFor(() => expect(view.result.current.errorMessage).toBeNull());
+    expect(toggleSpy).toHaveBeenLastCalledWith({ listId: 'list1', pasilloIdx: 0, itemIdx: 0, comprado: true });
+  });
+});
+
+// FRESCO-1284: the response of a tick can get lost after the write arrived (chaos experiment E4).
+describe('useShoppingList — a tick whose write fails', () => {
+  const tick = async () => {
+    const view = await setup();
+    await act(async () => view.result.current.handleToggle({ pasilloIdx: 0, itemIdx: 0, nextComprado: true }));
+    return { view, comprado: () => view.result.current.pasillos[0]?.items[0]?.comprado };
+  };
+
+  beforeEach(() => { toggleSpy.mockRejectedValueOnce(new Error('Failed to fetch')); });
+
+  test('stays ticked with no message when the database holds the tick', async () => {
+    readSpy.mockResolvedValue(true);
+    const { view, comprado } = await tick();
+
+    expect(readSpy).toHaveBeenCalledWith({ listId: 'list1', pasilloNombre: 'Frutas', itemNombre: 'Tomate' });
+    expect(comprado()).toBe(true);
+    expect(view.result.current.errorMessage).toBeNull();
+    expect(onToggleFailure).not.toHaveBeenCalled();
+  });
+
+  test('reverts and asks to try again when the database does not hold it', async () => {
+    const { view, comprado } = await tick();
+
+    expect(comprado()).toBe(false);
+    expect(view.result.current.errorMessage).toBe('No se pudo guardar el cambio. Vuelve a intentarlo.');
+    expect(onToggleFailure).toHaveBeenCalledWith({ pasilloIdx: 0, itemIdx: 0 });
+  });
+
+  test('stays ticked and queued when the database cannot be read, and is sent on reconnect', async () => {
+    readSpy.mockRejectedValue(new Error('Failed to fetch'));
+    const { view, comprado } = await tick();
+
+    expect(comprado()).toBe(true);
+    expect(view.result.current.errorMessage).toContain('No hemos podido comprobar si se guardó');
+    expect(onToggleFailure).not.toHaveBeenCalled();
+
     await act(async () => { window.dispatchEvent(new Event('online')); });
     await waitFor(() => expect(view.result.current.errorMessage).toBeNull());
     expect(toggleSpy).toHaveBeenLastCalledWith({ listId: 'list1', pasilloIdx: 0, itemIdx: 0, comprado: true });

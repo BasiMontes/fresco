@@ -1,9 +1,10 @@
 import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import * as React from 'react';
-import { edgeFailureMessage } from '@/lib/api/edge-function-timeout';
+import { edgeFailureMessage, mayHaveLanded } from '@/lib/api/edge-function-timeout';
 import { EdgeFunctionError, updateRecipeStatus } from '@/lib/api/edge-functions';
 import { slotId } from '@/lib/calendar/apply-slot-swap';
 import { getAccessToken } from '@/lib/client-api/auth';
+import { getSlotEstado } from '@/lib/client-api/meal-plan';
 import { listaDesactualizadaDeSlot } from '@/lib/client-api/shopping-list';
 import { captureEvent } from '@/lib/posthog/events';
 import { committedMarkEvent, undoneMarkEvent } from '@/lib/posthog/mark-events';
@@ -16,6 +17,20 @@ import { committedMarkEvent, undoneMarkEvent } from '@/lib/posthog/mark-events';
 const UNDO_WINDOW_MS = 10_000;
 
 type EstadosGrid = Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>;
+
+/** FRESCO-1284: the write got no answer and the database could not be asked either. */
+const UNCONFIRMED_MESSAGE = 'No hemos podido comprobar si se guardó el estado del plato. Recarga la página.';
+
+/** What the database holds for the slot, or `null` when it cannot be known. */
+async function readSavedEstado(mealPlanRecipeId: string): Promise<EstadoRecetaSlot | null> {
+  try {
+    return await getSlotEstado(mealPlanRecipeId);
+  }
+  catch (error) {
+    console.error('[CalendarGrid] could not read the slot after a failed mark', error);
+    return null;
+  }
+}
 
 export interface UseSlotMarkingArgs {
   slotIds: Record<DiaSemana, Record<TipoPlato, string>>
@@ -56,6 +71,47 @@ export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, 
     pendingMarkRef.current = pendingMark;
   }, [pendingMark]);
 
+  /** The mark is in the database: the funnel event and, for a discard, the stale shopping list notice. */
+  const onMarkSaved = React.useCallback(async (mark: PendingMark) => {
+    // FRESCO-1014: `pendiente` is a committed mark taken back (not the in-window "Deshacer", which never reaches
+    // the server). FRESCO-1031: every mark event carries the plan tier.
+    const event = committedMarkEvent(mark.estado, mark.prevEstado);
+    captureEvent(event.name, event.properties);
+    // FRESCO-1010: discarding a dish takes its ingredients off the list, but only once the list is
+    // updated. The database has flagged it by now; say so (cooking a dish does not change the list).
+    if (mark.estado === 'descartada' && onListaDesactualizada && await listaDesactualizadaDeSlot(slotIds[mark.dia][mark.tipo])) {
+      onListaDesactualizada();
+    }
+  }, [slotIds, onListaDesactualizada]);
+
+  /**
+   * FRESCO-1284: the response of a mark can get lost after the write arrived, so a failure is settled with what the
+   * database holds. Saved: keep it, no message. Something else: show that and say why. Unknown with no answer at
+   * all: keep the mark and ask to reload, never to retry something that may be saved.
+   */
+  const settleFailedMark = React.useCallback(async (mark: PendingMark, error: unknown) => {
+    const saved = await readSavedEstado(slotIds[mark.dia][mark.tipo]);
+    if (saved === mark.estado) {
+      await onMarkSaved(mark);
+      return;
+    }
+    if (saved === null && mayHaveLanded(error)) {
+      setErrorMessage(UNCONFIRMED_MESSAGE);
+      return;
+    }
+    setEstados(current => ({
+      ...current,
+      [mark.dia]: { ...current[mark.dia], [mark.tipo]: saved ?? mark.prevEstado },
+    }));
+    // FRESCO-47: 409 is the terminal-state guard firing on a real race
+    // (another tab/device got there first) — a distinct, expected case.
+    setErrorMessage(
+      error instanceof EdgeFunctionError && error.status === 409
+        ? 'Este plato ya fue marcado. Actualiza la página para ver su estado actual.'
+        : edgeFailureMessage(error, 'No se pudo guardar el estado del plato. Vuelve a intentarlo.'),
+    );
+  }, [slotIds, setEstados, setErrorMessage, onMarkSaved]);
+
   const commitMark = React.useCallback(async (mark: PendingMark) => {
     const id = slotId({ dia: mark.dia, tipo: mark.tipo });
     setPendingSlots(current => new Set(current).add(id));
@@ -65,30 +121,11 @@ export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, 
         { meal_plan_recipe_id: slotIds[mark.dia][mark.tipo], estado: mark.estado },
         accessToken,
       );
-      // FRESCO-1014: `pendiente` is a committed mark taken back (not the in-window "Deshacer", which never reaches
-      // the server). FRESCO-1031: every mark event carries the plan tier.
-      const event = committedMarkEvent(mark.estado, mark.prevEstado);
-      captureEvent(event.name, event.properties);
-      // FRESCO-1010: discarding a dish takes its ingredients off the list, but only once the list is
-      // updated. The database has flagged it by now; say so (cooking a dish does not change the list).
-      if (mark.estado === 'descartada' && onListaDesactualizada && await listaDesactualizadaDeSlot(slotIds[mark.dia][mark.tipo])) {
-        onListaDesactualizada();
-      }
+      await onMarkSaved(mark);
     }
     catch (error) {
       console.error('[CalendarGrid] updateRecipeStatus failed', error);
-      // Revert the optimistic mark — the write never landed.
-      setEstados(current => ({
-        ...current,
-        [mark.dia]: { ...current[mark.dia], [mark.tipo]: mark.prevEstado },
-      }));
-      // FRESCO-47: 409 is the terminal-state guard firing on a real race
-      // (another tab/device got there first) — a distinct, expected case.
-      setErrorMessage(
-        error instanceof EdgeFunctionError && error.status === 409
-          ? 'Este plato ya fue marcado. Actualiza la página para ver su estado actual.'
-          : edgeFailureMessage(error, 'No se pudo guardar el estado del plato. Vuelve a intentarlo.'),
-      );
+      await settleFailedMark(mark, error);
     }
     finally {
       setPendingSlots((current) => {
@@ -97,7 +134,7 @@ export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, 
         return next;
       });
     }
-  }, [slotIds, setEstados, setErrorMessage, setPendingSlots, onListaDesactualizada]);
+  }, [slotIds, setPendingSlots, onMarkSaved, settleFailedMark]);
 
   const flushPendingMark = React.useCallback(() => {
     if (commitTimerRef.current) {

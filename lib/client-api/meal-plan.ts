@@ -1,4 +1,4 @@
-import { assignRecipeToSlot as assignRecipeToSlotFor, copyMealPlanToCurrentWeek as copyMealPlanToCurrentWeekFor, deleteMealPlan as deleteMealPlanFor, swapMealPlanSlots as swapMealPlanSlotsFor } from '@/lib/api/meal-plan';
+import { assignRecipeToSlot as assignRecipeToSlotFor, copyMealPlanToCurrentWeek as copyMealPlanToCurrentWeekFor, deleteMealPlan as deleteMealPlanFor, getSlotEstado as getSlotEstadoFor, swapMealPlanSlots as swapMealPlanSlotsFor } from '@/lib/api/meal-plan';
 import { listOpenSlots as listOpenSlotsFor } from '@/lib/api/open-slots';
 import { createClient } from '@/lib/supabase/client';
 
@@ -14,6 +14,10 @@ export async function copyMealPlanToCurrentWeek(sourceMealPlanId: Parameters<typ
 
 export async function deleteMealPlan(mealPlanId: Parameters<typeof deleteMealPlanFor>[1]) {
   return deleteMealPlanFor(createClient(), mealPlanId);
+}
+
+export async function getSlotEstado(mealPlanRecipeId: Parameters<typeof getSlotEstadoFor>[1]) {
+  return getSlotEstadoFor(createClient(), mealPlanRecipeId);
 }
 
 export async function listOpenSlots(args: Parameters<typeof listOpenSlotsFor>[1]) {

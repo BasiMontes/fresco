@@ -117,6 +117,32 @@ export async function toggleShoppingListItem(
 }
 
 /**
+ * FRESCO-1284: the persisted `comprado` of one item, found by aisle and name, or `null` when it is not on the list.
+ * Asked after a failed tick, because the response can get lost after the write arrived. Fails fast on a real DB error.
+ */
+export async function getShoppingListItemComprado(
+  client: SupabaseClient<Database>,
+  { listId, pasilloNombre, itemNombre }: { listId: string, pasilloNombre: string, itemNombre: string },
+): Promise<boolean | null> {
+  const { data, error } = await client
+    .from('shopping_lists')
+    .select('items')
+    .eq('id', listId)
+    .maybeSingle();
+
+  if (error) {
+    throw new ShoppingListError(`No se pudo leer el producto: ${error.message}`);
+  }
+
+  const parsed = shoppingListPasillosSchema.safeParse(data?.items);
+  const item = parsed.success
+    ? parsed.data.find(pasillo => pasillo.nombre === pasilloNombre)?.items.find(candidate => candidate.nombre === itemNombre)
+    : undefined;
+
+  return item ? item.comprado : null;
+}
+
+/**
  * Removes every item already marked `comprado` from the list (and drops
  * any pasillo bucket left empty) via the `jsonb_clear_comprados` `security
  * definer` RPC — same direct-write precedent as `toggleShoppingListItem`.

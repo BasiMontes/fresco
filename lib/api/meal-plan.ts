@@ -369,3 +369,21 @@ export async function deleteMealPlan(
     throw new MealPlanError(`No se pudo eliminar el menú: ${error.message}`);
   }
 }
+
+/**
+ * FRESCO-1284: the persisted state of one slot, or `null` when the row is not there. Asked after a failed mark,
+ * because the response can get lost after the write arrived. Fails fast on a real DB error.
+ */
+export async function getSlotEstado(client: SupabaseClient<Database>, mealPlanRecipeId: string): Promise<EstadoRecetaSlot | null> {
+  const { data, error } = await client
+    .from('meal_plan_recipes')
+    .select('estado')
+    .eq('id', mealPlanRecipeId)
+    .maybeSingle();
+
+  if (error) {
+    throw new MealPlanError(`No se pudo leer el estado del plato: ${error.message}`);
+  }
+
+  return data?.estado ?? null;
+}
