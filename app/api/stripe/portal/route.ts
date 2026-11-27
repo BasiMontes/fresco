@@ -14,6 +14,9 @@ const RATE_LIMIT_ENDPOINT = 'stripe-portal';
 const RATE_LIMIT_PER_HOUR = 20;
 const RATE_LIMIT_WINDOW_SECONDS = 3600;
 
+/** FRESCO-1285: above the screen's 20 s limit and the Stripe client's two 8 s attempts (`lib/billing/stripe-limits.ts`). */
+export const maxDuration = 30;
+
 /**
  * POST /api/stripe/portal — `/profile`'s "Gestionar mi suscripción" CTA
  * (STORY-FRESCO-231). Creates a Stripe Billing Portal Session for the

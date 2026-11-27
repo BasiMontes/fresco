@@ -221,6 +221,15 @@ Leídas del código, no medidas. Hechos de partida: el cliente de Stripe se crea
 
 **Lo que no se ejecutó:** el recorrido completo desde la pantalla. Exigiría que la aplicación hablara con un Stripe que no contesta. El cliente se construye en `lib/stripe.ts` sin ninguna opción de entorno para el host y la pila local no trae un Stripe de mentira, así que no se puede redirigir. Véase S2.
 
+#### Repetición tras el arreglo (FRESCO-1285, 2026-11-27)
+
+| # | Resultado |
+|---|---|
+| S1a | `bun run chaos:stripe-stall` con la configuración real (8 s por intento, 1 reintento, `lib/billing/stripe-limits.ts`): se rinde a los **16,6 s** con `StripeConnectionError` y 2 conexiones |
+| S1b | Los botones de pago y de gestión de la suscripción cortan a los 20 s con "Está tardando más de lo normal. Inténtalo de nuevo.". Las rutas fijan `maxDuration = 30`. Cubierto por pruebas, no ejecutado de punta a punta |
+
+Los 8, 20 y 30 s son topes aprobados por el dueño. La latencia real de Stripe no se ha medido.
+
 ### S2: el webhook no llega, o llega con la base de datos caída
 
 **No se puede ejecutar de punta a punta en la pila local.** El tratamiento de `checkout.session.completed` llama a `stripe.subscriptions.retrieve` (`lib/billing/grant-pro.ts`), y la pila local solo tiene credenciales de Stripe de relleno (`.env.ci`), así que el webhook no llegaría a conceder Pro aunque llegara la firma bien formada.

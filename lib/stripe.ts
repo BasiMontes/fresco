@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { STRIPE_CLIENT_LIMITS } from '@/lib/billing/stripe-limits';
 import { STRIPE_API_VERSION } from './stripe-api-version';
 
 // Server-only Stripe client (ADR-0007: Stripe Checkout, hosted, `subscription`
@@ -83,9 +84,8 @@ let cachedStripe: Stripe | undefined;
 
 function getStripe(): Stripe {
   cachedStripe ??= new Stripe(requireStripeSecretKey(), {
-    // Pinned (`lib/stripe-api-version.ts`) to the version the installed SDK was generated against, so the
-    // effective API version is not the account default at call time: implicit and silently shiftable.
-    apiVersion: STRIPE_API_VERSION,
+    apiVersion: STRIPE_API_VERSION, // Pinned to the installed SDK's version, never the account default.
+    ...STRIPE_CLIENT_LIMITS, // FRESCO-1285: a silent Stripe fails in seconds, not in four minutes.
   });
 
   return cachedStripe;

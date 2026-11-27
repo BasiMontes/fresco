@@ -56,6 +56,24 @@ describe('ManageSubscriptionButton', () => {
     expect(await screen.findByTestId('manage_subscription_error_message')).toBeTruthy();
   });
 
+  test('FRESCO-1285: after 20 s without an answer it says so and lets the person retry', async () => {
+    const limit = new AbortController();
+    const timeout = spyOn(AbortSignal, 'timeout').mockReturnValue(limit.signal);
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
+    })) as unknown as typeof fetch;
+    renderWithProviders(<ManageSubscriptionButton />);
+
+    fireEvent.click(screen.getByTestId('manage_subscription_button'));
+    await waitFor(() => expect(screen.getByTestId('manage_subscription_button')).toBeDisabled());
+    expect(timeout).toHaveBeenCalledWith(20_000);
+    limit.abort(new DOMException('The operation timed out.', 'TimeoutError'));
+
+    expect(await screen.findByTestId('manage_subscription_error_message')).toHaveTextContent('Está tardando más de lo normal. Inténtalo de nuevo.');
+    expect(screen.getByTestId('manage_subscription_button')).not.toBeDisabled();
+    timeout.mockRestore();
+  });
+
   test('a network failure shows the same alert', async () => {
     globalThis.fetch = (async () => { throw new Error('offline'); }) as unknown as typeof fetch;
     renderWithProviders(<ManageSubscriptionButton />);

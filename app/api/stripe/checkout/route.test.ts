@@ -46,7 +46,7 @@ void mock.module('@/lib/stripe', () => ({ ...realStripe, stripe: {
   billingPortal: { sessions: { create: portalCreate } },
 } }));
 
-const { POST } = await import('./route');
+const { POST, maxDuration } = await import('./route');
 
 function req(body?: unknown) {
   return new NextRequest('https://test.fresco.local/api/stripe/checkout', { method: 'POST', ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
@@ -131,6 +131,10 @@ describe('POST /api/stripe/checkout', () => {
   test('500 when Stripe returns a session without a url', async () => {
     sessionsCreate.mockResolvedValue({ id: 'cs_1', url: null });
     expect((await POST(req())).status).toBe(500);
+  });
+
+  test('FRESCO-1285: the function is cut at 30 s, above the client limit and the Stripe client attempts', () => {
+    expect(maxDuration).toBe(30);
   });
 
   test('500 when Stripe throws', async () => {

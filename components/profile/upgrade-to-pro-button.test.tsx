@@ -1,5 +1,5 @@
 import type { ProPriceInfo } from '@/lib/legal/pro-summary';
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { renderWithProviders, screen, setupUser, waitFor } from '@/tests/component-render';
 import { UpgradeToProButton } from './upgrade-to-pro-button';
 
@@ -162,6 +162,34 @@ describe('UpgradeToProButton + pre-contract summary', () => {
     expect(urls().filter(u => !u.startsWith('/api/stripe/pro-price'))).toEqual(['/api/consents', '/api/stripe/checkout']);
     expect(calls.find(c => c.url === '/api/consents')?.body).toEqual({ kinds: ['withdrawal_waiver'] });
     expect(calls.find(c => c.url === '/api/stripe/checkout')?.body).toEqual({ interval: 'month' });
+  });
+
+  test('FRESCO-1285: a checkout with no answer after 20 s says so and leaves the button usable', async () => {
+    const user = await openSummary();
+    await user.click(screen.getByTestId('pro_checkout_withdrawal_checkbox'));
+    const limit = new AbortController();
+    const timeout = spyOn(AbortSignal, 'timeout').mockReturnValue(limit.signal);
+    const consoleError = spyOn(console, 'error').mockImplementation(() => {});
+    const answering = globalThis.fetch;
+    let asked = false;
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      if (url !== '/api/stripe/checkout') { return answering(url, init); }
+      asked = true;
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
+      });
+    }) as unknown as typeof fetch;
+
+    await user.click(screen.getByTestId('pro_checkout_confirm_button'));
+    await waitFor(() => expect(asked).toBe(true));
+    expect(timeout).toHaveBeenCalledWith(20_000);
+    limit.abort(new DOMException('The operation timed out.', 'TimeoutError'));
+
+    await waitFor(() => expect(screen.getByTestId('upgrade_to_pro_error_message').textContent).toContain('Está tardando más de lo normal. Inténtalo de nuevo.'));
+    expect(screen.getByTestId<HTMLButtonElement>('pro_checkout_confirm_button').disabled).toBe(false);
+    expect(window.location.hash).toBe('');
+    timeout.mockRestore();
+    consoleError.mockRestore();
   });
 
   test('if the waiver cannot be recorded, nothing is charged: no checkout, an error, and the box stays usable', async () => {
